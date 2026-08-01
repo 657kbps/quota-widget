@@ -4,11 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
 import com.kuyermqi.quotawidget.ui.SettingsScreen
 import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
-import com.kuyermqi.quotawidget.worker.BalanceRefreshWorker
+import com.kuyermqi.quotawidget.widget.WidgetRefreshCoordinator
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,10 +17,8 @@ class MainActivity : ComponentActivity() {
             QuotaWidgetTheme {
                 SettingsScreen(
                     settingsRepository = app.settingsRepository,
-                    onSettingsSaved = {
-                        WorkManager.getInstance(this@MainActivity).enqueue(
-                            OneTimeWorkRequestBuilder<BalanceRefreshWorker>().build(),
-                        )
+                    onRefreshBalance = {
+                        WidgetRefreshCoordinator.runBackgroundRefresh(this@MainActivity)
                     },
                 )
             }

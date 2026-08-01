@@ -42,11 +42,7 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.findByName("release")
-                ?: error(
-                    "Release signing is not configured. Set RELEASE_STORE_FILE, " +
-                        "RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, and RELEASE_KEY_PASSWORD.",
-                )
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
     compileOptions {
@@ -55,6 +51,28 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+}
+
+gradle.taskGraph.whenReady {
+    val buildingRelease = allTasks.any { task ->
+        val name = task.name
+        name.contains("Release", ignoreCase = true) &&
+            (name.startsWith("assemble") ||
+                name.startsWith("bundle") ||
+                name.startsWith("package") ||
+                name.startsWith("sign") ||
+                name.startsWith("install"))
+    }
+    if (buildingRelease) {
+        val releaseSigning = android.signingConfigs.findByName("release")
+        val releaseType = android.buildTypes.getByName("release")
+        if (releaseSigning == null || releaseType.signingConfig != releaseSigning) {
+            error(
+                "Release signing is not configured. Set RELEASE_STORE_FILE, " +
+                    "RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, and RELEASE_KEY_PASSWORD.",
+            )
+        }
     }
 }
 

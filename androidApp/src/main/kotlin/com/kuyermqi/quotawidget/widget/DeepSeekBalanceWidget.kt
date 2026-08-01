@@ -206,7 +206,7 @@ private fun WidgetContent(
                 is WidgetDisplayState.Error -> {
                     BalanceBlock(
                         title = "获取失败",
-                        subtitle = state.message,
+                        subtitle = null,
                         titleSize = 32.sp,
                         openApp = openApp,
                     )
@@ -218,16 +218,18 @@ private fun WidgetContent(
 
 private fun balanceTitleFontSize(formattedBalance: String): TextUnit =
     when {
-        formattedBalance.length <= 8 -> 32.sp
-        formattedBalance.length <= 10 -> 28.sp
-        formattedBalance.length <= 12 -> 24.sp
-        else -> 20.sp
+        formattedBalance.length <= 6 -> 32.sp
+        formattedBalance.length <= 7 -> 28.sp
+        formattedBalance.length <= 8 -> 24.sp
+        formattedBalance.length <= 10 -> 22.sp
+        formattedBalance.length <= 12 -> 20.sp
+        else -> 18.sp
     }
 
 @Composable
 private fun BalanceBlock(
     title: String,
-    subtitle: String,
+    subtitle: String?,
     titleSize: TextUnit,
     openApp: Action,
 ) {
@@ -239,17 +241,20 @@ private fun BalanceBlock(
                 fontSize = titleSize,
                 fontWeight = FontWeight.Bold,
             ),
+            maxLines = 1,
             modifier = GlanceModifier.clickableNoRipple(openApp),
         )
-        Spacer(GlanceModifier.height(2.dp))
-        Text(
-            text = subtitle,
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurfaceVariant,
-                fontSize = 12.sp,
-            ),
-            modifier = GlanceModifier.clickableNoRipple(openApp),
-        )
+        if (!subtitle.isNullOrBlank()) {
+            Spacer(GlanceModifier.height(2.dp))
+            Text(
+                text = subtitle,
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                    fontSize = 12.sp,
+                ),
+                modifier = GlanceModifier.clickableNoRipple(openApp),
+            )
+        }
     }
 }
 

@@ -11,6 +11,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,12 +19,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -34,6 +37,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,8 +52,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
+import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.platform.QuotaPlatform
@@ -61,7 +67,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     settingsRepository: PlatformSettingsRepository,
-    onSettingsSaved: () -> Unit,
+    onRefreshBalance: suspend () -> WidgetDisplayState,
 ) {
     val scope = rememberCoroutineScope()
     var savedSettings by remember { mutableStateOf(DeepSeekSettings()) }
@@ -71,6 +77,41 @@ fun SettingsScreen(
     var showPlatformTip by remember { mutableStateOf(false) }
     var tipLoaded by remember { mutableStateOf(false) }
     var loaded by remember { mutableStateOf(false) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
+    var saveError by remember { mutableStateOf<String?>(null) }
+    var lastSuccessBalance by remember { mutableStateOf<String?>(null) }
+
+    val widgetState by settingsRepository.observeWidgetState()
+        .collectAsStateWithLifecycle(initialValue = WidgetDisplayState.NotConfigured)
+
+    LaunchedEffect(widgetState) {
+        val success = widgetState as? WidgetDisplayState.Success ?: return@LaunchedEffect
+        lastSuccessBalance = success.snapshot.formattedBalance
+    }
+
+    fun balanceLabelFor(platformId: String): String? {
+        if (platformId != PlatformIds.DEEPSEEK) return null
+        if (savedSettings.apiKey.isBlank()) return null
+        return when (val state = widgetState) {
+            is WidgetDisplayState.Success -> state.snapshot.formattedBalance
+            WidgetDisplayState.Loading -> lastSuccessBalance ?: "刷新中…"
+            is WidgetDisplayState.Error -> lastSuccessBalance
+            WidgetDisplayState.NotConfigured -> null
+        }
+    }
+
+    suspend fun refreshBalance(showPullIndicator: Boolean = false): WidgetDisplayState {
+        if (savedSettings.apiKey.isBlank()) {
+            return WidgetDisplayState.NotConfigured
+        }
+        if (showPullIndicator) isRefreshing = true
+        return try {
+            onRefreshBalance()
+        } finally {
+            if (showPullIndicator) isRefreshing = false
+        }
+    }
 
     LaunchedEffect(Unit) {
         val settings = settingsRepository.getDeepSeekSettings()
@@ -80,6 +121,9 @@ fun SettingsScreen(
         showPlatformTip = !settingsRepository.isPlatformTipDismissed()
         tipLoaded = true
         loaded = true
+        if (settings.apiKey.isNotBlank()) {
+            refreshBalance(showPullIndicator = false)
+        }
     }
 
     val isDirty = loaded && (
@@ -98,74 +142,78 @@ fun SettingsScreen(
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
-        Column(
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { scope.launch { refreshBalance(showPullIndicator = true) } },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp),
         ) {
-            AnimatedVisibility(
-                visible = tipLoaded && showPlatformTip,
-                enter = EnterTransition.None,
-                exit = shrinkVertically(animationSpec = tween(220)) + fadeOut(tween(160)),
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    ),
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_tip_lightbulb),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier
-                                .padding(start = 4.dp, end = 10.dp)
-                                .size(22.dp),
-                        )
-                        Text(
-                            text = "在下方修改对应平台的配置",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(vertical = 12.dp),
-                        )
-                        IconButton(
-                            onClick = {
-                                showPlatformTip = false
-                                scope.launch {
-                                    settingsRepository.setPlatformTipDismissed(true)
-                                }
-                            },
-                            modifier = Modifier.size(32.dp),
+                if (tipLoaded) {
+                    item(key = "platform_tip") {
+                        AnimatedVisibility(
+                            visible = showPlatformTip,
+                            enter = EnterTransition.None,
+                            exit = shrinkVertically(animationSpec = tween(220)) + fadeOut(tween(160)),
                         ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_close),
-                                contentDescription = "关闭提示",
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.size(18.dp),
-                            )
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                ),
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_tip_lightbulb),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier
+                                            .padding(start = 4.dp, end = 10.dp)
+                                            .size(22.dp),
+                                    )
+                                    Text(
+                                        text = "在下方修改对应平台的配置",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(vertical = 12.dp),
+                                    )
+                                    IconButton(
+                                        onClick = {
+                                            showPlatformTip = false
+                                            scope.launch {
+                                                settingsRepository.setPlatformTipDismissed(true)
+                                            }
+                                        },
+                                        modifier = Modifier.size(32.dp),
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_close),
+                                            contentDescription = "关闭提示",
+                                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-            }
 
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(top = if (tipLoaded && showPlatformTip) 0.dp else 8.dp)
-                    .padding(bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
                 items(PlatformRegistry.platforms, key = { it.id }) { platform ->
                     PlatformConfigItem(
                         platform = platform,
@@ -175,20 +223,45 @@ fun SettingsScreen(
                                 if (expandedPlatformId == platform.id) null else platform.id
                         },
                         apiKey = draftApiKey,
-                        onApiKeyChange = { draftApiKey = it },
+                        onApiKeyChange = {
+                            draftApiKey = it
+                            saveError = null
+                        },
                         currency = draftCurrency,
-                        onCurrencyChange = { draftCurrency = it },
+                        onCurrencyChange = {
+                            draftCurrency = it
+                            saveError = null
+                        },
                         isDirty = isDirty,
+                        isSaving = isSaving,
+                        saveError = saveError,
+                        balanceText = balanceLabelFor(platform.id),
                         onSave = {
                             scope.launch {
                                 val next = DeepSeekSettings(
                                     apiKey = draftApiKey.trim(),
                                     currency = draftCurrency,
                                 )
-                                settingsRepository.saveDeepSeekSettings(next)
-                                savedSettings = next
-                                draftApiKey = next.apiKey
-                                onSettingsSaved()
+                                isSaving = true
+                                saveError = null
+                                try {
+                                    settingsRepository.saveDeepSeekSettings(next)
+                                    savedSettings = next
+                                    draftApiKey = next.apiKey
+                                    if (next.apiKey.isBlank()) {
+                                        lastSuccessBalance = null
+                                    }
+                                    when (val result = onRefreshBalance()) {
+                                        is WidgetDisplayState.Error -> {
+                                            saveError = result.message
+                                        }
+                                        else -> {
+                                            saveError = null
+                                        }
+                                    }
+                                } finally {
+                                    isSaving = false
+                                }
                             }
                         },
                     )
@@ -208,6 +281,9 @@ private fun PlatformConfigItem(
     currency: CurrencyPreference,
     onCurrencyChange: (CurrencyPreference) -> Unit,
     isDirty: Boolean,
+    isSaving: Boolean,
+    saveError: String?,
+    balanceText: String?,
     onSave: () -> Unit,
 ) {
     val arrowRotation by animateFloatAsState(
@@ -229,13 +305,21 @@ private fun PlatformConfigItem(
                     .clickable(onClick = onToggle)
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
                     text = platform.displayName,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
+                if (balanceText != null) {
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = balanceText,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
                 Icon(
                     painter = painterResource(R.drawable.ic_expand_more),
                     contentDescription = if (expanded) "收起" else "展开",
@@ -263,6 +347,7 @@ private fun PlatformConfigItem(
                             singleLine = true,
                             visualTransformation = PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            enabled = !isSaving,
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
@@ -276,6 +361,7 @@ private fun PlatformConfigItem(
                                 FilterChip(
                                     selected = currency == option,
                                     onClick = { onCurrencyChange(option) },
+                                    enabled = !isSaving,
                                     label = { Text(option.name) },
                                 )
                             }
@@ -286,14 +372,30 @@ private fun PlatformConfigItem(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        if (!saveError.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = saveError,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
+                            if (isSaving) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                            }
                             Button(
                                 onClick = onSave,
-                                enabled = isDirty,
+                                enabled = isDirty && !isSaving,
                             ) {
                                 Text("保存")
                             }

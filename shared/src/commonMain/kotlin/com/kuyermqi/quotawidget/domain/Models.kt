@@ -52,8 +52,16 @@ fun formatBalance(currency: CurrencyPreference, amount: String): String {
         CurrencyPreference.CNY -> "￥"
         CurrencyPreference.USD -> "$"
     }
-    return "$symbol${formatTwoDecimals(scaled)}$suffix"
+    val number = if (suffix.isEmpty()) {
+        formatTwoDecimals(scaled)
+    } else {
+        formatWhole(scaled)
+    }
+    return "$symbol$number$suffix"
 }
+
+private fun formatWhole(value: Double): String =
+    kotlin.math.round(value).toLong().toString()
 
 private fun formatTwoDecimals(value: Double): String {
     val cents = kotlin.math.round(value * 100.0).toLong()

@@ -8,6 +8,7 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
+import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.worker.BalanceRefreshWorker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
@@ -83,14 +84,21 @@ object WidgetRefreshCoordinator {
         }
     }
 
-    suspend fun runBackgroundRefresh(context: Context) {
+    suspend fun runBackgroundRefresh(context: Context): WidgetDisplayState {
         val app = context.applicationContext as QuotaWidgetApp
         Log.i(TAG, "runBackgroundRefresh start")
-        try {
+        return try {
             val result = app.refreshInteractor.refreshDeepSeek()
             Log.i(TAG, "runBackgroundRefresh done result=${result::class.simpleName}")
+            result
         } finally {
-            forceIdle(context)
+            // Do not force Idle: a widget-initiated refresh may still own the spinner.
+            val phase = app.settingsRepository.getRefreshIconPhase()
+            if (phase == RefreshIconPhase.Spinning || phase == RefreshIconPhase.Settling) {
+                updateWidgetSerialized(context, "background-refresh-keep-phase")
+            } else {
+                updateWidgetSerialized(context, "background-refresh")
+            }
         }
     }
 
