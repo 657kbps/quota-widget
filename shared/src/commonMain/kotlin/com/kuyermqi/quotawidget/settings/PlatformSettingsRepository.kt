@@ -1,5 +1,6 @@
 package com.kuyermqi.quotawidget.settings
 
+import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.BalanceSnapshot
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
@@ -30,4 +31,8 @@ interface PlatformSettingsRepository {
 
     suspend fun isPlatformTipDismissed(): Boolean
     suspend fun setPlatformTipDismissed(dismissed: Boolean)
+
+    fun observeAppSettings(): Flow<AppSettings>
+    suspend fun getAppSettings(): AppSettings
+    suspend fun saveAppSettings(settings: AppSettings)
 }

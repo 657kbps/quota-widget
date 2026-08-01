@@ -24,6 +24,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".AppSettingsActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.QuotaWidget" />
+
         <receiver
             android:name=".widget.DeepSeekBalanceWidgetReceiver"
             android:exported="true"

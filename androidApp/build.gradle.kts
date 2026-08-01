@@ -111,6 +111,7 @@ dependencies {
     implementation(projects.shared)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.tooling.preview)
@@ -122,5 +123,6 @@ dependencies {
     implementation(libs.androidx.work.runtime)
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
+    implementation(libs.material.kolor)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

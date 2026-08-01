@@ -1,5 +1,45 @@
 package com.kuyermqi.quotawidget.domain
 
+enum class DarkThemeMode {
+    FollowSystem,
+    Light,
+    Dark,
+    ;
+
+    companion object {
+        fun fromStorage(value: String?): DarkThemeMode =
+            entries.find { it.name == value } ?: FollowSystem
+    }
+}
+
+enum class ThemeColorMode {
+    FollowSystem,
+    Custom,
+    ;
+
+    companion object {
+        fun fromStorage(value: String?): ThemeColorMode =
+            entries.find { it.name == value } ?: FollowSystem
+    }
+}
+
+data class AppSettings(
+    val darkThemeMode: DarkThemeMode = DarkThemeMode.FollowSystem,
+    val themeColorMode: ThemeColorMode = ThemeColorMode.FollowSystem,
+    val customSeedColorArgb: Int = DEFAULT_CUSTOM_SEED_COLOR_ARGB,
+    val refreshIntervalMinutes: Int = DEFAULT_REFRESH_INTERVAL_MINUTES,
+) {
+    init {
+        require(refreshIntervalMinutes in ALLOWED_REFRESH_INTERVAL_MINUTES) {
+            "refreshIntervalMinutes must be one of $ALLOWED_REFRESH_INTERVAL_MINUTES"
+        }
+    }
+}
+
+const val DEFAULT_CUSTOM_SEED_COLOR_ARGB = 0xFF6750A4.toInt()
+const val DEFAULT_REFRESH_INTERVAL_MINUTES = 30
+val ALLOWED_REFRESH_INTERVAL_MINUTES = listOf(15, 30, 60, 120, 180, 720, 1440)
+
 enum class CurrencyPreference {
     CNY,
     USD,

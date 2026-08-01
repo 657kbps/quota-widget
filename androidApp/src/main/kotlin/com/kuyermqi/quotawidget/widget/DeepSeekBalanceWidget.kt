@@ -48,6 +48,7 @@ import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toAppThemeSettings
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toDisplayState
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toRefreshPhase
 import com.kuyermqi.quotawidget.worker.BalanceRefreshWorker
@@ -100,8 +101,15 @@ private suspend fun GlanceAppWidget.provideDeepSeekGlance(
                 "qw_status=${prefs[WidgetGlanceState.statusKey]}",
         )
         val refreshPhase = prefs.toRefreshPhase()
-        GlanceTheme {
-            content(state, refreshPhase, actionStartActivity<MainActivity>())
+        val themeColors = colorProvidersFor(context, prefs.toAppThemeSettings())
+        if (themeColors != null) {
+            GlanceTheme(colors = themeColors) {
+                content(state, refreshPhase, actionStartActivity<MainActivity>())
+            }
+        } else {
+            GlanceTheme {
+                content(state, refreshPhase, actionStartActivity<MainActivity>())
+            }
         }
     }
 }

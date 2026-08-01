@@ -4,18 +4,23 @@ import android.content.Context
 import android.util.Log
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
-import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.kuyermqi.quotawidget.QuotaWidgetApp
+import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.BalanceSnapshot
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
+import com.kuyermqi.quotawidget.domain.DEFAULT_CUSTOM_SEED_COLOR_ARGB
+import com.kuyermqi.quotawidget.domain.DEFAULT_REFRESH_INTERVAL_MINUTES
+import com.kuyermqi.quotawidget.domain.DarkThemeMode
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
+import com.kuyermqi.quotawidget.domain.ThemeColorMode
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.formatBalance
 import com.kuyermqi.quotawidget.platform.PlatformIds
@@ -37,6 +42,9 @@ object WidgetGlanceState {
     val totalKey = stringPreferencesKey("qw_total")
     val formattedKey = stringPreferencesKey("qw_formatted")
     val updatedAtKey = longPreferencesKey("qw_updated_at")
+    val darkThemeModeKey = stringPreferencesKey("qw_dark_theme_mode")
+    val themeColorModeKey = stringPreferencesKey("qw_theme_color_mode")
+    val seedColorKey = intPreferencesKey("qw_seed_color")
 
     private object Status {
         const val NOT_CONFIGURED = "not_configured"
@@ -50,6 +58,7 @@ object WidgetGlanceState {
         val repo = app.settingsRepository
         val phase = repo.getRefreshIconPhase()
         val display = repo.getWidgetState()
+        val appSettings = repo.getAppSettings()
         Log.i(TAG, "syncAndUpdate reason=$reason phase=$phase state=${display::class.simpleName}")
 
         val manager = GlanceAppWidgetManager(context)
@@ -63,7 +72,7 @@ object WidgetGlanceState {
             ids.forEach { id ->
                 updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
                     prefs.toMutablePreferences().apply {
-                        write(phase, display)
+                        write(phase, display, appSettings)
                     }
                 }
                 widget.update(context, id)
@@ -87,10 +96,11 @@ object WidgetGlanceState {
     ): WidgetDisplayState {
         val phase = repo.getRefreshIconPhase()
         val display = repo.getWidgetState()
+        val appSettings = repo.getAppSettings()
         val hasKey = repo.getDeepSeekSettings().apiKey.isNotBlank()
         updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
             prefs.toMutablePreferences().apply {
-                write(phase, display)
+                write(phase, display, appSettings)
             }
         }
         val verify = getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
@@ -104,6 +114,13 @@ object WidgetGlanceState {
 
     fun Preferences.toRefreshPhase(): RefreshIconPhase =
         RefreshIconPhase.fromStorage(this[refreshPhaseKey])
+
+    fun Preferences.toAppThemeSettings(): AppSettings = AppSettings(
+        darkThemeMode = DarkThemeMode.fromStorage(this[darkThemeModeKey]),
+        themeColorMode = ThemeColorMode.fromStorage(this[themeColorModeKey]),
+        customSeedColorArgb = this[seedColorKey] ?: DEFAULT_CUSTOM_SEED_COLOR_ARGB,
+        refreshIntervalMinutes = DEFAULT_REFRESH_INTERVAL_MINUTES,
+    )
 
     fun Preferences.toDisplayState(): WidgetDisplayState {
         return when (this[statusKey]) {
@@ -127,8 +144,15 @@ object WidgetGlanceState {
         }
     }
 
-    private fun MutablePreferences.write(phase: RefreshIconPhase, display: WidgetDisplayState) {
+    private fun MutablePreferences.write(
+        phase: RefreshIconPhase,
+        display: WidgetDisplayState,
+        appSettings: AppSettings,
+    ) {
         this[refreshPhaseKey] = phase.name
+        this[darkThemeModeKey] = appSettings.darkThemeMode.name
+        this[themeColorModeKey] = appSettings.themeColorMode.name
+        this[seedColorKey] = appSettings.customSeedColorArgb
         when (display) {
             WidgetDisplayState.NotConfigured -> {
                 this[statusKey] = Status.NOT_CONFIGURED

@@ -6,6 +6,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -13,9 +14,15 @@ import com.google.crypto.tink.Aead
 import com.google.crypto.tink.KeyTemplates
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
+import com.kuyermqi.quotawidget.domain.ALLOWED_REFRESH_INTERVAL_MINUTES
+import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.BalanceSnapshot
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
+import com.kuyermqi.quotawidget.domain.DarkThemeMode
+import com.kuyermqi.quotawidget.domain.DEFAULT_CUSTOM_SEED_COLOR_ARGB
+import com.kuyermqi.quotawidget.domain.DEFAULT_REFRESH_INTERVAL_MINUTES
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
+import com.kuyermqi.quotawidget.domain.ThemeColorMode
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.formatBalance
 import com.kuyermqi.quotawidget.platform.PlatformIds
@@ -125,6 +132,32 @@ class AndroidPlatformSettingsRepository(
         }
     }
 
+    override fun observeAppSettings(): Flow<AppSettings> =
+        dataStore.data.map { prefs -> prefs.toAppSettings() }
+
+    override suspend fun getAppSettings(): AppSettings =
+        dataStore.data.first().toAppSettings()
+
+    override suspend fun saveAppSettings(settings: AppSettings) {
+        dataStore.edit { prefs ->
+            prefs[Keys.DARK_THEME_MODE] = settings.darkThemeMode.name
+            prefs[Keys.THEME_COLOR_MODE] = settings.themeColorMode.name
+            prefs[Keys.CUSTOM_SEED_COLOR_ARGB] = settings.customSeedColorArgb
+            prefs[Keys.REFRESH_INTERVAL_MINUTES] = settings.refreshIntervalMinutes
+        }
+    }
+
+    private fun Preferences.toAppSettings(): AppSettings {
+        val interval = this[Keys.REFRESH_INTERVAL_MINUTES] ?: DEFAULT_REFRESH_INTERVAL_MINUTES
+        return AppSettings(
+            darkThemeMode = DarkThemeMode.fromStorage(this[Keys.DARK_THEME_MODE]),
+            themeColorMode = ThemeColorMode.fromStorage(this[Keys.THEME_COLOR_MODE]),
+            customSeedColorArgb = this[Keys.CUSTOM_SEED_COLOR_ARGB] ?: DEFAULT_CUSTOM_SEED_COLOR_ARGB,
+            refreshIntervalMinutes = interval.takeIf { it in ALLOWED_REFRESH_INTERVAL_MINUTES }
+                ?: DEFAULT_REFRESH_INTERVAL_MINUTES,
+        )
+    }
+
     private fun Preferences.toDeepSeekSettings(): DeepSeekSettings {
         val encrypted = this[Keys.API_KEY_ENCRYPTED]
         val apiKey = encrypted?.let { runCatching { decrypt(it) }.getOrDefault("") }.orEmpty()
@@ -186,6 +219,10 @@ class AndroidPlatformSettingsRepository(
         val REFRESH_ICON_PHASE = stringPreferencesKey("refresh_icon_phase")
         val REFRESH_STARTED_AT = longPreferencesKey("refresh_started_at")
         val PLATFORM_TIP_DISMISSED = booleanPreferencesKey("platform_tip_dismissed")
+        val DARK_THEME_MODE = stringPreferencesKey("dark_theme_mode")
+        val THEME_COLOR_MODE = stringPreferencesKey("theme_color_mode")
+        val CUSTOM_SEED_COLOR_ARGB = intPreferencesKey("custom_seed_color_argb")
+        val REFRESH_INTERVAL_MINUTES = intPreferencesKey("refresh_interval_minutes")
     }
 
     private object Status {

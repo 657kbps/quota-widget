@@ -6,4 +6,22 @@
     <string name="widget_deepseek_compact_label">DeepSeek 余额（紧凑）</string>
     <string name="widget_deepseek_compact_description">紧凑显示 DeepSeek API 账户余额</string>
     <string name="widget_loading">加载中…</string>
+    <string name="app_settings_title">应用设置</string>
+    <string name="app_settings_back">返回</string>
+    <string name="app_settings_open">打开应用设置</string>
+    <string name="app_settings_dark_mode">深色模式</string>
+    <string name="app_settings_dark_mode_on">开</string>
+    <string name="app_settings_dark_mode_off">关</string>
+    <string name="app_settings_dark_mode_system">跟随系统</string>
+    <string name="app_settings_theme_color">主题颜色</string>
+    <string name="app_settings_theme_color_system">跟随系统</string>
+    <string name="app_settings_theme_color_custom">自定义</string>
+    <string name="app_settings_theme_color_preview">当前主题色</string>
+    <string name="app_settings_refresh_interval">自动更新间隔</string>
+    <string name="app_settings_refresh_interval_minutes">%1$d 分钟</string>
+    <string name="app_settings_refresh_interval_hours">%1$d 小时</string>
+    <string name="app_settings_color_picker_title">选择主题色</string>
+    <string name="app_settings_color_picker_hue">色相</string>
+    <string name="app_settings_color_picker_confirm">确认</string>
+    <string name="app_settings_color_picker_cancel">取消</string>
 </resources>

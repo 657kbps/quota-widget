@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -49,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -68,14 +70,16 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     settingsRepository: PlatformSettingsRepository,
     onRefreshBalance: suspend () -> WidgetDisplayState,
+    onOpenAppSettings: () -> Unit,
+    showPlatformTip: Boolean,
+    tipLoaded: Boolean,
+    onDismissPlatformTip: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     var savedSettings by remember { mutableStateOf(DeepSeekSettings()) }
     var draftApiKey by remember { mutableStateOf("") }
     var draftCurrency by remember { mutableStateOf(CurrencyPreference.CNY) }
     var expandedPlatformId by remember { mutableStateOf<String?>(null) }
-    var showPlatformTip by remember { mutableStateOf(false) }
-    var tipLoaded by remember { mutableStateOf(false) }
     var loaded by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
@@ -118,8 +122,6 @@ fun SettingsScreen(
         savedSettings = settings
         draftApiKey = settings.apiKey
         draftCurrency = settings.currency
-        showPlatformTip = !settingsRepository.isPlatformTipDismissed()
-        tipLoaded = true
         loaded = true
         if (settings.apiKey.isNotBlank()) {
             refreshBalance(showPullIndicator = false)
@@ -134,6 +136,15 @@ fun SettingsScreen(
         topBar = {
             TopAppBar(
                 title = { Text("配额监控") },
+                actions = {
+                    IconButton(onClick = onOpenAppSettings) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_settings),
+                            contentDescription = stringResource(R.string.app_settings_open),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
@@ -148,11 +159,12 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 16.dp)
+                .imePadding(),
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 if (tipLoaded) {
@@ -194,7 +206,7 @@ fun SettingsScreen(
                                     )
                                     IconButton(
                                         onClick = {
-                                            showPlatformTip = false
+                                            onDismissPlatformTip()
                                             scope.launch {
                                                 settingsRepository.setPlatformTipDismissed(true)
                                             }
