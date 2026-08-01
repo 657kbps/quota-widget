@@ -15,10 +15,16 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 2
         versionName = (findProperty("versionName") as String?) ?: "1.1.0"
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        }
     }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/LICENSE*"
+            excludes += "/META-INF/NOTICE*"
+            excludes += "/META-INF/*.kotlin_module"
         }
     }
     signingConfigs {
@@ -41,8 +47,21 @@ android {
     }
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
-            signingConfigs.findByName("release")?.let { signingConfig = it }
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            val releaseSigning = signingConfigs.findByName("release")
+            val allowDebugReleaseSigning =
+                (findProperty("allowDebugReleaseSigning") as String?) == "true"
+            signingConfig = releaseSigning
+                ?: if (allowDebugReleaseSigning) {
+                    signingConfigs.getByName("debug")
+                } else {
+                    null
+                }
         }
     }
     compileOptions {
@@ -65,9 +84,15 @@ gradle.taskGraph.whenReady {
                 name.startsWith("install"))
     }
     if (buildingRelease) {
+        val allowDebugReleaseSigning =
+            (findProperty("allowDebugReleaseSigning") as String?) == "true"
         val releaseSigning = android.signingConfigs.findByName("release")
         val releaseType = android.buildTypes.getByName("release")
-        if (releaseSigning == null || releaseType.signingConfig != releaseSigning) {
+        val ok = releaseSigning != null && releaseType.signingConfig == releaseSigning
+        val okDebugFallback =
+            allowDebugReleaseSigning &&
+                releaseType.signingConfig == android.signingConfigs.getByName("debug")
+        if (!ok && !okDebugFallback) {
             error(
                 "Release signing is not configured. Set RELEASE_STORE_FILE, " +
                     "RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, and RELEASE_KEY_PASSWORD.",
