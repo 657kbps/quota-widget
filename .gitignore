@@ -15,3 +15,8 @@ captures/
 *.aab
 *.ap_
 *.dex
+*.jks
+*.keystore
+/release.keystore
+/release-keystore.secrets.txt
+

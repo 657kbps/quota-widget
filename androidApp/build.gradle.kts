@@ -21,11 +21,32 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    signingConfigs {
+        val storeFilePath = System.getenv("RELEASE_STORE_FILE")
+        val storePassword = System.getenv("RELEASE_STORE_PASSWORD")
+        val keyAlias = System.getenv("RELEASE_KEY_ALIAS")
+        val keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
+        if (!storeFilePath.isNullOrBlank() &&
+            !storePassword.isNullOrBlank() &&
+            !keyAlias.isNullOrBlank() &&
+            !keyPassword.isNullOrBlank()
+        ) {
+            create("release") {
+                storeFile = file(storeFilePath)
+                this.storePassword = storePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
+        }
+    }
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
-            // Installable CI artifacts until a dedicated release keystore is configured.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release")
+                ?: error(
+                    "Release signing is not configured. Set RELEASE_STORE_FILE, " +
+                        "RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, and RELEASE_KEY_PASSWORD.",
+                )
         }
     }
     compileOptions {
