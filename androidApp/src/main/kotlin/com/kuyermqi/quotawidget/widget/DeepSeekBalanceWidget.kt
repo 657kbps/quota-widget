@@ -64,63 +64,95 @@ private fun GlanceModifier.systemWidgetBackgroundCornerRadius(): GlanceModifier 
         cornerRadius(16.dp)
     }
 
+private const val TAG = "QuotaRefresh"
+
+private suspend fun GlanceAppWidget.provideDeepSeekGlance(
+    context: Context,
+    id: GlanceId,
+    content: @Composable (state: WidgetDisplayState, refreshPhase: RefreshIconPhase, openApp: Action) -> Unit,
+) {
+    val app = context.applicationContext as QuotaWidgetApp
+    val repoDisplay = WidgetGlanceState.syncFromRepository(context, id, app.settingsRepository)
+    maybeRefreshIfConfigured(context, app)
+    Log.i(TAG, "provideGlance id=$id repoDisplay=${repoDisplay::class.simpleName}")
+    provideContent {
+        val prefs = currentState<Preferences>()
+        val glanceState = prefs.toDisplayState()
+        // currentState() can still be empty on the first composition after
+        // updateAppWidgetState in the same provideGlance; fall back to repo
+        // only when Glance prefs were never written for this session.
+        val state = if (
+            prefs[WidgetGlanceState.statusKey] == null &&
+            repoDisplay !is WidgetDisplayState.NotConfigured
+        ) {
+            Log.w(
+                TAG,
+                "compose fallback: empty glance state, using repo=${repoDisplay::class.simpleName}",
+            )
+            repoDisplay
+        } else {
+            glanceState
+        }
+        Log.i(
+            TAG,
+            "compose glance=${glanceState::class.simpleName} " +
+                "effective=${state::class.simpleName} " +
+                "qw_status=${prefs[WidgetGlanceState.statusKey]}",
+        )
+        val refreshPhase = prefs.toRefreshPhase()
+        GlanceTheme {
+            content(state, refreshPhase, actionStartActivity<MainActivity>())
+        }
+    }
+}
+
+private suspend fun maybeRefreshIfConfigured(context: Context, app: QuotaWidgetApp) {
+    val settings = app.settingsRepository.getDeepSeekSettings()
+    if (settings.apiKey.isBlank()) return
+    val state = app.settingsRepository.getWidgetState()
+    if (state !is WidgetDisplayState.Loading) return
+    Log.i(TAG, "provideGlance enqueue refresh; configured but no balance yet")
+    val request = OneTimeWorkRequestBuilder<BalanceRefreshWorker>().build()
+    WorkManager.getInstance(context).enqueueUniqueWork(
+        BalanceRefreshWorker.UNIQUE_WORK_NAME + "_bootstrap",
+        ExistingWorkPolicy.KEEP,
+        request,
+    )
+}
+
+private fun enqueueBootstrapRefresh(context: Context) {
+    Log.i(TAG, "widget onEnabled; enqueue bootstrap refresh")
+    val request = OneTimeWorkRequestBuilder<BalanceRefreshWorker>().build()
+    WorkManager.getInstance(context).enqueueUniqueWork(
+        BalanceRefreshWorker.UNIQUE_WORK_NAME + "_bootstrap",
+        ExistingWorkPolicy.KEEP,
+        request,
+    )
+}
+
 class DeepSeekBalanceWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val app = context.applicationContext as QuotaWidgetApp
-        val repoDisplay = WidgetGlanceState.syncFromRepository(context, id, app.settingsRepository)
-        maybeRefreshIfConfigured(context, app)
-        Log.i(TAG, "provideGlance id=$id repoDisplay=${repoDisplay::class.simpleName}")
-        provideContent {
-            val prefs = currentState<Preferences>()
-            val glanceState = prefs.toDisplayState()
-            // currentState() can still be empty on the first composition after
-            // updateAppWidgetState in the same provideGlance; fall back to repo
-            // only when Glance prefs were never written for this session.
-            val state = if (
-                prefs[WidgetGlanceState.statusKey] == null &&
-                repoDisplay !is WidgetDisplayState.NotConfigured
-            ) {
-                Log.w(
-                    TAG,
-                    "compose fallback: empty glance state, using repo=${repoDisplay::class.simpleName}",
-                )
-                repoDisplay
-            } else {
-                glanceState
-            }
-            Log.i(
-                TAG,
-                "compose glance=${glanceState::class.simpleName} " +
-                    "effective=${state::class.simpleName} " +
-                    "qw_status=${prefs[WidgetGlanceState.statusKey]}",
+        provideDeepSeekGlance(context, id) { state, refreshPhase, openApp ->
+            WidgetContent(
+                state = state,
+                refreshPhase = refreshPhase,
+                openApp = openApp,
             )
-            val refreshPhase = prefs.toRefreshPhase()
-            GlanceTheme {
-                WidgetContent(
-                    state = state,
-                    refreshPhase = refreshPhase,
-                    openApp = actionStartActivity<MainActivity>(),
-                )
-            }
         }
     }
+}
 
-    companion object {
-        private const val TAG = "QuotaRefresh"
+class DeepSeekBalanceCompactWidget : GlanceAppWidget() {
+    override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
-        private suspend fun maybeRefreshIfConfigured(context: Context, app: QuotaWidgetApp) {
-            val settings = app.settingsRepository.getDeepSeekSettings()
-            if (settings.apiKey.isBlank()) return
-            val state = app.settingsRepository.getWidgetState()
-            if (state !is WidgetDisplayState.Loading) return
-            Log.i(TAG, "provideGlance enqueue refresh; configured but no balance yet")
-            val request = OneTimeWorkRequestBuilder<BalanceRefreshWorker>().build()
-            WorkManager.getInstance(context).enqueueUniqueWork(
-                BalanceRefreshWorker.UNIQUE_WORK_NAME + "_bootstrap",
-                ExistingWorkPolicy.KEEP,
-                request,
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
+        provideDeepSeekGlance(context, id) { state, refreshPhase, openApp ->
+            CompactWidgetContent(
+                state = state,
+                refreshPhase = refreshPhase,
+                openApp = openApp,
             )
         }
     }
@@ -216,6 +248,77 @@ private fun WidgetContent(
     }
 }
 
+@Composable
+private fun CompactWidgetContent(
+    state: WidgetDisplayState,
+    refreshPhase: RefreshIconPhase,
+    openApp: Action,
+) {
+    Box(
+        modifier = GlanceModifier
+            .fillMaxSize()
+            .appWidgetBackground()
+            .systemWidgetBackgroundCornerRadius()
+            .clickableNoRipple(openApp),
+    ) {
+        Image(
+            provider = ImageProvider(R.drawable.widget_rounded_bg),
+            contentDescription = null,
+            colorFilter = ColorFilter.tint(GlanceTheme.colors.widgetBackground),
+            modifier = GlanceModifier.fillMaxSize(),
+        )
+        Row(
+            modifier = GlanceModifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val (title, subtitle, titleSize) = when (state) {
+                WidgetDisplayState.NotConfigured -> Triple("未配置", null, 26.sp)
+                WidgetDisplayState.Loading -> Triple("刷新中…", null, 26.sp)
+                is WidgetDisplayState.Success -> {
+                    val balance = state.snapshot.formattedBalance
+                    Triple(
+                        balance,
+                        "更新于 ${WidgetDateFormatter.formatUpdatedAt(state.snapshot.updatedAtEpochMs)}",
+                        compactBalanceTitleFontSize(balance),
+                    )
+                }
+                is WidgetDisplayState.Error -> Triple("获取失败", null, 26.sp)
+            }
+            Column(
+                modifier = GlanceModifier
+                    .defaultWeight()
+                    .clickableNoRipple(openApp),
+            ) {
+                Text(
+                    text = title,
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSurface,
+                        fontSize = titleSize,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    maxLines = 1,
+                    modifier = GlanceModifier.clickableNoRipple(openApp),
+                )
+                if (!subtitle.isNullOrBlank()) {
+                    Spacer(GlanceModifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        style = TextStyle(
+                            color = GlanceTheme.colors.onSurfaceVariant,
+                            fontSize = 11.sp,
+                        ),
+                        maxLines = 1,
+                        modifier = GlanceModifier.clickableNoRipple(openApp),
+                    )
+                }
+            }
+            RefreshButton(phase = refreshPhase)
+        }
+    }
+}
+
 private fun balanceTitleFontSize(formattedBalance: String): TextUnit =
     when {
         formattedBalance.length <= 6 -> 32.sp
@@ -224,6 +327,16 @@ private fun balanceTitleFontSize(formattedBalance: String): TextUnit =
         formattedBalance.length <= 10 -> 22.sp
         formattedBalance.length <= 12 -> 20.sp
         else -> 18.sp
+    }
+
+private fun compactBalanceTitleFontSize(formattedBalance: String): TextUnit =
+    when {
+        formattedBalance.length <= 6 -> 26.sp
+        formattedBalance.length <= 7 -> 24.sp
+        formattedBalance.length <= 8 -> 22.sp
+        formattedBalance.length <= 10 -> 20.sp
+        formattedBalance.length <= 12 -> 18.sp
+        else -> 16.sp
     }
 
 @Composable
@@ -299,12 +412,15 @@ class DeepSeekBalanceWidgetReceiver : GlanceAppWidgetReceiver() {
 
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
-        Log.i("QuotaRefresh", "widget onEnabled; enqueue bootstrap refresh")
-        val request = OneTimeWorkRequestBuilder<BalanceRefreshWorker>().build()
-        WorkManager.getInstance(context).enqueueUniqueWork(
-            BalanceRefreshWorker.UNIQUE_WORK_NAME + "_bootstrap",
-            ExistingWorkPolicy.KEEP,
-            request,
-        )
+        enqueueBootstrapRefresh(context)
+    }
+}
+
+class DeepSeekBalanceCompactWidgetReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = DeepSeekBalanceCompactWidget()
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        enqueueBootstrapRefresh(context)
     }
 }

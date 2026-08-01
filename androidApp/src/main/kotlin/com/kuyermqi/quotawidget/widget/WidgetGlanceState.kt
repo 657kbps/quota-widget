@@ -53,20 +53,26 @@ object WidgetGlanceState {
         Log.i(TAG, "syncAndUpdate reason=$reason phase=$phase state=${display::class.simpleName}")
 
         val manager = GlanceAppWidgetManager(context)
-        val widget = DeepSeekBalanceWidget()
-        val ids = manager.getGlanceIds(DeepSeekBalanceWidget::class.java)
-        if (ids.isEmpty()) {
-            Log.w(TAG, "syncAndUpdate no glance ids")
-            return
-        }
-        ids.forEach { id ->
-            updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
-                prefs.toMutablePreferences().apply {
-                    write(phase, display)
+        val targets = listOf(
+            DeepSeekBalanceWidget() to DeepSeekBalanceWidget::class.java,
+            DeepSeekBalanceCompactWidget() to DeepSeekBalanceCompactWidget::class.java,
+        )
+        var updated = 0
+        for ((widget, clazz) in targets) {
+            val ids = manager.getGlanceIds(clazz)
+            ids.forEach { id ->
+                updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
+                    prefs.toMutablePreferences().apply {
+                        write(phase, display)
+                    }
                 }
+                widget.update(context, id)
+                updated++
+                Log.i(TAG, "syncAndUpdate applied id=$id type=${clazz.simpleName} reason=$reason")
             }
-            widget.update(context, id)
-            Log.i(TAG, "syncAndUpdate applied id=$id reason=$reason")
+        }
+        if (updated == 0) {
+            Log.w(TAG, "syncAndUpdate no glance ids")
         }
     }
 

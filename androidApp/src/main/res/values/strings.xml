@@ -3,5 +3,7 @@
     <string name="app_name">配额监控</string>
     <string name="widget_deepseek_label">DeepSeek 余额</string>
     <string name="widget_deepseek_description">显示 DeepSeek API 账户余额</string>
+    <string name="widget_deepseek_compact_label">DeepSeek 余额（紧凑）</string>
+    <string name="widget_deepseek_compact_description">紧凑显示 DeepSeek API 账户余额</string>
     <string name="widget_loading">加载中…</string>
 </resources>
