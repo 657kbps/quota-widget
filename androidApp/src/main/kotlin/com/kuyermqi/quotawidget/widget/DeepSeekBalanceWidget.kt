@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -322,7 +323,12 @@ private fun CompactWidgetContent(
                     )
                 }
             }
-            RefreshButton(phase = refreshPhase)
+            RefreshButton(
+                phase = refreshPhase,
+                hitSize = 34.dp,
+                iconSize = 30.dp,
+                spinnerSize = 28.dp,
+            )
         }
     }
 }
@@ -380,12 +386,17 @@ private fun BalanceBlock(
 }
 
 @Composable
-private fun RefreshButton(phase: RefreshIconPhase) {
+private fun RefreshButton(
+    phase: RefreshIconPhase,
+    hitSize: Dp = 28.dp,
+    iconSize: Dp = 24.dp,
+    spinnerSize: Dp = 22.dp,
+) {
     val refresh = actionRunCallback<RefreshBalanceAction>()
     // Keep hit target close to icon size so right inset matches left text padding.
     Box(
         modifier = GlanceModifier
-            .size(28.dp)
+            .size(hitSize)
             .clickableNoRipple(refresh),
         contentAlignment = Alignment.Center,
     ) {
@@ -397,7 +408,7 @@ private fun RefreshButton(phase: RefreshIconPhase) {
                 CircularProgressIndicator(
                     color = GlanceTheme.colors.primary,
                     modifier = GlanceModifier
-                        .size(22.dp)
+                        .size(spinnerSize)
                         .clickableNoRipple(refresh),
                 )
             }
@@ -407,7 +418,7 @@ private fun RefreshButton(phase: RefreshIconPhase) {
                     contentDescription = "刷新余额",
                     colorFilter = ColorFilter.tint(GlanceTheme.colors.primary),
                     modifier = GlanceModifier
-                        .size(24.dp)
+                        .size(iconSize)
                         .clickableNoRipple(refresh),
                 )
             }
