@@ -24,4 +24,12 @@
     <string name="app_settings_color_picker_hue">色相</string>
     <string name="app_settings_color_picker_confirm">确认</string>
     <string name="app_settings_color_picker_cancel">取消</string>
+    <string name="battery_optimization_tip">为保证小组件按设定间隔后台刷新，请关闭本应用的电池优化</string>
+    <string name="battery_optimization_tip_action">关闭电池优化</string>
+    <string name="oem_background_tip">若在关闭电池优化后仍然无法正常刷新，请参考 DontKillMyApp 的设置方式确保应用可以正常后台运行</string>
+    <string name="oem_background_tip_link">https://dontkillmyapp.com/</string>
+    <string name="oem_background_tip_url">https://dontkillmyapp.com/</string>
+    <string name="platform_tip">在下方修改对应平台的配置</string>
+    <string name="tip_dismiss">关闭提示</string>
+    <string name="in_app_webview_back">返回</string>
 </resources>

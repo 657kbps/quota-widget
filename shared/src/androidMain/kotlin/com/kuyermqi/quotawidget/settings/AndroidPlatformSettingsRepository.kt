@@ -132,6 +132,15 @@ class AndroidPlatformSettingsRepository(
         }
     }
 
+    override suspend fun isOemBackgroundTipDismissed(): Boolean =
+        dataStore.data.first()[Keys.OEM_BACKGROUND_TIP_DISMISSED] == true
+
+    override suspend fun setOemBackgroundTipDismissed(dismissed: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.OEM_BACKGROUND_TIP_DISMISSED] = dismissed
+        }
+    }
+
     override fun observeAppSettings(): Flow<AppSettings> =
         dataStore.data.map { prefs -> prefs.toAppSettings() }
 
@@ -219,6 +228,7 @@ class AndroidPlatformSettingsRepository(
         val REFRESH_ICON_PHASE = stringPreferencesKey("refresh_icon_phase")
         val REFRESH_STARTED_AT = longPreferencesKey("refresh_started_at")
         val PLATFORM_TIP_DISMISSED = booleanPreferencesKey("platform_tip_dismissed")
+        val OEM_BACKGROUND_TIP_DISMISSED = booleanPreferencesKey("oem_background_tip_dismissed")
         val DARK_THEME_MODE = stringPreferencesKey("dark_theme_mode")
         val THEME_COLOR_MODE = stringPreferencesKey("theme_color_mode")
         val CUSTOM_SEED_COLOR_ARGB = intPreferencesKey("custom_seed_color_argb")

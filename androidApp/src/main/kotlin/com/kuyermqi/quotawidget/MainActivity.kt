@@ -15,7 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.refresh.displayState
-import com.kuyermqi.quotawidget.ui.SettingsScreen
+import com.kuyermqi.quotawidget.ui.HomeScreen
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState
@@ -34,10 +34,12 @@ class MainActivity : ComponentActivity() {
             val appSettings by app.settingsRepository.observeAppSettings()
                 .collectAsStateWithLifecycle(initialValue = initialSettings)
             var showPlatformTip by remember { mutableStateOf(false) }
+            var showOemBackgroundTip by remember { mutableStateOf(false) }
             var tipLoaded by remember { mutableStateOf(false) }
 
             LaunchedEffect(Unit) {
                 showPlatformTip = !app.settingsRepository.isPlatformTipDismissed()
+                showOemBackgroundTip = !app.settingsRepository.isOemBackgroundTipDismissed()
                 tipLoaded = true
             }
 
@@ -54,7 +56,7 @@ class MainActivity : ComponentActivity() {
                 themeColorMode = appSettings.themeColorMode,
                 seedColor = Color(appSettings.customSeedColorArgb),
             ) {
-                SettingsScreen(
+                HomeScreen(
                     settingsRepository = app.settingsRepository,
                     onRefreshBalance = {
                         WidgetRefreshCoordinator.runBackgroundRefresh(this@MainActivity)
@@ -64,8 +66,10 @@ class MainActivity : ComponentActivity() {
                         startActivity(Intent(this@MainActivity, AppSettingsActivity::class.java))
                     },
                     showPlatformTip = showPlatformTip,
+                    showOemBackgroundTip = showOemBackgroundTip,
                     tipLoaded = tipLoaded,
                     onDismissPlatformTip = { showPlatformTip = false },
+                    onDismissOemBackgroundTip = { showOemBackgroundTip = false },
                 )
             }
         }
