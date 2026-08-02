@@ -37,7 +37,7 @@ data class AppSettings(
 }
 
 const val DEFAULT_CUSTOM_SEED_COLOR_ARGB = 0xFF6750A4.toInt()
-const val DEFAULT_REFRESH_INTERVAL_MINUTES = 30
+const val DEFAULT_REFRESH_INTERVAL_MINUTES = 60
 val ALLOWED_REFRESH_INTERVAL_MINUTES = listOf(15, 30, 60, 120, 180, 720, 1440)
 
 enum class CurrencyPreference {
