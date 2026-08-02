@@ -16,6 +16,8 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.action.Action
+import androidx.glance.action.ActionParameters
+import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.CircularProgressIndicator
@@ -48,6 +50,7 @@ import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toAppThemeSettings
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toDisplayState
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toRefreshPhase
@@ -102,13 +105,19 @@ private suspend fun GlanceAppWidget.provideDeepSeekGlance(
         )
         val refreshPhase = prefs.toRefreshPhase()
         val themeColors = colorProvidersFor(context, prefs.toAppThemeSettings())
+        val openApp = actionStartActivity<MainActivity>(
+            actionParametersOf(
+                ActionParameters.Key<String>(MainActivity.EXTRA_FOCUS_PLATFORM_ID)
+                    to PlatformIds.DEEPSEEK,
+            ),
+        )
         if (themeColors != null) {
             GlanceTheme(colors = themeColors) {
-                content(state, refreshPhase, actionStartActivity<MainActivity>())
+                content(state, refreshPhase, openApp)
             }
         } else {
             GlanceTheme {
-                content(state, refreshPhase, actionStartActivity<MainActivity>())
+                content(state, refreshPhase, openApp)
             }
         }
     }

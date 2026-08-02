@@ -55,6 +55,9 @@ fun TipBanner(
             modifier = cardModifier,
             colors = CardDefaults.cardColors(containerColor = containerColor),
         ) {
+            val hasExtraContent =
+                (linkText != null && onLinkClick != null) ||
+                    (actionText != null && onActionClick != null)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -64,7 +67,10 @@ fun TipBanner(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(top = 12.dp, bottom = 4.dp),
+                        .padding(
+                            top = 12.dp,
+                            bottom = if (hasExtraContent) 4.dp else 12.dp,
+                        ),
                 ) {
                     Row(verticalAlignment = Alignment.Top) {
                         Icon(

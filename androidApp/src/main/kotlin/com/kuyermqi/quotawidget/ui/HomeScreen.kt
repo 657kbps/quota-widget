@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,6 +49,11 @@ import com.kuyermqi.quotawidget.ui.components.isIgnoringBatteryOptimizations
 import com.kuyermqi.quotawidget.ui.components.requestIgnoreBatteryOptimizations
 import kotlinx.coroutines.launch
 
+data class FocusPlatformRequest(
+    val platformId: String,
+    val nonce: Long,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -59,10 +65,12 @@ fun HomeScreen(
     tipLoaded: Boolean,
     onDismissPlatformTip: () -> Unit,
     onDismissOemBackgroundTip: () -> Unit,
+    focusPlatformRequest: FocusPlatformRequest? = null,
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val listState = rememberLazyListState()
     var showBatteryOptimizationTip by remember {
         mutableStateOf(!context.isIgnoringBatteryOptimizations())
     }
@@ -70,6 +78,8 @@ fun HomeScreen(
     var draftApiKey by remember { mutableStateOf("") }
     var draftCurrency by remember { mutableStateOf(CurrencyPreference.CNY) }
     var expandedPlatformId by remember { mutableStateOf<String?>(null) }
+    var highlightPlatformId by remember { mutableStateOf<String?>(null) }
+    var highlightNonce by remember { mutableStateOf<Long?>(null) }
     var loaded by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
@@ -82,6 +92,20 @@ fun HomeScreen(
     LaunchedEffect(widgetState) {
         val success = widgetState as? WidgetDisplayState.Success ?: return@LaunchedEffect
         lastSuccessBalance = success.snapshot.formattedBalance
+    }
+
+    LaunchedEffect(focusPlatformRequest, tipLoaded) {
+        val request = focusPlatformRequest ?: return@LaunchedEffect
+        if (!tipLoaded) return@LaunchedEffect
+        val platformIndex = PlatformRegistry.platforms.indexOfFirst { it.id == request.platformId }
+        if (platformIndex < 0) return@LaunchedEffect
+
+        expandedPlatformId = request.platformId
+        highlightPlatformId = request.platformId
+        highlightNonce = request.nonce
+
+        val tipCount = 3
+        listState.animateScrollToItem(tipCount + platformIndex)
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -163,6 +187,7 @@ fun HomeScreen(
                 .imePadding(),
         ) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -233,6 +258,13 @@ fun HomeScreen(
                                 if (expandedPlatformId == platform.id) null else platform.id
                         },
                         balanceText = balanceLabelFor(platform.id),
+                        highlightNonce = highlightNonce.takeIf { highlightPlatformId == platform.id },
+                        onHighlightFinished = {
+                            if (highlightPlatformId == platform.id) {
+                                highlightPlatformId = null
+                                highlightNonce = null
+                            }
+                        },
                     ) {
                         when (platform.id) {
                             PlatformIds.DEEPSEEK -> DeepSeekConfigContent(

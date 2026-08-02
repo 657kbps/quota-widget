@@ -1,5 +1,6 @@
 package com.kuyermqi.quotawidget.ui.components
 
+import androidx.compose.animation.Animatable
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -7,6 +8,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -21,10 +23,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.kuyermqi.quotawidget.R
@@ -35,6 +40,8 @@ fun PlatformConfigItem(
     expanded: Boolean,
     onToggle: () -> Unit,
     balanceText: String? = null,
+    highlightNonce: Long? = null,
+    onHighlightFinished: () -> Unit = {},
     expandedContent: @Composable ColumnScope.() -> Unit,
 ) {
     val arrowRotation by animateFloatAsState(
@@ -42,12 +49,27 @@ fun PlatformConfigItem(
         animationSpec = tween(durationMillis = 240),
         label = "expandArrow",
     )
+    val flashColor = MaterialTheme.colorScheme.primary
+    val borderColor = remember { Animatable(Color.Transparent) }
+
+    LaunchedEffect(highlightNonce) {
+        if (highlightNonce == null) {
+            borderColor.snapTo(Color.Transparent)
+            return@LaunchedEffect
+        }
+        repeat(2) {
+            borderColor.animateTo(flashColor, animationSpec = tween(160))
+            borderColor.animateTo(Color.Transparent, animationSpec = tween(160))
+        }
+        onHighlightFinished()
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
+        border = BorderStroke(2.dp, borderColor.value),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
