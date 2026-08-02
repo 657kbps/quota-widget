@@ -28,6 +28,7 @@ data class AppSettings(
     val themeColorMode: ThemeColorMode = ThemeColorMode.FollowSystem,
     val customSeedColorArgb: Int = DEFAULT_CUSTOM_SEED_COLOR_ARGB,
     val refreshIntervalMinutes: Int = DEFAULT_REFRESH_INTERVAL_MINUTES,
+    val checkForUpdatesOnLaunch: Boolean = true,
 ) {
     init {
         require(refreshIntervalMinutes in ALLOWED_REFRESH_INTERVAL_MINUTES) {

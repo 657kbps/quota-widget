@@ -247,6 +247,38 @@ fun AppSettingsScreen(
                     }
                 }
             }
+
+            item(key = "check_updates_on_launch") {
+                SettingsSection(title = stringResource(R.string.app_settings_check_updates_on_launch)) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        FilterChip(
+                            selected = appSettings.checkForUpdatesOnLaunch,
+                            onClick = {
+                                scope.launch {
+                                    settingsRepository.saveAppSettings(
+                                        appSettings.copy(checkForUpdatesOnLaunch = true),
+                                    )
+                                }
+                            },
+                            label = { Text(stringResource(R.string.app_settings_check_updates_on)) },
+                        )
+                        FilterChip(
+                            selected = !appSettings.checkForUpdatesOnLaunch,
+                            onClick = {
+                                scope.launch {
+                                    settingsRepository.saveAppSettings(
+                                        appSettings.copy(checkForUpdatesOnLaunch = false),
+                                    )
+                                }
+                            },
+                            label = { Text(stringResource(R.string.app_settings_check_updates_off)) },
+                        )
+                    }
+                }
+            }
         }
     }
 }

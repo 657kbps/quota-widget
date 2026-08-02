@@ -8,6 +8,7 @@ import com.kuyermqi.quotawidget.refresh.BalanceRefreshInteractor
 import com.kuyermqi.quotawidget.settings.AndroidPlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
+import com.kuyermqi.quotawidget.update.UpdateCheckInteractor
 import com.kuyermqi.quotawidget.widget.BalanceRefreshWork
 import com.kuyermqi.quotawidget.widget.PeriodicRefreshScheduler
 import kotlinx.coroutines.CoroutineScope
@@ -28,6 +29,9 @@ class QuotaWidgetApp : Application() {
     lateinit var refreshInteractor: BalanceRefreshInteractor
         private set
 
+    lateinit var updateCheckInteractor: UpdateCheckInteractor
+        private set
+
     override fun onCreate() {
         // Prefs first (sync), then DataStore — must finish before any Activity draws.
         AppNightMode.apply(this, AppNightMode.storedMode(this))
@@ -44,6 +48,9 @@ class QuotaWidgetApp : Application() {
         refreshInteractor = BalanceRefreshInteractor(
             settingsRepository = settingsRepository,
             deepSeekClient = DeepSeekBalanceClient(),
+        )
+        updateCheckInteractor = UpdateCheckInteractor(
+            settingsRepository = settingsRepository,
         )
         // Clear any stuck spinner left by a killed ActionCallback / worker.
         appScope.launch {

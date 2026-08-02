@@ -35,6 +35,9 @@ interface PlatformSettingsRepository {
     suspend fun isOemBackgroundTipDismissed(): Boolean
     suspend fun setOemBackgroundTipDismissed(dismissed: Boolean)
 
+    suspend fun getUpdateIgnoredVersion(): String?
+    suspend fun setUpdateIgnoredVersion(version: String?)
+
     fun observeAppSettings(): Flow<AppSettings>
     suspend fun getAppSettings(): AppSettings
     suspend fun saveAppSettings(settings: AppSettings)

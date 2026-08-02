@@ -141,6 +141,19 @@ class AndroidPlatformSettingsRepository(
         }
     }
 
+    override suspend fun getUpdateIgnoredVersion(): String? =
+        dataStore.data.first()[Keys.UPDATE_IGNORED_VERSION]
+
+    override suspend fun setUpdateIgnoredVersion(version: String?) {
+        dataStore.edit { prefs ->
+            if (version.isNullOrBlank()) {
+                prefs.remove(Keys.UPDATE_IGNORED_VERSION)
+            } else {
+                prefs[Keys.UPDATE_IGNORED_VERSION] = version
+            }
+        }
+    }
+
     override fun observeAppSettings(): Flow<AppSettings> =
         dataStore.data.map { prefs -> prefs.toAppSettings() }
 
@@ -153,6 +166,7 @@ class AndroidPlatformSettingsRepository(
             prefs[Keys.THEME_COLOR_MODE] = settings.themeColorMode.name
             prefs[Keys.CUSTOM_SEED_COLOR_ARGB] = settings.customSeedColorArgb
             prefs[Keys.REFRESH_INTERVAL_MINUTES] = settings.refreshIntervalMinutes
+            prefs[Keys.CHECK_FOR_UPDATES_ON_LAUNCH] = settings.checkForUpdatesOnLaunch
         }
     }
 
@@ -164,6 +178,7 @@ class AndroidPlatformSettingsRepository(
             customSeedColorArgb = this[Keys.CUSTOM_SEED_COLOR_ARGB] ?: DEFAULT_CUSTOM_SEED_COLOR_ARGB,
             refreshIntervalMinutes = interval.takeIf { it in ALLOWED_REFRESH_INTERVAL_MINUTES }
                 ?: DEFAULT_REFRESH_INTERVAL_MINUTES,
+            checkForUpdatesOnLaunch = this[Keys.CHECK_FOR_UPDATES_ON_LAUNCH] ?: true,
         )
     }
 
@@ -233,6 +248,8 @@ class AndroidPlatformSettingsRepository(
         val THEME_COLOR_MODE = stringPreferencesKey("theme_color_mode")
         val CUSTOM_SEED_COLOR_ARGB = intPreferencesKey("custom_seed_color_argb")
         val REFRESH_INTERVAL_MINUTES = intPreferencesKey("refresh_interval_minutes")
+        val CHECK_FOR_UPDATES_ON_LAUNCH = booleanPreferencesKey("check_for_updates_on_launch")
+        val UPDATE_IGNORED_VERSION = stringPreferencesKey("update_ignored_version")
     }
 
     private object Status {
