@@ -3,12 +3,11 @@ package com.kuyermqi.quotawidget.widget
 import android.content.Context
 import android.util.Log
 import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
-import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.refresh.BalanceRefreshResult
+import com.kuyermqi.quotawidget.refresh.displayState
 import com.kuyermqi.quotawidget.worker.BalanceRefreshWorker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
@@ -45,35 +44,36 @@ object WidgetRefreshCoordinator {
         updateWidgetSerialized(context, "spinning-pre-enqueue")
         Log.i(TAG, "beginUserRefresh enqueued user work")
 
-        val request = OneTimeWorkRequestBuilder<BalanceRefreshWorker>()
-            .setInputData(BalanceRefreshWorker.userRefreshInput())
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .build()
         WorkManager.getInstance(context).enqueueUniqueWork(
             BalanceRefreshWorker.UNIQUE_USER_REFRESH_WORK,
             ExistingWorkPolicy.REPLACE,
-            request,
+            BalanceRefreshWork.oneTime(userInitiated = true, expedited = true),
         )
     }
 
-    suspend fun runUserRefresh(context: Context) {
+    suspend fun runUserRefresh(context: Context): BalanceRefreshResult {
         val app = context.applicationContext as QuotaWidgetApp
         val settings = app.settingsRepository
         val startedAt = settings.getRefreshStartedAtEpochMs().takeIf { it > 0L }
             ?: System.currentTimeMillis().also { settings.setRefreshStartedAtEpochMs(it) }
         Log.i(TAG, "runUserRefresh start")
-        try {
+        return try {
             settings.setRefreshIconPhase(RefreshIconPhase.Spinning)
             updateWidgetSerialized(context, "spinning")
 
             val result = app.refreshInteractor.refreshDeepSeek()
-            Log.i(TAG, "runUserRefresh network done result=${result::class.simpleName}")
+            Log.i(
+                TAG,
+                "runUserRefresh network done result=${result::class.simpleName} " +
+                    "state=${result.displayState::class.simpleName}",
+            )
 
             val elapsed = System.currentTimeMillis() - startedAt
             val remain = MIN_SPINNER_VISIBLE_MS - elapsed
             if (remain > 0L) {
                 delay(remain)
             }
+            result
         } catch (t: Throwable) {
             Log.e(TAG, "runUserRefresh failed", t)
             throw t
@@ -84,12 +84,16 @@ object WidgetRefreshCoordinator {
         }
     }
 
-    suspend fun runBackgroundRefresh(context: Context): WidgetDisplayState {
+    suspend fun runBackgroundRefresh(context: Context): BalanceRefreshResult {
         val app = context.applicationContext as QuotaWidgetApp
         Log.i(TAG, "runBackgroundRefresh start")
         return try {
             val result = app.refreshInteractor.refreshDeepSeek()
-            Log.i(TAG, "runBackgroundRefresh done result=${result::class.simpleName}")
+            Log.i(
+                TAG,
+                "runBackgroundRefresh done result=${result::class.simpleName} " +
+                    "state=${result.displayState::class.simpleName}",
+            )
             result
         } finally {
             // Do not force Idle: a widget-initiated refresh may still own the spinner.

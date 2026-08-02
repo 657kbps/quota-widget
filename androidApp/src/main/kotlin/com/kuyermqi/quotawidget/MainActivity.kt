@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuyermqi.quotawidget.domain.AppSettings
+import com.kuyermqi.quotawidget.refresh.displayState
 import com.kuyermqi.quotawidget.ui.SettingsScreen
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
@@ -57,6 +58,7 @@ class MainActivity : ComponentActivity() {
                     settingsRepository = app.settingsRepository,
                     onRefreshBalance = {
                         WidgetRefreshCoordinator.runBackgroundRefresh(this@MainActivity)
+                            .let { it.displayState }
                     },
                     onOpenAppSettings = {
                         startActivity(Intent(this@MainActivity, AppSettingsActivity::class.java))

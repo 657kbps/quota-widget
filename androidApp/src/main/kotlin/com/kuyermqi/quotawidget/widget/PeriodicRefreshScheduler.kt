@@ -12,7 +12,9 @@ object PeriodicRefreshScheduler {
         val request = PeriodicWorkRequestBuilder<BalanceRefreshWorker>(
             intervalMinutes.toLong(),
             TimeUnit.MINUTES,
-        ).build()
+        )
+            .setConstraints(BalanceRefreshWork.networkConstraints)
+            .build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             BalanceRefreshWorker.UNIQUE_WORK_NAME,
             ExistingPeriodicWorkPolicy.UPDATE,

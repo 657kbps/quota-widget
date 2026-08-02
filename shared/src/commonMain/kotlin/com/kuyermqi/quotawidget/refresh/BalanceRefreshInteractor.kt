@@ -11,12 +11,15 @@ class BalanceRefreshInteractor(
     /**
      * Fetches the latest balance without forcing a loading placeholder,
      * so the widget can keep showing the previous value while the icon spins.
+     *
+     * On transient failure, keeps an existing [WidgetDisplayState.Success] instead of
+     * overwriting it with Error (avoids "获取失败" after lock-screen network blips).
      */
-    suspend fun refreshDeepSeek(): WidgetDisplayState {
+    suspend fun refreshDeepSeek(): BalanceRefreshResult {
         val settings = settingsRepository.getDeepSeekSettings()
         if (settings.apiKey.isBlank()) {
             settingsRepository.saveWidgetNotConfigured()
-            return WidgetDisplayState.NotConfigured
+            return BalanceRefreshResult.Completed(WidgetDisplayState.NotConfigured)
         }
 
         return try {
@@ -25,11 +28,16 @@ class BalanceRefreshInteractor(
                 preferredCurrency = settings.currency,
             )
             settingsRepository.saveWidgetSuccess(snapshot)
-            WidgetDisplayState.Success(snapshot)
+            BalanceRefreshResult.Completed(WidgetDisplayState.Success(snapshot))
         } catch (e: Exception) {
             val message = e.message?.takeIf { it.isNotBlank() } ?: "查询余额失败"
-            settingsRepository.saveWidgetError(message)
-            WidgetDisplayState.Error(message)
+            val previous = settingsRepository.getWidgetState()
+            if (previous is WidgetDisplayState.Success) {
+                BalanceRefreshResult.TransientFailure(previous)
+            } else {
+                settingsRepository.saveWidgetError(message)
+                BalanceRefreshResult.TransientFailure(WidgetDisplayState.Error(message))
+            }
         }
     }
 }

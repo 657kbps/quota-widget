@@ -42,7 +42,6 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.kuyermqi.quotawidget.MainActivity
 import com.kuyermqi.quotawidget.QuotaWidgetApp
@@ -121,21 +120,19 @@ private suspend fun maybeRefreshIfConfigured(context: Context, app: QuotaWidgetA
     val state = app.settingsRepository.getWidgetState()
     if (state !is WidgetDisplayState.Loading) return
     Log.i(TAG, "provideGlance enqueue refresh; configured but no balance yet")
-    val request = OneTimeWorkRequestBuilder<BalanceRefreshWorker>().build()
     WorkManager.getInstance(context).enqueueUniqueWork(
         BalanceRefreshWorker.UNIQUE_WORK_NAME + "_bootstrap",
         ExistingWorkPolicy.KEEP,
-        request,
+        BalanceRefreshWork.oneTime(),
     )
 }
 
 private fun enqueueBootstrapRefresh(context: Context) {
     Log.i(TAG, "widget onEnabled; enqueue bootstrap refresh")
-    val request = OneTimeWorkRequestBuilder<BalanceRefreshWorker>().build()
     WorkManager.getInstance(context).enqueueUniqueWork(
         BalanceRefreshWorker.UNIQUE_WORK_NAME + "_bootstrap",
         ExistingWorkPolicy.KEEP,
-        request,
+        BalanceRefreshWork.oneTime(),
     )
 }
 
