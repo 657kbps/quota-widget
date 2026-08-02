@@ -49,7 +49,6 @@ class BalanceRefreshWorker(
         private const val TAG = "QuotaRefresh"
         const val UNIQUE_WORK_NAME = "deepseek_balance_refresh"
         const val UNIQUE_USER_REFRESH_WORK = "deepseek_balance_user_refresh"
-        const val UNIQUE_UNLOCK_REFRESH_WORK = "deepseek_balance_unlock_refresh"
         const val KEY_USER_INITIATED = "user_initiated"
 
         fun userRefreshInput(): Data =

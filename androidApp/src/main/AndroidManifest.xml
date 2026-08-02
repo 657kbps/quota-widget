@@ -61,13 +61,5 @@
                 <action android:name="com.kuyermqi.quotawidget.ACTION_DEBUG_REFRESH" />
             </intent-filter>
         </receiver>
-
-        <receiver
-            android:name=".widget.UnlockRefreshReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.USER_PRESENT" />
-            </intent-filter>
-        </receiver>
     </application>
 </manifest>
