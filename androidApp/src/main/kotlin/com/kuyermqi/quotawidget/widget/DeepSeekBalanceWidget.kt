@@ -13,6 +13,7 @@ import androidx.glance.ImageProvider
 import androidx.glance.action.Action
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -35,6 +36,7 @@ import com.kuyermqi.quotawidget.platform.PlatformIds
 
 class DeepSeekBalanceWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
+    override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         providePlatformGlance(context, id, PlatformIds.DEEPSEEK) { state, refreshPhase, openApp, platformTitle ->
@@ -50,6 +52,7 @@ class DeepSeekBalanceWidget : GlanceAppWidget() {
 
 class DeepSeekBalanceCompactWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
+    override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         providePlatformGlance(context, id, PlatformIds.DEEPSEEK) { state, refreshPhase, openApp, _ ->

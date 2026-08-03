@@ -13,6 +13,7 @@ import androidx.glance.ImageProvider
 import androidx.glance.action.Action
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -41,6 +42,7 @@ import com.kuyermqi.quotawidget.platform.PlatformIds
 
 class OpenCodeGoWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
+    override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val windowKind = (context.applicationContext as QuotaWidgetApp)
@@ -61,6 +63,7 @@ class OpenCodeGoWidget : GlanceAppWidget() {
 
 class OpenCodeGoCompactWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
+    override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val windowKind = (context.applicationContext as QuotaWidgetApp)
