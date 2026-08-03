@@ -1,14 +1,9 @@
 package com.kuyermqi.quotawidget.widget
 
 import android.content.Context
-import android.os.Build
-import android.util.Log
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.datastore.preferences.core.Preferences
 import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -16,18 +11,9 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.action.Action
-import androidx.glance.action.ActionParameters
-import androidx.glance.action.actionParametersOf
-import androidx.glance.action.actionStartActivity
-import androidx.glance.action.clickable
-import androidx.glance.appwidget.CircularProgressIndicator
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.appWidgetBackground
-import androidx.glance.appwidget.cornerRadius
-import androidx.glance.appwidget.provideContent
-import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -37,123 +23,26 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
-import androidx.glance.layout.size
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.work.ExistingWorkPolicy
-import androidx.work.WorkManager
-import com.kuyermqi.quotawidget.MainActivity
-import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.platform.PlatformIds
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toAppThemeSettings
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toDisplayState
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toRefreshPhase
-import com.kuyermqi.quotawidget.worker.BalanceRefreshWorker
-
-/** clickable without the default Material ink / ripple. */
-private fun GlanceModifier.clickableNoRipple(onClick: Action): GlanceModifier =
-    clickable(onClick = onClick, rippleOverride = R.drawable.widget_no_ripple)
-
-/** Match launcher/OEM widget corners on API 31+; fall back to AOSP-typical 16dp. */
-private fun GlanceModifier.systemWidgetBackgroundCornerRadius(): GlanceModifier =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        cornerRadius(android.R.dimen.system_app_widget_background_radius)
-    } else {
-        cornerRadius(16.dp)
-    }
-
-private const val TAG = "QuotaRefresh"
-
-private suspend fun GlanceAppWidget.provideDeepSeekGlance(
-    context: Context,
-    id: GlanceId,
-    content: @Composable (state: WidgetDisplayState, refreshPhase: RefreshIconPhase, openApp: Action) -> Unit,
-) {
-    val app = context.applicationContext as QuotaWidgetApp
-    val repoDisplay = WidgetGlanceState.syncFromRepository(context, id, app.settingsRepository)
-    maybeRefreshIfConfigured(context, app)
-    Log.i(TAG, "provideGlance id=$id repoDisplay=${repoDisplay::class.simpleName}")
-    provideContent {
-        val prefs = currentState<Preferences>()
-        val glanceState = prefs.toDisplayState()
-        // currentState() can still be empty on the first composition after
-        // updateAppWidgetState in the same provideGlance; fall back to repo
-        // only when Glance prefs were never written for this session.
-        val state = if (
-            prefs[WidgetGlanceState.statusKey] == null &&
-            repoDisplay !is WidgetDisplayState.NotConfigured
-        ) {
-            Log.w(
-                TAG,
-                "compose fallback: empty glance state, using repo=${repoDisplay::class.simpleName}",
-            )
-            repoDisplay
-        } else {
-            glanceState
-        }
-        Log.i(
-            TAG,
-            "compose glance=${glanceState::class.simpleName} " +
-                "effective=${state::class.simpleName} " +
-                "qw_status=${prefs[WidgetGlanceState.statusKey]}",
-        )
-        val refreshPhase = prefs.toRefreshPhase()
-        val themeColors = colorProvidersFor(context, prefs.toAppThemeSettings())
-        val openApp = actionStartActivity<MainActivity>(
-            actionParametersOf(
-                ActionParameters.Key<String>(MainActivity.EXTRA_FOCUS_PLATFORM_ID)
-                    to PlatformIds.DEEPSEEK,
-            ),
-        )
-        if (themeColors != null) {
-            GlanceTheme(colors = themeColors) {
-                content(state, refreshPhase, openApp)
-            }
-        } else {
-            GlanceTheme {
-                content(state, refreshPhase, openApp)
-            }
-        }
-    }
-}
-
-private suspend fun maybeRefreshIfConfigured(context: Context, app: QuotaWidgetApp) {
-    val settings = app.settingsRepository.getDeepSeekSettings()
-    if (settings.apiKey.isBlank()) return
-    val state = app.settingsRepository.getWidgetState()
-    if (state !is WidgetDisplayState.Loading) return
-    Log.i(TAG, "provideGlance enqueue refresh; configured but no balance yet")
-    WorkManager.getInstance(context).enqueueUniqueWork(
-        BalanceRefreshWorker.UNIQUE_WORK_NAME + "_bootstrap",
-        ExistingWorkPolicy.KEEP,
-        BalanceRefreshWork.oneTime(),
-    )
-}
-
-private fun enqueueBootstrapRefresh(context: Context) {
-    Log.i(TAG, "widget onEnabled; enqueue bootstrap refresh")
-    WorkManager.getInstance(context).enqueueUniqueWork(
-        BalanceRefreshWorker.UNIQUE_WORK_NAME + "_bootstrap",
-        ExistingWorkPolicy.KEEP,
-        BalanceRefreshWork.oneTime(),
-    )
-}
 
 class DeepSeekBalanceWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        provideDeepSeekGlance(context, id) { state, refreshPhase, openApp ->
-            WidgetContent(
+        providePlatformGlance(context, id, PlatformIds.DEEPSEEK) { state, refreshPhase, openApp, platformTitle ->
+            DeepSeekWidgetContent(
                 state = state,
                 refreshPhase = refreshPhase,
                 openApp = openApp,
+                platformTitle = platformTitle,
             )
         }
     }
@@ -163,8 +52,8 @@ class DeepSeekBalanceCompactWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        provideDeepSeekGlance(context, id) { state, refreshPhase, openApp ->
-            CompactWidgetContent(
+        providePlatformGlance(context, id, PlatformIds.DEEPSEEK) { state, refreshPhase, openApp, _ ->
+            DeepSeekCompactWidgetContent(
                 state = state,
                 refreshPhase = refreshPhase,
                 openApp = openApp,
@@ -174,13 +63,12 @@ class DeepSeekBalanceCompactWidget : GlanceAppWidget() {
 }
 
 @Composable
-private fun WidgetContent(
+private fun DeepSeekWidgetContent(
     state: WidgetDisplayState,
     refreshPhase: RefreshIconPhase,
     openApp: Action,
+    platformTitle: String,
 ) {
-    // Rounded card: shape drawable + system radius (API 31+) / 16dp fallback.
-    // Glance often does not bubble clicks from Text to parent containers — attach actions on leaves.
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -199,50 +87,37 @@ private fun WidgetContent(
                 .fillMaxSize()
                 .padding(start = 14.dp, top = 14.dp, end = 14.dp, bottom = 22.dp),
         ) {
-            Row(
-                modifier = GlanceModifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "DeepSeek",
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurface,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium,
-                    ),
-                    modifier = GlanceModifier
-                        .defaultWeight()
-                        .clickableNoRipple(openApp),
-                )
-                RefreshButton(phase = refreshPhase)
-            }
-
+            WidgetHeader(PlatformIds.DEEPSEEK, platformTitle, refreshPhase, openApp)
             Spacer(
                 modifier = GlanceModifier
                     .defaultWeight()
                     .fillMaxWidth()
                     .clickableNoRipple(openApp),
             )
-
             when (state) {
-                WidgetDisplayState.NotConfigured -> {
+                WidgetDisplayState.NotConfigured ->
                     BalanceBlock(
-                        title = "未配置",
-                        subtitle = "点击配置 API Key",
+                        title = contextString(R.string.widget_not_configured),
+                        subtitle = null,
                         titleSize = 32.sp,
                         openApp = openApp,
                     )
-                }
-                WidgetDisplayState.Loading -> {
+                WidgetDisplayState.Loading ->
                     BalanceBlock(
-                        title = "刷新中…",
-                        subtitle = "正在获取余额",
+                        title = contextString(R.string.widget_loading_balance),
+                        subtitle = null,
                         titleSize = 32.sp,
                         openApp = openApp,
                     )
-                }
+                WidgetDisplayState.NeedsReauth ->
+                    BalanceBlock(
+                        title = contextString(R.string.widget_needs_reauth),
+                        subtitle = null,
+                        titleSize = 32.sp,
+                        openApp = openApp,
+                    )
                 is WidgetDisplayState.Success -> {
-                    val balance = state.snapshot.formattedBalance
+                    val balance = state.snapshot.primaryDisplay
                     BalanceBlock(
                         title = balance,
                         subtitle = "更新于 ${WidgetDateFormatter.formatUpdatedAt(state.snapshot.updatedAtEpochMs)}",
@@ -250,21 +125,20 @@ private fun WidgetContent(
                         openApp = openApp,
                     )
                 }
-                is WidgetDisplayState.Error -> {
+                is WidgetDisplayState.Error ->
                     BalanceBlock(
-                        title = "获取失败",
+                        title = contextString(R.string.widget_fetch_failed),
                         subtitle = null,
                         titleSize = 32.sp,
                         openApp = openApp,
                     )
-                }
             }
         }
     }
 }
 
 @Composable
-private fun CompactWidgetContent(
+private fun DeepSeekCompactWidgetContent(
     state: WidgetDisplayState,
     refreshPhase: RefreshIconPhase,
     openApp: Action,
@@ -289,17 +163,22 @@ private fun CompactWidgetContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val (title, subtitle, titleSize) = when (state) {
-                WidgetDisplayState.NotConfigured -> Triple("未配置", null, 26.sp)
-                WidgetDisplayState.Loading -> Triple("刷新中…", null, 26.sp)
+                WidgetDisplayState.NotConfigured ->
+                    Triple(contextString(R.string.widget_not_configured), null, 26.sp)
+                WidgetDisplayState.Loading ->
+                    Triple(contextString(R.string.widget_loading_balance), null, 26.sp)
+                WidgetDisplayState.NeedsReauth ->
+                    Triple(contextString(R.string.widget_needs_reauth), null, 26.sp)
                 is WidgetDisplayState.Success -> {
-                    val balance = state.snapshot.formattedBalance
+                    val primary = state.snapshot.primaryDisplay
                     Triple(
-                        balance,
+                        primary,
                         "更新于 ${WidgetDateFormatter.formatUpdatedAt(state.snapshot.updatedAtEpochMs)}",
-                        compactBalanceTitleFontSize(balance),
+                        compactBalanceTitleFontSize(primary),
                     )
                 }
-                is WidgetDisplayState.Error -> Triple("获取失败", null, 26.sp)
+                is WidgetDisplayState.Error ->
+                    Triple(contextString(R.string.widget_fetch_failed), null, 26.sp)
             }
             Column(
                 modifier = GlanceModifier
@@ -330,104 +209,12 @@ private fun CompactWidgetContent(
                 }
             }
             RefreshButton(
+                platformId = PlatformIds.DEEPSEEK,
                 phase = refreshPhase,
                 hitSize = 34.dp,
                 iconSize = 30.dp,
                 spinnerSize = 28.dp,
             )
-        }
-    }
-}
-
-private fun balanceTitleFontSize(formattedBalance: String): TextUnit =
-    when {
-        formattedBalance.length <= 6 -> 32.sp
-        formattedBalance.length <= 7 -> 28.sp
-        formattedBalance.length <= 8 -> 24.sp
-        formattedBalance.length <= 10 -> 22.sp
-        formattedBalance.length <= 12 -> 20.sp
-        else -> 18.sp
-    }
-
-private fun compactBalanceTitleFontSize(formattedBalance: String): TextUnit =
-    when {
-        formattedBalance.length <= 6 -> 26.sp
-        formattedBalance.length <= 7 -> 24.sp
-        formattedBalance.length <= 8 -> 22.sp
-        formattedBalance.length <= 10 -> 20.sp
-        formattedBalance.length <= 12 -> 18.sp
-        else -> 16.sp
-    }
-
-@Composable
-private fun BalanceBlock(
-    title: String,
-    subtitle: String?,
-    titleSize: TextUnit,
-    openApp: Action,
-) {
-    Column(modifier = GlanceModifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurface,
-                fontSize = titleSize,
-                fontWeight = FontWeight.Bold,
-            ),
-            maxLines = 1,
-            modifier = GlanceModifier.clickableNoRipple(openApp),
-        )
-        if (!subtitle.isNullOrBlank()) {
-            Spacer(GlanceModifier.height(2.dp))
-            Text(
-                text = subtitle,
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurfaceVariant,
-                    fontSize = 12.sp,
-                ),
-                modifier = GlanceModifier.clickableNoRipple(openApp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun RefreshButton(
-    phase: RefreshIconPhase,
-    hitSize: Dp = 28.dp,
-    iconSize: Dp = 24.dp,
-    spinnerSize: Dp = 22.dp,
-) {
-    val refresh = actionRunCallback<RefreshBalanceAction>()
-    // Keep hit target close to icon size so right inset matches left text padding.
-    Box(
-        modifier = GlanceModifier
-            .size(hitSize)
-            .clickableNoRipple(refresh),
-        contentAlignment = Alignment.Center,
-    ) {
-        when (phase) {
-            RefreshIconPhase.Spinning,
-            RefreshIconPhase.Settling,
-            -> {
-                // Also attach action on the indicator; parent clickable is unreliable.
-                CircularProgressIndicator(
-                    color = GlanceTheme.colors.primary,
-                    modifier = GlanceModifier
-                        .size(spinnerSize)
-                        .clickableNoRipple(refresh),
-                )
-            }
-            RefreshIconPhase.Idle -> {
-                Image(
-                    provider = ImageProvider(R.drawable.ic_refresh),
-                    contentDescription = "刷新余额",
-                    colorFilter = ColorFilter.tint(GlanceTheme.colors.primary),
-                    modifier = GlanceModifier
-                        .size(iconSize)
-                        .clickableNoRipple(refresh),
-                )
-            }
         }
     }
 }

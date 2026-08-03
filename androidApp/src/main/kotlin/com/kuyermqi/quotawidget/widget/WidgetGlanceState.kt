@@ -8,22 +8,28 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
+import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.domain.AppSettings
-import com.kuyermqi.quotawidget.domain.BalanceSnapshot
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.DEFAULT_CUSTOM_SEED_COLOR_ARGB
 import com.kuyermqi.quotawidget.domain.DEFAULT_REFRESH_INTERVAL_MINUTES
 import com.kuyermqi.quotawidget.domain.DarkThemeMode
+import com.kuyermqi.quotawidget.domain.QuotaSnapshot
+import com.kuyermqi.quotawidget.domain.QuotaWindow
+import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.ThemeColorMode
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.domain.decodeQuotaWindows
+import com.kuyermqi.quotawidget.domain.encodeQuotaWindows
 import com.kuyermqi.quotawidget.domain.formatBalance
 import com.kuyermqi.quotawidget.platform.PlatformIds
+import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 
 /**
@@ -37,10 +43,12 @@ object WidgetGlanceState {
     val refreshPhaseKey = stringPreferencesKey("qw_refresh_phase")
     val statusKey = stringPreferencesKey("qw_status")
     val errorKey = stringPreferencesKey("qw_error")
+    val platformIdKey = stringPreferencesKey("qw_platform_id")
     val platformNameKey = stringPreferencesKey("qw_platform_name")
     val currencyKey = stringPreferencesKey("qw_currency")
     val totalKey = stringPreferencesKey("qw_total")
     val formattedKey = stringPreferencesKey("qw_formatted")
+    val windowsKey = stringPreferencesKey("qw_windows")
     val updatedAtKey = longPreferencesKey("qw_updated_at")
     val darkThemeModeKey = stringPreferencesKey("qw_dark_theme_mode")
     val themeColorModeKey = stringPreferencesKey("qw_theme_color_mode")
@@ -51,33 +59,60 @@ object WidgetGlanceState {
         const val LOADING = "loading"
         const val SUCCESS = "success"
         const val ERROR = "error"
+        const val NEEDS_REAUTH = "needs_reauth"
     }
+
+    private data class Target(
+        val widget: GlanceAppWidget,
+        val clazz: Class<out GlanceAppWidget>,
+        val platformId: String,
+    )
+
+    private fun targets(): List<Target> = listOf(
+        Target(DeepSeekBalanceWidget(), DeepSeekBalanceWidget::class.java, PlatformIds.DEEPSEEK),
+        Target(
+            DeepSeekBalanceCompactWidget(),
+            DeepSeekBalanceCompactWidget::class.java,
+            PlatformIds.DEEPSEEK,
+        ),
+        Target(OpenCodeGoWidget(), OpenCodeGoWidget::class.java, PlatformIds.OPENCODE_GO),
+        Target(
+            OpenCodeGoCompactWidget(),
+            OpenCodeGoCompactWidget::class.java,
+            PlatformIds.OPENCODE_GO,
+        ),
+        Target(
+            OpenCodeGoOverviewWidget(),
+            OpenCodeGoOverviewWidget::class.java,
+            PlatformIds.OPENCODE_GO,
+        ),
+    )
 
     suspend fun syncAndUpdate(context: Context, reason: String) {
         val app = context.applicationContext as QuotaWidgetApp
         val repo = app.settingsRepository
-        val phase = repo.getRefreshIconPhase()
-        val display = repo.getWidgetState()
         val appSettings = repo.getAppSettings()
-        Log.i(TAG, "syncAndUpdate reason=$reason phase=$phase state=${display::class.simpleName}")
+        Log.i(TAG, "syncAndUpdate reason=$reason")
 
         val manager = GlanceAppWidgetManager(context)
-        val targets = listOf(
-            DeepSeekBalanceWidget() to DeepSeekBalanceWidget::class.java,
-            DeepSeekBalanceCompactWidget() to DeepSeekBalanceCompactWidget::class.java,
-        )
         var updated = 0
-        for ((widget, clazz) in targets) {
-            val ids = manager.getGlanceIds(clazz)
+        for (target in targets()) {
+            val display = repo.getWidgetState(target.platformId)
+            val phase = repo.getRefreshIconPhase(target.platformId)
+            val ids = manager.getGlanceIds(target.clazz)
             ids.forEach { id ->
                 updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
                     prefs.toMutablePreferences().apply {
                         write(phase, display, appSettings)
                     }
                 }
-                widget.update(context, id)
+                target.widget.update(context, id)
                 updated++
-                Log.i(TAG, "syncAndUpdate applied id=$id type=${clazz.simpleName} reason=$reason")
+                Log.i(
+                    TAG,
+                    "syncAndUpdate applied id=$id type=${target.clazz.simpleName} " +
+                        "platform=${target.platformId} phase=$phase reason=$reason",
+                )
             }
         }
         if (updated == 0) {
@@ -93,11 +128,11 @@ object WidgetGlanceState {
         context: Context,
         id: GlanceId,
         repo: PlatformSettingsRepository,
+        platformId: String,
     ): WidgetDisplayState {
-        val phase = repo.getRefreshIconPhase()
-        val display = repo.getWidgetState()
+        val phase = repo.getRefreshIconPhase(platformId)
+        val display = repo.getWidgetState(platformId)
         val appSettings = repo.getAppSettings()
-        val hasKey = repo.getDeepSeekSettings().apiKey.isNotBlank()
         updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
             prefs.toMutablePreferences().apply {
                 write(phase, display, appSettings)
@@ -106,7 +141,7 @@ object WidgetGlanceState {
         val verify = getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
         Log.i(
             TAG,
-            "syncFromRepository id=$id hasKey=$hasKey repo=${display::class.simpleName} " +
+            "syncFromRepository id=$id platform=$platformId repo=${display::class.simpleName} " +
                 "glanceStatus=${verify[statusKey]} glanceFormatted=${verify[formattedKey]}",
         )
         return display
@@ -125,18 +160,34 @@ object WidgetGlanceState {
     fun Preferences.toDisplayState(): WidgetDisplayState {
         return when (this[statusKey]) {
             Status.LOADING -> WidgetDisplayState.Loading
+            Status.NEEDS_REAUTH -> WidgetDisplayState.NeedsReauth
             Status.ERROR -> WidgetDisplayState.Error(this[errorKey] ?: "刷新失败")
             Status.SUCCESS -> {
+                val platformId = this[platformIdKey] ?: PlatformIds.DEEPSEEK
                 val currency = CurrencyPreference.fromStorage(this[currencyKey])
                 val total = this[totalKey] ?: "0"
+                val primary = this[formattedKey]
+                    ?: if (platformId == PlatformIds.DEEPSEEK) {
+                        formatBalance(currency, total)
+                    } else {
+                        ""
+                    }
+                val windows = decodeQuotaWindows(this[windowsKey])
+                    ?: if (platformId == PlatformIds.DEEPSEEK) {
+                        listOf(QuotaWindow(kind = QuotaWindowKind.BALANCE))
+                    } else {
+                        emptyList()
+                    }
                 WidgetDisplayState.Success(
-                    BalanceSnapshot(
-                        platformId = PlatformIds.DEEPSEEK,
-                        platformName = this[platformNameKey] ?: "DeepSeek",
+                    QuotaSnapshot(
+                        platformId = platformId,
+                        platformName = this[platformNameKey]
+                            ?: PlatformRegistry.displayName(platformId),
+                        windows = windows,
+                        primaryDisplay = primary,
+                        updatedAtEpochMs = this[updatedAtKey] ?: 0L,
                         currency = currency,
                         totalBalance = total,
-                        formattedBalance = this[formattedKey] ?: formatBalance(currency, total),
-                        updatedAtEpochMs = this[updatedAtKey] ?: 0L,
                     ),
                 )
             }
@@ -162,16 +213,22 @@ object WidgetGlanceState {
                 this[statusKey] = Status.LOADING
                 remove(errorKey)
             }
+            WidgetDisplayState.NeedsReauth -> {
+                this[statusKey] = Status.NEEDS_REAUTH
+                remove(errorKey)
+            }
             is WidgetDisplayState.Error -> {
                 this[statusKey] = Status.ERROR
                 this[errorKey] = display.message
             }
             is WidgetDisplayState.Success -> {
                 this[statusKey] = Status.SUCCESS
+                this[platformIdKey] = display.snapshot.platformId
                 this[platformNameKey] = display.snapshot.platformName
                 this[currencyKey] = display.snapshot.currency.name
                 this[totalKey] = display.snapshot.totalBalance
-                this[formattedKey] = display.snapshot.formattedBalance
+                this[formattedKey] = display.snapshot.primaryDisplay
+                this[windowsKey] = encodeQuotaWindows(display.snapshot.windows)
                 this[updatedAtKey] = display.snapshot.updatedAtEpochMs
                 remove(errorKey)
             }

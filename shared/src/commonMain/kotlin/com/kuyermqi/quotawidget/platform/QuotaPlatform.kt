@@ -11,6 +11,7 @@ interface QuotaPlatform {
 
 object PlatformIds {
     const val DEEPSEEK = "deepseek"
+    const val OPENCODE_GO = "opencode_go"
 }
 
 object PlatformRegistry {
@@ -19,7 +20,14 @@ object PlatformRegistry {
             override val id = PlatformIds.DEEPSEEK
             override val displayName = "DeepSeek"
         },
+        object : QuotaPlatform {
+            override val id = PlatformIds.OPENCODE_GO
+            override val displayName = "OpenCode Go"
+        },
     )
 
     fun find(id: String): QuotaPlatform? = platforms.find { it.id == id }
+
+    fun displayName(id: String): String =
+        find(id)?.displayName ?: id
 }

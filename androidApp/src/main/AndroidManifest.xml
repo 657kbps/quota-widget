@@ -32,7 +32,7 @@
             android:theme="@style/Theme.QuotaWidget" />
 
         <activity
-            android:name=".InAppWebViewActivity"
+            android:name=".webview.InAppWebViewActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity"
             android:theme="@style/Theme.QuotaWidget" />
@@ -59,6 +59,42 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/deepseek_balance_widget_compact_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.OpenCodeGoWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_opencode_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/opencode_go_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.OpenCodeGoCompactWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_opencode_compact_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/opencode_go_widget_compact_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.OpenCodeGoOverviewWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_opencode_overview_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/opencode_go_widget_overview_info" />
         </receiver>
 
         <receiver

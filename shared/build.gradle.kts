@@ -15,6 +15,9 @@ kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
+
+        // Opt-in: includes commonTest in androidHostTest (JVM unit tests).
+        withHostTest {}
     }
 
     sourceSets {
@@ -25,10 +28,21 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
         }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+        }
         androidMain.dependencies {
             implementation(libs.androidx.datastore.preferences)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.tink.android)
         }
     }
+}
+
+// Alias used by AGENTS / plan verification (`testDebugUnitTest`).
+tasks.register("testDebugUnitTest") {
+    group = "verification"
+    description = "Alias for testAndroidHostTest (commonTest + androidHostTest)"
+    dependsOn("testAndroidHostTest")
 }

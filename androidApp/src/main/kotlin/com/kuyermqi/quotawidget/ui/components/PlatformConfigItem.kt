@@ -88,8 +88,8 @@ fun PlatformConfigItem(
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = balanceText,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
                     )
                 }
                 Spacer(modifier = Modifier.weight(1f))

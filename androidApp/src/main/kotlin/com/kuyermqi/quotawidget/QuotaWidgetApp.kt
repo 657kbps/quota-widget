@@ -2,8 +2,8 @@ package com.kuyermqi.quotawidget
 
 import android.app.Application
 import androidx.work.WorkManager
-import com.kuyermqi.quotawidget.deepseek.DeepSeekBalanceClient
-import com.kuyermqi.quotawidget.domain.RefreshIconPhase
+import com.kuyermqi.quotawidget.provider.DeepSeekQuotaProvider
+import com.kuyermqi.quotawidget.provider.OpenCodeGoQuotaProvider
 import com.kuyermqi.quotawidget.refresh.BalanceRefreshInteractor
 import com.kuyermqi.quotawidget.settings.AndroidPlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
@@ -47,18 +47,18 @@ class QuotaWidgetApp : Application() {
         }
         refreshInteractor = BalanceRefreshInteractor(
             settingsRepository = settingsRepository,
-            deepSeekClient = DeepSeekBalanceClient(),
+            providers = listOf(
+                DeepSeekQuotaProvider(),
+                OpenCodeGoQuotaProvider(),
+            ),
         )
         updateCheckInteractor = UpdateCheckInteractor(
             settingsRepository = settingsRepository,
         )
         // Clear any stuck spinner left by a killed ActionCallback / worker.
         appScope.launch {
-            val phase = settingsRepository.getRefreshIconPhase()
-            if (phase != RefreshIconPhase.Idle) {
-                android.util.Log.i("QuotaRefresh", "onCreate clearing stale phase=$phase")
-                settingsRepository.setRefreshIconPhase(RefreshIconPhase.Idle)
-            }
+            settingsRepository.clearAllRefreshIconPhases()
+            android.util.Log.i("QuotaRefresh", "onCreate cleared refresh phases")
             val interval = settingsRepository.getAppSettings().refreshIntervalMinutes
             PeriodicRefreshScheduler.schedule(this@QuotaWidgetApp, interval)
         }

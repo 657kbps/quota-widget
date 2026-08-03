@@ -111,9 +111,11 @@ class MainActivity : ComponentActivity() {
 
                 HomeScreen(
                     settingsRepository = app.settingsRepository,
-                    onRefreshBalance = {
+                    onRefreshPlatform = { platformId ->
+                        app.refreshInteractor.refresh(platformId).displayState
+                    },
+                    onRefreshAllConfigured = {
                         WidgetRefreshCoordinator.runBackgroundRefresh(this@MainActivity)
-                            .let { it.displayState }
                     },
                     onOpenAppSettings = {
                         startActivity(Intent(this@MainActivity, AppSettingsActivity::class.java))

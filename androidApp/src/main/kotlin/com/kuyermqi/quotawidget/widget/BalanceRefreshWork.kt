@@ -16,12 +16,16 @@ object BalanceRefreshWork {
     fun oneTime(
         userInitiated: Boolean = false,
         expedited: Boolean = false,
+        platformId: String? = null,
     ): OneTimeWorkRequest {
         val builder = OneTimeWorkRequestBuilder<BalanceRefreshWorker>()
             .setConstraints(networkConstraints)
-        if (userInitiated) {
-            builder.setInputData(BalanceRefreshWorker.userRefreshInput())
-        }
+            .setInputData(
+                BalanceRefreshWorker.input(
+                    userInitiated = userInitiated,
+                    platformId = platformId,
+                ),
+            )
         if (expedited) {
             builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
         }

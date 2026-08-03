@@ -1,8 +1,9 @@
 package com.kuyermqi.quotawidget.settings
 
 import com.kuyermqi.quotawidget.domain.AppSettings
-import com.kuyermqi.quotawidget.domain.BalanceSnapshot
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
+import com.kuyermqi.quotawidget.domain.OpenCodeWidgetWindowKind
+import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import kotlinx.coroutines.flow.Flow
@@ -12,22 +13,39 @@ data class DeepSeekSettings(
     val currency: CurrencyPreference = CurrencyPreference.CNY,
 )
 
+data class OpenCodeGoSettings(
+    val workspaceId: String = "",
+    val workspaceName: String = "",
+    val authCookie: String = "",
+    val widgetWindowKind: OpenCodeWidgetWindowKind = OpenCodeWidgetWindowKind.ROLLING,
+) {
+    val isConfigured: Boolean
+        get() = workspaceId.isNotBlank() && authCookie.isNotBlank()
+}
+
 interface PlatformSettingsRepository {
     fun observeDeepSeekSettings(): Flow<DeepSeekSettings>
     suspend fun getDeepSeekSettings(): DeepSeekSettings
     suspend fun saveDeepSeekSettings(settings: DeepSeekSettings)
 
-    fun observeWidgetState(): Flow<WidgetDisplayState>
-    suspend fun getWidgetState(): WidgetDisplayState
-    suspend fun saveWidgetSuccess(snapshot: BalanceSnapshot)
-    suspend fun saveWidgetError(message: String)
-    suspend fun saveWidgetLoading()
-    suspend fun saveWidgetNotConfigured()
+    fun observeOpenCodeGoSettings(): Flow<OpenCodeGoSettings>
+    suspend fun getOpenCodeGoSettings(): OpenCodeGoSettings
+    suspend fun saveOpenCodeGoSettings(settings: OpenCodeGoSettings)
+    suspend fun clearOpenCodeGoSettings()
 
-    suspend fun getRefreshIconPhase(): RefreshIconPhase
-    suspend fun setRefreshIconPhase(phase: RefreshIconPhase)
-    suspend fun getRefreshStartedAtEpochMs(): Long
-    suspend fun setRefreshStartedAtEpochMs(epochMs: Long)
+    fun observeWidgetState(platformId: String): Flow<WidgetDisplayState>
+    suspend fun getWidgetState(platformId: String): WidgetDisplayState
+    suspend fun saveWidgetSuccess(platformId: String, snapshot: QuotaSnapshot)
+    suspend fun saveWidgetError(platformId: String, message: String)
+    suspend fun saveWidgetLoading(platformId: String)
+    suspend fun saveWidgetNotConfigured(platformId: String)
+    suspend fun saveWidgetNeedsReauth(platformId: String)
+
+    suspend fun getRefreshIconPhase(platformId: String): RefreshIconPhase
+    suspend fun setRefreshIconPhase(platformId: String, phase: RefreshIconPhase)
+    suspend fun getRefreshStartedAtEpochMs(platformId: String): Long
+    suspend fun setRefreshStartedAtEpochMs(platformId: String, epochMs: Long)
+    suspend fun clearAllRefreshIconPhases()
 
     suspend fun isPlatformTipDismissed(): Boolean
     suspend fun setPlatformTipDismissed(dismissed: Boolean)

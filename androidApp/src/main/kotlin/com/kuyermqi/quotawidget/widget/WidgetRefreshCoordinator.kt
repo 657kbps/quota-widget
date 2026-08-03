@@ -6,8 +6,9 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.WorkManager
 import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
+import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.refresh.BalanceRefreshResult
-import com.kuyermqi.quotawidget.refresh.displayState
 import com.kuyermqi.quotawidget.worker.BalanceRefreshWorker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
@@ -24,49 +25,52 @@ object WidgetRefreshCoordinator {
      * ActionCallback entry: enqueue work only. Glance updates happen in the worker
      * via [WidgetGlanceState.syncAndUpdate] so recomposition sees fresh Glance state.
      */
-    suspend fun beginUserRefresh(context: Context) {
+    suspend fun beginUserRefresh(context: Context, platformId: String) {
         val app = context.applicationContext as QuotaWidgetApp
         val settings = app.settingsRepository
-        val phase = settings.getRefreshIconPhase()
-        Log.i(TAG, "beginUserRefresh phase=$phase")
+        val phase = settings.getRefreshIconPhase(platformId)
+        Log.i(TAG, "beginUserRefresh platform=$platformId phase=$phase")
         if (phase == RefreshIconPhase.Spinning || phase == RefreshIconPhase.Settling) {
-            val startedAt = settings.getRefreshStartedAtEpochMs()
+            val startedAt = settings.getRefreshStartedAtEpochMs(platformId)
             val age = System.currentTimeMillis() - startedAt
             if (startedAt > 0L && age in 0 until STALE_SPIN_TIMEOUT_MS) {
-                Log.w(TAG, "beginUserRefresh ignored; still refreshing ageMs=$age")
+                Log.w(TAG, "beginUserRefresh ignored; still refreshing platform=$platformId ageMs=$age")
                 return
             }
-            Log.w(TAG, "beginUserRefresh stale phase=$phase ageMs=$age; continuing")
+            Log.w(TAG, "beginUserRefresh stale phase=$phase platform=$platformId ageMs=$age; continuing")
         }
 
-        settings.setRefreshStartedAtEpochMs(System.currentTimeMillis())
-        settings.setRefreshIconPhase(RefreshIconPhase.Spinning)
+        settings.setRefreshStartedAtEpochMs(platformId, System.currentTimeMillis())
+        settings.setRefreshIconPhase(platformId, RefreshIconPhase.Spinning)
         updateWidgetSerialized(context, "spinning-pre-enqueue")
-        Log.i(TAG, "beginUserRefresh enqueued user work")
+        Log.i(TAG, "beginUserRefresh enqueued user work platform=$platformId")
 
         WorkManager.getInstance(context).enqueueUniqueWork(
-            BalanceRefreshWorker.UNIQUE_USER_REFRESH_WORK,
+            BalanceRefreshWorker.userRefreshWorkName(platformId),
             ExistingWorkPolicy.REPLACE,
-            BalanceRefreshWork.oneTime(userInitiated = true, expedited = true),
+            BalanceRefreshWork.oneTime(
+                userInitiated = true,
+                expedited = true,
+                platformId = platformId,
+            ),
         )
     }
 
-    suspend fun runUserRefresh(context: Context): BalanceRefreshResult {
+    suspend fun runUserRefresh(context: Context, platformId: String): BalanceRefreshResult {
         val app = context.applicationContext as QuotaWidgetApp
         val settings = app.settingsRepository
-        val startedAt = settings.getRefreshStartedAtEpochMs().takeIf { it > 0L }
-            ?: System.currentTimeMillis().also { settings.setRefreshStartedAtEpochMs(it) }
-        Log.i(TAG, "runUserRefresh start")
+        val startedAt = settings.getRefreshStartedAtEpochMs(platformId).takeIf { it > 0L }
+            ?: System.currentTimeMillis().also {
+                settings.setRefreshStartedAtEpochMs(platformId, it)
+            }
+        Log.i(TAG, "runUserRefresh start platform=$platformId")
         return try {
-            settings.setRefreshIconPhase(RefreshIconPhase.Spinning)
+            settings.setRefreshIconPhase(platformId, RefreshIconPhase.Spinning)
             updateWidgetSerialized(context, "spinning")
 
-            val result = app.refreshInteractor.refreshDeepSeek()
-            Log.i(
-                TAG,
-                "runUserRefresh network done result=${result::class.simpleName} " +
-                    "state=${result.displayState::class.simpleName}",
-            )
+            val result = app.refreshInteractor.refresh(platformId)
+            logResult(platformId, result)
+            Log.i(TAG, "runUserRefresh network done platform=$platformId")
 
             val elapsed = System.currentTimeMillis() - startedAt
             val remain = MIN_SPINNER_VISIBLE_MS - elapsed
@@ -75,11 +79,11 @@ object WidgetRefreshCoordinator {
             }
             result
         } catch (t: Throwable) {
-            Log.e(TAG, "runUserRefresh failed", t)
+            Log.e(TAG, "runUserRefresh failed platform=$platformId", t)
             throw t
         } finally {
-            settings.setRefreshIconPhase(RefreshIconPhase.Idle)
-            Log.i(TAG, "runUserRefresh finally phase=Idle")
+            settings.setRefreshIconPhase(platformId, RefreshIconPhase.Idle)
+            Log.i(TAG, "runUserRefresh finally phase=Idle platform=$platformId")
             updateWidgetSerialized(context, "idle")
         }
     }
@@ -88,29 +92,45 @@ object WidgetRefreshCoordinator {
         val app = context.applicationContext as QuotaWidgetApp
         Log.i(TAG, "runBackgroundRefresh start")
         return try {
-            val result = app.refreshInteractor.refreshDeepSeek()
-            Log.i(
-                TAG,
-                "runBackgroundRefresh done result=${result::class.simpleName} " +
-                    "state=${result.displayState::class.simpleName}",
-            )
-            result
-        } finally {
-            // Do not force Idle: a widget-initiated refresh may still own the spinner.
-            val phase = app.settingsRepository.getRefreshIconPhase()
-            if (phase == RefreshIconPhase.Spinning || phase == RefreshIconPhase.Settling) {
-                updateWidgetSerialized(context, "background-refresh-keep-phase")
-            } else {
-                updateWidgetSerialized(context, "background-refresh")
+            val results = app.refreshInteractor.refreshAllConfigured()
+            results.forEachIndexed { index, result ->
+                // Prefer logging OpenCode / DeepSeek errors for diagnosis.
+                logResult("configured[$index]", result)
             }
+            Log.i(TAG, "runBackgroundRefresh done count=${results.size}")
+            results.lastOrNull()
+                ?: BalanceRefreshResult.Completed(WidgetDisplayState.NotConfigured)
+        } finally {
+            updateWidgetSerialized(context, "background-refresh")
         }
     }
 
-    suspend fun forceIdle(context: Context) {
+    suspend fun forceIdle(context: Context, platformId: String? = null) {
         val app = context.applicationContext as QuotaWidgetApp
-        app.settingsRepository.setRefreshIconPhase(RefreshIconPhase.Idle)
-        Log.i(TAG, "forceIdle")
+        if (platformId == null) {
+            app.settingsRepository.clearAllRefreshIconPhases()
+            Log.i(TAG, "forceIdle all platforms")
+        } else {
+            app.settingsRepository.setRefreshIconPhase(platformId, RefreshIconPhase.Idle)
+            Log.i(TAG, "forceIdle platform=$platformId")
+        }
         updateWidgetSerialized(context, "forceIdle")
+    }
+
+    private fun logResult(platformId: String, result: BalanceRefreshResult) {
+        when (val state = when (result) {
+            is BalanceRefreshResult.Completed -> result.state
+            is BalanceRefreshResult.TransientFailure -> result.retained
+        }) {
+            is WidgetDisplayState.Error ->
+                Log.e(TAG, "refresh error platform=$platformId message=${state.message}")
+            WidgetDisplayState.NeedsReauth ->
+                Log.w(TAG, "refresh needsReauth platform=$platformId")
+            is WidgetDisplayState.Success ->
+                Log.i(TAG, "refresh success platform=$platformId display=${state.snapshot.primaryDisplay}")
+            else ->
+                Log.i(TAG, "refresh done platform=$platformId state=${state::class.simpleName}")
+        }
     }
 
     private suspend fun updateWidgetSerialized(context: Context, reason: String) {
