@@ -13,8 +13,8 @@ android {
         applicationId = "com.kuyermqi.quotawidget"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 9
-        versionName = (findProperty("versionName") as String?) ?: "1.4.0"
+        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 10
+        versionName = (findProperty("versionName") as String?) ?: "1.4.1"
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a")
         }
