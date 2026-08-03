@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
 import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -19,6 +20,7 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.appWidgetBackground
+import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -34,7 +36,6 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.kuyermqi.quotawidget.R
-import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.domain.OpenCodeUsageDisplayMode
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -44,6 +45,7 @@ import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.formatOpenCodeUsagePercent
 import com.kuyermqi.quotawidget.domain.opencode.openCodeWindowLabelRes
 import com.kuyermqi.quotawidget.platform.PlatformIds
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toOpenCodeUsageDisplayMode
 
 /**
  * OpenCode overview widget: rolling / weekly / monthly usage.
@@ -58,17 +60,12 @@ class OpenCodeGoOverviewWidget : GlanceAppWidget() {
     )
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val usageDisplayMode = (context.applicationContext as QuotaWidgetApp)
-            .settingsRepository
-            .getOpenCodeGoSettings()
-            .usageDisplayMode
         providePlatformGlance(context, id, PlatformIds.OPENCODE_GO) { state, refreshPhase, openApp, platformTitle ->
             OpenCodeOverviewWidgetContent(
                 state = state,
                 refreshPhase = refreshPhase,
                 openApp = openApp,
                 platformTitle = platformTitle,
-                usageDisplayMode = usageDisplayMode,
             )
         }
     }
@@ -124,8 +121,8 @@ private fun OpenCodeOverviewWidgetContent(
     refreshPhase: RefreshIconPhase,
     openApp: Action,
     platformTitle: String,
-    usageDisplayMode: OpenCodeUsageDisplayMode,
 ) {
+    val usageDisplayMode = currentState<Preferences>().toOpenCodeUsageDisplayMode()
     val density = if (LocalSize.current.height >= OpenCodeGoOverviewWidget.SizeComfortable.height) {
         ComfortableDensity
     } else {

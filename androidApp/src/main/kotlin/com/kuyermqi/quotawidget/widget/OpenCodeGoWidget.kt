@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
 import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -15,6 +16,7 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.appWidgetBackground
+import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -29,7 +31,6 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.OpenCodeUsageDisplayMode
 import com.kuyermqi.quotawidget.domain.OpenCodeWidgetWindowKind
@@ -38,23 +39,20 @@ import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.formatOpenCodeUsagePercent
 import com.kuyermqi.quotawidget.platform.PlatformIds
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toOpenCodeUsageDisplayMode
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toOpenCodeWidgetWindowKind
 
 class OpenCodeGoWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
     override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val settings = (context.applicationContext as QuotaWidgetApp)
-            .settingsRepository
-            .getOpenCodeGoSettings()
         providePlatformGlance(context, id, PlatformIds.OPENCODE_GO) { state, refreshPhase, openApp, platformTitle ->
             OpenCodeWidgetContent(
                 state = state,
                 refreshPhase = refreshPhase,
                 openApp = openApp,
                 platformTitle = platformTitle,
-                windowKind = settings.widgetWindowKind,
-                usageDisplayMode = settings.usageDisplayMode,
             )
         }
     }
@@ -65,16 +63,11 @@ class OpenCodeGoCompactWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val settings = (context.applicationContext as QuotaWidgetApp)
-            .settingsRepository
-            .getOpenCodeGoSettings()
         providePlatformGlance(context, id, PlatformIds.OPENCODE_GO) { state, refreshPhase, openApp, _ ->
             OpenCodeCompactWidgetContent(
                 state = state,
                 refreshPhase = refreshPhase,
                 openApp = openApp,
-                windowKind = settings.widgetWindowKind,
-                usageDisplayMode = settings.usageDisplayMode,
             )
         }
     }
@@ -86,9 +79,10 @@ private fun OpenCodeWidgetContent(
     refreshPhase: RefreshIconPhase,
     openApp: Action,
     platformTitle: String,
-    windowKind: OpenCodeWidgetWindowKind,
-    usageDisplayMode: OpenCodeUsageDisplayMode,
 ) {
+    val prefs = currentState<Preferences>()
+    val windowKind = prefs.toOpenCodeWidgetWindowKind()
+    val usageDisplayMode = prefs.toOpenCodeUsageDisplayMode()
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -161,9 +155,10 @@ private fun OpenCodeCompactWidgetContent(
     state: WidgetDisplayState,
     refreshPhase: RefreshIconPhase,
     openApp: Action,
-    windowKind: OpenCodeWidgetWindowKind,
-    usageDisplayMode: OpenCodeUsageDisplayMode,
 ) {
+    val prefs = currentState<Preferences>()
+    val windowKind = prefs.toOpenCodeWidgetWindowKind()
+    val usageDisplayMode = prefs.toOpenCodeUsageDisplayMode()
     Box(
         modifier = GlanceModifier
             .fillMaxSize()

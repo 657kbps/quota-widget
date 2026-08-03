@@ -19,6 +19,8 @@ import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.DEFAULT_CUSTOM_SEED_COLOR_ARGB
 import com.kuyermqi.quotawidget.domain.DEFAULT_REFRESH_INTERVAL_MINUTES
 import com.kuyermqi.quotawidget.domain.DarkThemeMode
+import com.kuyermqi.quotawidget.domain.OpenCodeUsageDisplayMode
+import com.kuyermqi.quotawidget.domain.OpenCodeWidgetWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
@@ -30,6 +32,7 @@ import com.kuyermqi.quotawidget.domain.encodeQuotaWindows
 import com.kuyermqi.quotawidget.domain.formatBalance
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
+import com.kuyermqi.quotawidget.settings.OpenCodeGoSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 
 /**
@@ -53,6 +56,8 @@ object WidgetGlanceState {
     val darkThemeModeKey = stringPreferencesKey("qw_dark_theme_mode")
     val themeColorModeKey = stringPreferencesKey("qw_theme_color_mode")
     val seedColorKey = intPreferencesKey("qw_seed_color")
+    val openCodeWindowKindKey = stringPreferencesKey("qw_opencode_window_kind")
+    val openCodeUsageDisplayModeKey = stringPreferencesKey("qw_opencode_usage_display")
 
     private object Status {
         const val NOT_CONFIGURED = "not_configured"
@@ -92,6 +97,7 @@ object WidgetGlanceState {
         val app = context.applicationContext as QuotaWidgetApp
         val repo = app.settingsRepository
         val appSettings = repo.getAppSettings()
+        val openCodeSettings = repo.getOpenCodeGoSettings()
         Log.i(TAG, "syncAndUpdate reason=$reason")
 
         val manager = GlanceAppWidgetManager(context)
@@ -103,7 +109,14 @@ object WidgetGlanceState {
             ids.forEach { id ->
                 updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
                     prefs.toMutablePreferences().apply {
-                        write(phase, display, appSettings)
+                        write(
+                            phase = phase,
+                            display = display,
+                            appSettings = appSettings,
+                            openCodeSettings = openCodeSettings.takeIf {
+                                target.platformId == PlatformIds.OPENCODE_GO
+                            },
+                        )
                     }
                 }
                 target.widget.update(context, id)
@@ -133,9 +146,14 @@ object WidgetGlanceState {
         val phase = repo.getRefreshIconPhase(platformId)
         val display = repo.getWidgetState(platformId)
         val appSettings = repo.getAppSettings()
+        val openCodeSettings = if (platformId == PlatformIds.OPENCODE_GO) {
+            repo.getOpenCodeGoSettings()
+        } else {
+            null
+        }
         updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
             prefs.toMutablePreferences().apply {
-                write(phase, display, appSettings)
+                write(phase, display, appSettings, openCodeSettings)
             }
         }
         val verify = getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
@@ -156,6 +174,12 @@ object WidgetGlanceState {
         customSeedColorArgb = this[seedColorKey] ?: DEFAULT_CUSTOM_SEED_COLOR_ARGB,
         refreshIntervalMinutes = DEFAULT_REFRESH_INTERVAL_MINUTES,
     )
+
+    fun Preferences.toOpenCodeWidgetWindowKind(): OpenCodeWidgetWindowKind =
+        OpenCodeWidgetWindowKind.fromStorage(this[openCodeWindowKindKey])
+
+    fun Preferences.toOpenCodeUsageDisplayMode(): OpenCodeUsageDisplayMode =
+        OpenCodeUsageDisplayMode.fromStorage(this[openCodeUsageDisplayModeKey])
 
     fun Preferences.toDisplayState(): WidgetDisplayState {
         return when (this[statusKey]) {
@@ -199,11 +223,16 @@ object WidgetGlanceState {
         phase: RefreshIconPhase,
         display: WidgetDisplayState,
         appSettings: AppSettings,
+        openCodeSettings: OpenCodeGoSettings?,
     ) {
         this[refreshPhaseKey] = phase.name
         this[darkThemeModeKey] = appSettings.darkThemeMode.name
         this[themeColorModeKey] = appSettings.themeColorMode.name
         this[seedColorKey] = appSettings.customSeedColorArgb
+        if (openCodeSettings != null) {
+            this[openCodeWindowKindKey] = openCodeSettings.widgetWindowKind.name
+            this[openCodeUsageDisplayModeKey] = openCodeSettings.usageDisplayMode.name
+        }
         when (display) {
             WidgetDisplayState.NotConfigured -> {
                 this[statusKey] = Status.NOT_CONFIGURED
