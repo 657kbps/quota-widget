@@ -1,4 +1,4 @@
-# 配额监控 · Quota Widget
+<h1 align="center">配额监控 · Quota Widget</h1>
 
 <p align="center">
   <a href="README.md">中文</a> · <a href="README_EN.md">English</a>
