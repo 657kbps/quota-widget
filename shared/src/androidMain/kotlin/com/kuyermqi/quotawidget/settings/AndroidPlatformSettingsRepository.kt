@@ -21,6 +21,7 @@ import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.DarkThemeMode
 import com.kuyermqi.quotawidget.domain.DEFAULT_CUSTOM_SEED_COLOR_ARGB
 import com.kuyermqi.quotawidget.domain.DEFAULT_REFRESH_INTERVAL_MINUTES
+import com.kuyermqi.quotawidget.domain.OpenCodeUsageDisplayMode
 import com.kuyermqi.quotawidget.domain.OpenCodeWidgetWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -100,12 +101,18 @@ class AndroidPlatformSettingsRepository(
                 }
             }
             prefs[Keys.OPENCODE_WIDGET_WINDOW] = settings.widgetWindowKind.name
+            prefs[Keys.OPENCODE_USAGE_DISPLAY] = settings.usageDisplayMode.name
         }
     }
 
     override suspend fun clearOpenCodeGoSettings() {
-        val window = getOpenCodeGoSettings().widgetWindowKind
-        saveOpenCodeGoSettings(OpenCodeGoSettings(widgetWindowKind = window))
+        val current = getOpenCodeGoSettings()
+        saveOpenCodeGoSettings(
+            OpenCodeGoSettings(
+                widgetWindowKind = current.widgetWindowKind,
+                usageDisplayMode = current.usageDisplayMode,
+            ),
+        )
     }
 
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =
@@ -282,6 +289,7 @@ class AndroidPlatformSettingsRepository(
             workspaceName = this[Keys.OPENCODE_WORKSPACE_NAME].orEmpty(),
             authCookie = authCookie,
             widgetWindowKind = OpenCodeWidgetWindowKind.fromStorage(this[Keys.OPENCODE_WIDGET_WINDOW]),
+            usageDisplayMode = OpenCodeUsageDisplayMode.fromStorage(this[Keys.OPENCODE_USAGE_DISPLAY]),
         )
     }
 
@@ -407,6 +415,7 @@ class AndroidPlatformSettingsRepository(
         val OPENCODE_WORKSPACE_NAME = stringPreferencesKey("opencode_workspace_name")
         val OPENCODE_AUTH_COOKIE_ENC = stringPreferencesKey("opencode_auth_cookie_enc")
         val OPENCODE_WIDGET_WINDOW = stringPreferencesKey("opencode_go_widget_window")
+        val OPENCODE_USAGE_DISPLAY = stringPreferencesKey("opencode_go_usage_display")
         val ACTIVE_PLATFORM_ID = stringPreferencesKey("active_platform_id")
         val LEGACY_WIDGET_STATUS = stringPreferencesKey("widget_status")
         val LEGACY_WIDGET_ERROR = stringPreferencesKey("widget_error")

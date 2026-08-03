@@ -92,6 +92,18 @@ enum class OpenCodeWidgetWindowKind {
     }
 }
 
+/** Whether OpenCode surfaces show used percent or remaining percent. */
+enum class OpenCodeUsageDisplayMode {
+    USED,
+    REMAINING,
+    ;
+
+    companion object {
+        fun fromStorage(value: String?): OpenCodeUsageDisplayMode =
+            entries.find { it.name == value } ?: USED
+    }
+}
+
 @Serializable
 data class QuotaWindow(
     val kind: QuotaWindowKind,
@@ -158,8 +170,20 @@ fun formatBalance(currency: CurrencyPreference, amount: String): String {
 /** Used-percent threshold for warning-colored progress (settings UI and widgets). */
 const val USAGE_NEAR_LIMIT_PERCENT = 90.0
 
+/** Remaining-percent threshold equivalent to [USAGE_NEAR_LIMIT_PERCENT] used. */
+const val REMAINING_NEAR_LIMIT_PERCENT = 100.0 - USAGE_NEAR_LIMIT_PERCENT
+
 fun isUsageNearLimit(usedPercent: Double): Boolean =
     usedPercent >= USAGE_NEAR_LIMIT_PERCENT
+
+fun isUsageNearLimitForDisplay(
+    usedPercent: Double,
+    mode: OpenCodeUsageDisplayMode,
+): Boolean = when (mode) {
+    OpenCodeUsageDisplayMode.USED -> isUsageNearLimit(usedPercent)
+    OpenCodeUsageDisplayMode.REMAINING ->
+        remainingUsagePercent(usedPercent) <= REMAINING_NEAR_LIMIT_PERCENT
+}
 
 fun formatUsagePercent(percent: Double): String {
     val rounded = kotlin.math.round(percent * 10.0) / 10.0
@@ -188,8 +212,26 @@ fun formatOpenCodePrimaryDisplay(windows: List<QuotaWindow>): String {
 fun remainingUsagePercent(usedPercent: Double): Double =
     (100.0 - usedPercent).coerceIn(0.0, 100.0)
 
+fun displayUsagePercent(
+    usedPercent: Double,
+    mode: OpenCodeUsageDisplayMode,
+): Double = when (mode) {
+    OpenCodeUsageDisplayMode.USED -> usedPercent.coerceIn(0.0, 100.0)
+    OpenCodeUsageDisplayMode.REMAINING -> remainingUsagePercent(usedPercent)
+}
+
+fun displayUsageFillFraction(
+    usedPercent: Double,
+    mode: OpenCodeUsageDisplayMode,
+): Float = (displayUsagePercent(usedPercent, mode) / 100.0).toFloat().coerceIn(0f, 1f)
+
 fun formatRemainingUsagePercent(usedPercent: Double): String =
     formatUsagePercent(remainingUsagePercent(usedPercent))
+
+fun formatOpenCodeUsagePercent(
+    usedPercent: Double,
+    mode: OpenCodeUsageDisplayMode,
+): String = formatUsagePercent(displayUsagePercent(usedPercent, mode))
 
 fun formatOpenCodeRemainingForWindow(
     windows: List<QuotaWindow>,
@@ -197,6 +239,15 @@ fun formatOpenCodeRemainingForWindow(
 ): String? {
     val used = windows.find { it.kind == windowKind.toQuotaWindowKind() }?.usedPercent ?: return null
     return formatRemainingUsagePercent(used)
+}
+
+fun formatOpenCodeUsageForWindow(
+    windows: List<QuotaWindow>,
+    windowKind: OpenCodeWidgetWindowKind = OpenCodeWidgetWindowKind.ROLLING,
+    mode: OpenCodeUsageDisplayMode = OpenCodeUsageDisplayMode.USED,
+): String? {
+    val used = windows.find { it.kind == windowKind.toQuotaWindowKind() }?.usedPercent ?: return null
+    return formatOpenCodeUsagePercent(used, mode)
 }
 
 fun formatOpenCodeRemainingRolling(windows: List<QuotaWindow>): String? =

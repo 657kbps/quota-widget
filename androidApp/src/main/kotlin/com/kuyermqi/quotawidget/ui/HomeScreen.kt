@@ -43,10 +43,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.res.Resources
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
+import com.kuyermqi.quotawidget.domain.OpenCodeUsageDisplayMode
 import com.kuyermqi.quotawidget.domain.OpenCodeWidgetWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
-import com.kuyermqi.quotawidget.domain.formatOpenCodeRemainingForWindow
+import com.kuyermqi.quotawidget.domain.formatOpenCodeUsageForWindow
 import com.kuyermqi.quotawidget.domain.opencode.OpenCodeLoginWebViewFlow
 import com.kuyermqi.quotawidget.opencode.OpenCodeGoClient
 import com.kuyermqi.quotawidget.opencode.OpenCodeWorkspace
@@ -108,6 +109,9 @@ fun HomeScreen(
     var draftOpenCodeWindowKind by remember {
         mutableStateOf(OpenCodeWidgetWindowKind.ROLLING)
     }
+    var draftOpenCodeUsageDisplayMode by remember {
+        mutableStateOf(OpenCodeUsageDisplayMode.USED)
+    }
     var expandedPlatformId by remember { mutableStateOf<String?>(null) }
     var highlightPlatformId by remember { mutableStateOf<String?>(null) }
     var highlightNonce by remember { mutableStateOf<Long?>(null) }
@@ -131,11 +135,18 @@ fun HomeScreen(
         draftOpenCodeWorkspaceId = settings.workspaceId
         draftOpenCodeWorkspaceName = settings.workspaceName
         draftOpenCodeWindowKind = settings.widgetWindowKind
+        draftOpenCodeUsageDisplayMode = settings.usageDisplayMode
     }
 
-    suspend fun clearOpenCodeSession(keepWindowKind: OpenCodeWidgetWindowKind) {
+    suspend fun clearOpenCodeSession(
+        keepWindowKind: OpenCodeWidgetWindowKind,
+        keepUsageDisplayMode: OpenCodeUsageDisplayMode,
+    ) {
         settingsRepository.clearOpenCodeGoSettings()
-        openCodeSettings = OpenCodeGoSettings(widgetWindowKind = keepWindowKind)
+        openCodeSettings = OpenCodeGoSettings(
+            widgetWindowKind = keepWindowKind,
+            usageDisplayMode = keepUsageDisplayMode,
+        )
         applyOpenCodeDraft(openCodeSettings)
         opencodeWorkspaces = emptyList()
         workspacesError = null
@@ -235,6 +246,7 @@ fun HomeScreen(
                     workspaceId = workspaceId,
                     authCookie = authCookie,
                     widgetWindowKind = draftOpenCodeWindowKind,
+                    usageDisplayMode = draftOpenCodeUsageDisplayMode,
                 )
                 settingsRepository.saveOpenCodeGoSettings(next)
                 openCodeSettings = next
@@ -252,7 +264,10 @@ fun HomeScreen(
                     WidgetDisplayState.NeedsReauth -> {
                         // Cookie was captured but session is still public/invalid — don't leave
                         // a contradictory "已登录" + "需登录" state.
-                        clearOpenCodeSession(keepWindowKind = next.widgetWindowKind)
+                        clearOpenCodeSession(
+                            keepWindowKind = next.widgetWindowKind,
+                            keepUsageDisplayMode = next.usageDisplayMode,
+                        )
                         openCodeError = msgLoginFailed
                     }
                     else -> {
@@ -270,12 +285,18 @@ fun HomeScreen(
         val success = deepSeekWidgetState as? WidgetDisplayState.Success ?: return@LaunchedEffect
         lastDeepSeekDisplay = success.snapshot.primaryDisplay
     }
-    LaunchedEffect(openCodeWidgetState, openCodeSettings.widgetWindowKind, resources) {
+    LaunchedEffect(
+        openCodeWidgetState,
+        openCodeSettings.widgetWindowKind,
+        openCodeSettings.usageDisplayMode,
+        resources,
+    ) {
         val success = openCodeWidgetState as? WidgetDisplayState.Success ?: return@LaunchedEffect
-        lastOpenCodeDisplay = formatOpenCodeRemainingSummary(
+        lastOpenCodeDisplay = formatOpenCodeUsageSummary(
             resources = resources,
             windows = success.snapshot.windows,
             windowKind = openCodeSettings.widgetWindowKind,
+            usageDisplayMode = openCodeSettings.usageDisplayMode,
             fallback = success.snapshot.primaryDisplay,
         )
     }
@@ -325,10 +346,11 @@ fun HomeScreen(
         return when (state) {
             is WidgetDisplayState.Success -> when (platformId) {
                 PlatformIds.OPENCODE_GO ->
-                    formatOpenCodeRemainingSummary(
+                    formatOpenCodeUsageSummary(
                         resources = resources,
                         windows = state.snapshot.windows,
                         windowKind = openCodeSettings.widgetWindowKind,
+                        usageDisplayMode = openCodeSettings.usageDisplayMode,
                         fallback = state.snapshot.primaryDisplay,
                     )
                 PlatformIds.DEEPSEEK -> deepSeekBalanceLabel(state.snapshot.primaryDisplay)
@@ -386,7 +408,8 @@ fun HomeScreen(
     val isOpenCodeDirty = loaded && openCodeSettings.isConfigured && (
         draftOpenCodeWorkspaceId != openCodeSettings.workspaceId ||
             draftOpenCodeWorkspaceName != openCodeSettings.workspaceName ||
-            draftOpenCodeWindowKind != openCodeSettings.widgetWindowKind
+            draftOpenCodeWindowKind != openCodeSettings.widgetWindowKind ||
+            draftOpenCodeUsageDisplayMode != openCodeSettings.usageDisplayMode
         )
 
     val openCodeWindows =
@@ -566,6 +589,11 @@ fun HomeScreen(
                                     draftOpenCodeWindowKind = kind
                                     openCodeError = null
                                 },
+                                usageDisplayMode = draftOpenCodeUsageDisplayMode,
+                                onUsageDisplayModeChange = { mode ->
+                                    draftOpenCodeUsageDisplayMode = mode
+                                    openCodeError = null
+                                },
                                 onWorkspaceSelected = { workspace ->
                                     draftOpenCodeWorkspaceId = workspace.id
                                     draftOpenCodeWorkspaceName = workspace.name
@@ -584,6 +612,7 @@ fun HomeScreen(
                                         try {
                                             clearOpenCodeSession(
                                                 keepWindowKind = draftOpenCodeWindowKind,
+                                                keepUsageDisplayMode = draftOpenCodeUsageDisplayMode,
                                             )
                                             WidgetGlanceState.syncAndUpdate(
                                                 context,
@@ -603,6 +632,7 @@ fun HomeScreen(
                                                 workspaceId = draftOpenCodeWorkspaceId,
                                                 workspaceName = draftOpenCodeWorkspaceName,
                                                 widgetWindowKind = draftOpenCodeWindowKind,
+                                                usageDisplayMode = draftOpenCodeUsageDisplayMode,
                                             )
                                             settingsRepository.saveOpenCodeGoSettings(next)
                                             openCodeSettings = next
@@ -617,6 +647,7 @@ fun HomeScreen(
                                                 WidgetDisplayState.NeedsReauth -> {
                                                     clearOpenCodeSession(
                                                         keepWindowKind = next.widgetWindowKind,
+                                                        keepUsageDisplayMode = next.usageDisplayMode,
                                                     )
                                                     openCodeError = msgNeedsReauth
                                                 }
@@ -643,17 +674,26 @@ fun HomeScreen(
     }
 }
 
-private fun formatOpenCodeRemainingSummary(
+private fun formatOpenCodeUsageSummary(
     resources: Resources,
     windows: List<QuotaWindow>,
     windowKind: OpenCodeWidgetWindowKind,
+    usageDisplayMode: OpenCodeUsageDisplayMode,
     fallback: String,
 ): String {
-    val percent = formatOpenCodeRemainingForWindow(windows, windowKind) ?: return fallback
-    val resId = when (windowKind) {
-        OpenCodeWidgetWindowKind.ROLLING -> R.string.opencode_remaining_rolling
-        OpenCodeWidgetWindowKind.WEEKLY -> R.string.opencode_remaining_weekly
-        OpenCodeWidgetWindowKind.MONTHLY -> R.string.opencode_remaining_monthly
+    val percent = formatOpenCodeUsageForWindow(windows, windowKind, usageDisplayMode)
+        ?: return fallback
+    val resId = when (usageDisplayMode) {
+        OpenCodeUsageDisplayMode.USED -> when (windowKind) {
+            OpenCodeWidgetWindowKind.ROLLING -> R.string.opencode_used_rolling
+            OpenCodeWidgetWindowKind.WEEKLY -> R.string.opencode_used_weekly
+            OpenCodeWidgetWindowKind.MONTHLY -> R.string.opencode_used_monthly
+        }
+        OpenCodeUsageDisplayMode.REMAINING -> when (windowKind) {
+            OpenCodeWidgetWindowKind.ROLLING -> R.string.opencode_remaining_rolling
+            OpenCodeWidgetWindowKind.WEEKLY -> R.string.opencode_remaining_weekly
+            OpenCodeWidgetWindowKind.MONTHLY -> R.string.opencode_remaining_monthly
+        }
     }
     return resources.getString(resId, percent)
 }

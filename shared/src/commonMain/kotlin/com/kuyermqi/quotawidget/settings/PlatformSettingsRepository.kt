@@ -2,6 +2,7 @@ package com.kuyermqi.quotawidget.settings
 
 import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
+import com.kuyermqi.quotawidget.domain.OpenCodeUsageDisplayMode
 import com.kuyermqi.quotawidget.domain.OpenCodeWidgetWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
@@ -18,6 +19,7 @@ data class OpenCodeGoSettings(
     val workspaceName: String = "",
     val authCookie: String = "",
     val widgetWindowKind: OpenCodeWidgetWindowKind = OpenCodeWidgetWindowKind.ROLLING,
+    val usageDisplayMode: OpenCodeUsageDisplayMode = OpenCodeUsageDisplayMode.USED,
 ) {
     val isConfigured: Boolean
         get() = workspaceId.isNotBlank() && authCookie.isNotBlank()

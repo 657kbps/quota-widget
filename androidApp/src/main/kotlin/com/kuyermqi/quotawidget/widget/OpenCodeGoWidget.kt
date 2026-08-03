@@ -31,13 +31,12 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.R
+import com.kuyermqi.quotawidget.domain.OpenCodeUsageDisplayMode
 import com.kuyermqi.quotawidget.domain.OpenCodeWidgetWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
-import com.kuyermqi.quotawidget.domain.formatRemainingUsagePercent
-import com.kuyermqi.quotawidget.domain.isUsageNearLimit
-import com.kuyermqi.quotawidget.domain.remainingUsagePercent
+import com.kuyermqi.quotawidget.domain.formatOpenCodeUsagePercent
 import com.kuyermqi.quotawidget.platform.PlatformIds
 
 class OpenCodeGoWidget : GlanceAppWidget() {
@@ -45,17 +44,17 @@ class OpenCodeGoWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val windowKind = (context.applicationContext as QuotaWidgetApp)
+        val settings = (context.applicationContext as QuotaWidgetApp)
             .settingsRepository
             .getOpenCodeGoSettings()
-            .widgetWindowKind
         providePlatformGlance(context, id, PlatformIds.OPENCODE_GO) { state, refreshPhase, openApp, platformTitle ->
             OpenCodeWidgetContent(
                 state = state,
                 refreshPhase = refreshPhase,
                 openApp = openApp,
                 platformTitle = platformTitle,
-                windowKind = windowKind,
+                windowKind = settings.widgetWindowKind,
+                usageDisplayMode = settings.usageDisplayMode,
             )
         }
     }
@@ -66,16 +65,16 @@ class OpenCodeGoCompactWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val windowKind = (context.applicationContext as QuotaWidgetApp)
+        val settings = (context.applicationContext as QuotaWidgetApp)
             .settingsRepository
             .getOpenCodeGoSettings()
-            .widgetWindowKind
         providePlatformGlance(context, id, PlatformIds.OPENCODE_GO) { state, refreshPhase, openApp, _ ->
             OpenCodeCompactWidgetContent(
                 state = state,
                 refreshPhase = refreshPhase,
                 openApp = openApp,
-                windowKind = windowKind,
+                windowKind = settings.widgetWindowKind,
+                usageDisplayMode = settings.usageDisplayMode,
             )
         }
     }
@@ -88,6 +87,7 @@ private fun OpenCodeWidgetContent(
     openApp: Action,
     platformTitle: String,
     windowKind: OpenCodeWidgetWindowKind,
+    usageDisplayMode: OpenCodeUsageDisplayMode,
 ) {
     Box(
         modifier = GlanceModifier
@@ -140,6 +140,7 @@ private fun OpenCodeWidgetContent(
                     OpenCodeSuccessBlock(
                         snapshot = state.snapshot,
                         windowKind = windowKind,
+                        usageDisplayMode = usageDisplayMode,
                         openApp = openApp,
                         showProgress = true,
                     )
@@ -161,6 +162,7 @@ private fun OpenCodeCompactWidgetContent(
     refreshPhase: RefreshIconPhase,
     openApp: Action,
     windowKind: OpenCodeWidgetWindowKind,
+    usageDisplayMode: OpenCodeUsageDisplayMode,
 ) {
     Box(
         modifier = GlanceModifier
@@ -191,6 +193,7 @@ private fun OpenCodeCompactWidgetContent(
                         OpenCodeSuccessBlock(
                             snapshot = state.snapshot,
                             windowKind = windowKind,
+                            usageDisplayMode = usageDisplayMode,
                             openApp = openApp,
                             showProgress = false,
                             compact = true,
@@ -241,6 +244,7 @@ private fun OpenCodeCompactWidgetContent(
 private fun OpenCodeSuccessBlock(
     snapshot: QuotaSnapshot,
     windowKind: OpenCodeWidgetWindowKind,
+    usageDisplayMode: OpenCodeUsageDisplayMode,
     openApp: Action,
     showProgress: Boolean,
     compact: Boolean = false,
@@ -248,20 +252,17 @@ private fun OpenCodeSuccessBlock(
     val used = snapshot.windows
         .find { it.kind == windowKind.toQuotaWindowKind() }
         ?.usedPercent
-    val remainingText = if (used != null) {
-        formatRemainingUsagePercent(used)
+    val usageText = if (used != null) {
+        formatOpenCodeUsagePercent(used, usageDisplayMode)
     } else {
         snapshot.primaryDisplay.ifBlank { contextString(R.string.opencode_usage_unavailable) }
     }
-    val remainingFraction = used?.let {
-        (remainingUsagePercent(it) / 100.0).toFloat().coerceIn(0f, 1f)
-    }
     Column(modifier = GlanceModifier.fillMaxWidth()) {
         Text(
-            text = remainingText,
+            text = usageText,
             style = TextStyle(
                 color = GlanceTheme.colors.onSurface,
-                fontSize = if (compact) compactBalanceTitleFontSize(remainingText) else balanceTitleFontSize(remainingText),
+                fontSize = if (compact) compactBalanceTitleFontSize(usageText) else balanceTitleFontSize(usageText),
                 fontWeight = FontWeight.Bold,
             ),
             maxLines = 1,
@@ -269,10 +270,10 @@ private fun OpenCodeSuccessBlock(
         )
         if (showProgress) {
             Spacer(GlanceModifier.height(8.dp))
-            if (remainingFraction != null && used != null) {
-                OpenCodeSegmentProgressBar(
-                    fillFraction = remainingFraction,
-                    nearLimit = isUsageNearLimit(used),
+            if (used != null) {
+                OpenCodeUsageProgressBar(
+                    usedPercent = used,
+                    usageDisplayMode = usageDisplayMode,
                 )
                 Spacer(GlanceModifier.height(10.dp))
             } else {

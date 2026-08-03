@@ -34,12 +34,15 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.kuyermqi.quotawidget.R
+import com.kuyermqi.quotawidget.QuotaWidgetApp
+import com.kuyermqi.quotawidget.domain.OpenCodeUsageDisplayMode
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
-import com.kuyermqi.quotawidget.domain.formatUsagePercent
+import com.kuyermqi.quotawidget.domain.formatOpenCodeUsagePercent
+import com.kuyermqi.quotawidget.domain.opencode.openCodeWindowLabelRes
 import com.kuyermqi.quotawidget.platform.PlatformIds
 
 /**
@@ -55,12 +58,17 @@ class OpenCodeGoOverviewWidget : GlanceAppWidget() {
     )
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val usageDisplayMode = (context.applicationContext as QuotaWidgetApp)
+            .settingsRepository
+            .getOpenCodeGoSettings()
+            .usageDisplayMode
         providePlatformGlance(context, id, PlatformIds.OPENCODE_GO) { state, refreshPhase, openApp, platformTitle ->
             OpenCodeOverviewWidgetContent(
                 state = state,
                 refreshPhase = refreshPhase,
                 openApp = openApp,
                 platformTitle = platformTitle,
+                usageDisplayMode = usageDisplayMode,
             )
         }
     }
@@ -116,6 +124,7 @@ private fun OpenCodeOverviewWidgetContent(
     refreshPhase: RefreshIconPhase,
     openApp: Action,
     platformTitle: String,
+    usageDisplayMode: OpenCodeUsageDisplayMode,
 ) {
     val density = if (LocalSize.current.height >= OpenCodeGoOverviewWidget.SizeComfortable.height) {
         ComfortableDensity
@@ -189,6 +198,7 @@ private fun OpenCodeOverviewWidgetContent(
                         snapshot = state.snapshot,
                         openApp = openApp,
                         density = density,
+                        usageDisplayMode = usageDisplayMode,
                     )
                 }
             }
@@ -201,6 +211,7 @@ private fun OpenCodeOverviewSuccessBlock(
     snapshot: QuotaSnapshot,
     openApp: Action,
     density: OverviewDensity,
+    usageDisplayMode: OpenCodeUsageDisplayMode,
 ) {
     Column(
         modifier = GlanceModifier
@@ -208,24 +219,33 @@ private fun OpenCodeOverviewSuccessBlock(
             .clickableNoRipple(openApp),
     ) {
         OverviewUsageRow(
-            label = contextString(R.string.opencode_window_rolling),
+            label = contextString(
+                openCodeWindowLabelRes(QuotaWindowKind.FIVE_HOUR, usageDisplayMode),
+            ),
             window = snapshot.windows.find { it.kind == QuotaWindowKind.FIVE_HOUR },
             openApp = openApp,
             density = density,
+            usageDisplayMode = usageDisplayMode,
         )
         Spacer(GlanceModifier.height(density.rowGap))
         OverviewUsageRow(
-            label = contextString(R.string.opencode_window_weekly),
+            label = contextString(
+                openCodeWindowLabelRes(QuotaWindowKind.WEEKLY, usageDisplayMode),
+            ),
             window = snapshot.windows.find { it.kind == QuotaWindowKind.WEEKLY },
             openApp = openApp,
             density = density,
+            usageDisplayMode = usageDisplayMode,
         )
         Spacer(GlanceModifier.height(density.rowGap))
         OverviewUsageRow(
-            label = contextString(R.string.opencode_window_monthly),
+            label = contextString(
+                openCodeWindowLabelRes(QuotaWindowKind.MONTHLY, usageDisplayMode),
+            ),
             window = snapshot.windows.find { it.kind == QuotaWindowKind.MONTHLY },
             openApp = openApp,
             density = density,
+            usageDisplayMode = usageDisplayMode,
         )
         Spacer(GlanceModifier.height(density.updatedGap))
         Text(
@@ -246,6 +266,7 @@ private fun OverviewUsageRow(
     window: QuotaWindow?,
     openApp: Action,
     density: OverviewDensity,
+    usageDisplayMode: OpenCodeUsageDisplayMode,
 ) {
     val used = window?.usedPercent
     Column(
@@ -268,7 +289,7 @@ private fun OverviewUsageRow(
                 modifier = GlanceModifier.defaultWeight(),
             )
             Text(
-                text = used?.let { formatUsagePercent(it) }
+                text = used?.let { formatOpenCodeUsagePercent(it, usageDisplayMode) }
                     ?: contextString(R.string.opencode_usage_unavailable),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
@@ -280,7 +301,10 @@ private fun OverviewUsageRow(
         }
         Spacer(GlanceModifier.height(density.labelBarGap))
         if (used != null) {
-            OpenCodeUsedProgressBar(usedPercent = used)
+            OpenCodeUsageProgressBar(
+                usedPercent = used,
+                usageDisplayMode = usageDisplayMode,
+            )
         } else {
             OpenCodeSegmentProgressBar(fillFraction = 0f, nearLimit = false)
         }

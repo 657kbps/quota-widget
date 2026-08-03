@@ -35,11 +35,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kuyermqi.quotawidget.R
+import com.kuyermqi.quotawidget.domain.OpenCodeUsageDisplayMode
 import com.kuyermqi.quotawidget.domain.OpenCodeWidgetWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
-import com.kuyermqi.quotawidget.domain.formatUsagePercent
-import com.kuyermqi.quotawidget.domain.isUsageNearLimit
+import com.kuyermqi.quotawidget.domain.displayUsageFillFraction
+import com.kuyermqi.quotawidget.domain.formatOpenCodeUsagePercent
+import com.kuyermqi.quotawidget.domain.isUsageNearLimitForDisplay
+import com.kuyermqi.quotawidget.domain.opencode.openCodeWindowLabelRes
 import com.kuyermqi.quotawidget.opencode.OpenCodeWorkspace
 import kotlin.math.roundToInt
 
@@ -58,6 +61,8 @@ fun ColumnScope.OpenCodeGoConfigContent(
     workspacesError: String?,
     widgetWindowKind: OpenCodeWidgetWindowKind,
     onWidgetWindowKindChange: (OpenCodeWidgetWindowKind) -> Unit,
+    usageDisplayMode: OpenCodeUsageDisplayMode,
+    onUsageDisplayModeChange: (OpenCodeUsageDisplayMode) -> Unit,
     onWorkspaceSelected: (OpenCodeWorkspace) -> Unit,
     onLogin: () -> Unit,
     onLogout: () -> Unit,
@@ -121,6 +126,27 @@ fun ColumnScope.OpenCodeGoConfigContent(
                 onClick = { onWidgetWindowKindChange(OpenCodeWidgetWindowKind.MONTHLY) },
             )
         }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = stringResource(R.string.opencode_usage_display_label),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            WindowChip(
+                selected = usageDisplayMode == OpenCodeUsageDisplayMode.USED,
+                label = stringResource(R.string.opencode_usage_display_used),
+                enabled = !isBusy,
+                onClick = { onUsageDisplayModeChange(OpenCodeUsageDisplayMode.USED) },
+            )
+            WindowChip(
+                selected = usageDisplayMode == OpenCodeUsageDisplayMode.REMAINING,
+                label = stringResource(R.string.opencode_usage_display_remaining),
+                enabled = !isBusy,
+                onClick = { onUsageDisplayModeChange(OpenCodeUsageDisplayMode.REMAINING) },
+            )
+        }
         if (windows.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
             Card(
@@ -137,18 +163,36 @@ fun ColumnScope.OpenCodeGoConfigContent(
                         .padding(horizontal = 12.dp, vertical = 12.dp),
                 ) {
                     UsageBar(
-                        label = stringResource(R.string.opencode_window_rolling),
+                        label = stringResource(
+                            openCodeWindowLabelRes(
+                                QuotaWindowKind.FIVE_HOUR,
+                                usageDisplayMode,
+                            ),
+                        ),
                         window = windows.find { it.kind == QuotaWindowKind.FIVE_HOUR },
+                        usageDisplayMode = usageDisplayMode,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     UsageBar(
-                        label = stringResource(R.string.opencode_window_weekly),
+                        label = stringResource(
+                            openCodeWindowLabelRes(
+                                QuotaWindowKind.WEEKLY,
+                                usageDisplayMode,
+                            ),
+                        ),
                         window = windows.find { it.kind == QuotaWindowKind.WEEKLY },
+                        usageDisplayMode = usageDisplayMode,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     UsageBar(
-                        label = stringResource(R.string.opencode_window_monthly),
+                        label = stringResource(
+                            openCodeWindowLabelRes(
+                                QuotaWindowKind.MONTHLY,
+                                usageDisplayMode,
+                            ),
+                        ),
                         window = windows.find { it.kind == QuotaWindowKind.MONTHLY },
+                        usageDisplayMode = usageDisplayMode,
                     )
                 }
             }
@@ -285,9 +329,10 @@ private fun WindowChip(
 private fun UsageBar(
     label: String,
     window: QuotaWindow?,
+    usageDisplayMode: OpenCodeUsageDisplayMode,
 ) {
     val used = window?.usedPercent ?: 0.0
-    val progress = (used / 100.0).toFloat().coerceIn(0f, 1f)
+    val progress = displayUsageFillFraction(used, usageDisplayMode)
     val scheme = MaterialTheme.colorScheme
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -300,7 +345,7 @@ private fun UsageBar(
                 color = scheme.onSurface,
             )
             Text(
-                text = formatUsagePercent(used),
+                text = formatOpenCodeUsagePercent(used, usageDisplayMode),
                 style = MaterialTheme.typography.bodyMedium,
                 color = scheme.onSurface,
             )
@@ -311,7 +356,11 @@ private fun UsageBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(6.dp),
-            color = if (isUsageNearLimit(used)) scheme.error else scheme.primary,
+            color = if (isUsageNearLimitForDisplay(used, usageDisplayMode)) {
+                scheme.error
+            } else {
+                scheme.primary
+            },
             trackColor = scheme.onSurface.copy(alpha = 0.18f),
         )
         Spacer(modifier = Modifier.height(4.dp))

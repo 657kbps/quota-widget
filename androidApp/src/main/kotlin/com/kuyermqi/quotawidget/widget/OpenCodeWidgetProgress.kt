@@ -10,18 +10,23 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
-import com.kuyermqi.quotawidget.domain.isUsageNearLimit
+import com.kuyermqi.quotawidget.domain.OpenCodeUsageDisplayMode
+import com.kuyermqi.quotawidget.domain.displayUsageFillFraction
+import com.kuyermqi.quotawidget.domain.isUsageNearLimitForDisplay
 import kotlin.math.roundToInt
 
 /**
  * Segmented usage progress for OpenCode Glance widgets.
- * [usedPercent] drives fill amount and the ≥90% warning color.
+ * Fill and warning color follow [usageDisplayMode].
  */
 @Composable
-internal fun OpenCodeUsedProgressBar(usedPercent: Double) {
+internal fun OpenCodeUsageProgressBar(
+    usedPercent: Double,
+    usageDisplayMode: OpenCodeUsageDisplayMode,
+) {
     OpenCodeSegmentProgressBar(
-        fillFraction = (usedPercent / 100.0).toFloat().coerceIn(0f, 1f),
-        nearLimit = isUsageNearLimit(usedPercent),
+        fillFraction = displayUsageFillFraction(usedPercent, usageDisplayMode),
+        nearLimit = isUsageNearLimitForDisplay(usedPercent, usageDisplayMode),
     )
 }
 

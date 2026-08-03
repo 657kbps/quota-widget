@@ -52,7 +52,11 @@ class FakePlatformSettingsRepository(
 
     override suspend fun clearOpenCodeGoSettings() {
         val window = openCodeFlow.value.widgetWindowKind
-        openCodeFlow.value = OpenCodeGoSettings(widgetWindowKind = window)
+        val displayMode = openCodeFlow.value.usageDisplayMode
+        openCodeFlow.value = OpenCodeGoSettings(
+            widgetWindowKind = window,
+            usageDisplayMode = displayMode,
+        )
         widgetFlow(PlatformIds.OPENCODE_GO).value = WidgetDisplayState.NotConfigured
     }
 

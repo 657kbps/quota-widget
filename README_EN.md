@@ -39,7 +39,7 @@
 | Platform | Displays | Widgets |
 |----------|----------|---------|
 | **DeepSeek** | API account balance | Standard · Compact |
-| **OpenCode Go** | Rolling / weekly / monthly remaining usage | Standard · Compact · Overview |
+| **OpenCode Go** | Rolling / weekly / monthly usage or remaining (configurable) | Standard · Compact · Overview |
 
 ## Download
 
