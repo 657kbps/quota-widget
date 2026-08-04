@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 /**
  * Debug-only entry so we can trigger refresh from adb:
  * adb shell am broadcast -a com.kuyermqi.quotawidget.ACTION_DEBUG_REFRESH \
- *   -n com.kuyermqi.quotawidget/.widget.DebugRefreshReceiver \
+ *   -n com.kuyermqi.quotawidget.debug/.widget.DebugRefreshReceiver \
  *   --es platform_id opencode_go
  */
 class DebugRefreshReceiver : BroadcastReceiver() {

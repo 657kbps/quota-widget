@@ -66,6 +66,8 @@
 
 产物位于 `androidApp/build/outputs/apk/debug/`。
 
+Debug 包名为 `com.kuyermqi.quotawidget.debug`，可与正式包（`com.kuyermqi.quotawidget`）同时安装；桌面显示为「配额监控 Debug」。
+
 本地验证 Release（R8）可用调试签名（勿用于正式分发）：
 
 ```bash

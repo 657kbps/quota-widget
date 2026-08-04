@@ -65,6 +65,8 @@ Some OEM ROMs still restrict background work after disabling battery optimizatio
 
 Output: `androidApp/build/outputs/apk/debug/`.
 
+The debug applicationId is `com.kuyermqi.quotawidget.debug`, so it can be installed alongside the release package (`com.kuyermqi.quotawidget`). The launcher label is “配额监控 Debug”.
+
 Local Release (R8) verification with the debug keystore (do not distribute):
 
 ```bash
