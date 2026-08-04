@@ -26,10 +26,10 @@
 
 ## Features
 
-- **Multi-platform monitoring**: DeepSeek account balance and OpenCode Go usage (rolling / weekly / monthly)
+- **Multi-platform monitoring**: DeepSeek balance, OpenCode Go usage, and Codex subscription usage (weekly / monthly)
 - **Multiple widget sizes**: Standard, compact, and usage overview layouts
 - **Background refresh**: WorkManager periodic updates plus tap-to-refresh
-- **Secure storage**: API keys encrypted with Tink before DataStore persistence
+- **Secure storage**: API keys / OAuth tokens encrypted with Tink before DataStore persistence
 - **Customizable theme**: Light / dark / system, plus a custom accent color
 - **Background survival tips**: Battery optimization guidance and [DontKillMyApp](https://dontkillmyapp.com/) OEM references
 - **In-app update checks**: Optionally check GitHub Releases on launch
@@ -40,6 +40,7 @@
 |----------|----------|---------|
 | **DeepSeek** | API account balance | Standard · Compact |
 | **OpenCode Go** | Rolling / weekly / monthly usage or remaining (configurable) | Standard · Compact · Overview |
+| **Codex** | Weekly / monthly usage or remaining (in-app OAuth login) | Standard · Compact · Overview |
 
 ## Download
 
