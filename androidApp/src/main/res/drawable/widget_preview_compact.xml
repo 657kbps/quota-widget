@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Skeleton for compact 2x1 widgets. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="52dp"
+    android:viewportWidth="120"
+    android:viewportHeight="52">
+    <path
+        android:fillColor="#FBFDF8"
+        android:pathData="M12,0h96c6.6,0 12,5.4 12,12v28c0,6.6 -5.4,12 -12,12h-96c-6.6,0 -12,-5.4 -12,-12v-28c0,-6.6 5.4,-12 12,-12z" />
+    <path
+        android:fillColor="#D9DED9"
+        android:pathData="M16,14h64c4,0 8,4 8,8v8c0,4 -4,8 -8,8h-64c-4,0 -8,-4 -8,-8v-8c0,-4 4,-8 8,-8z" />
+    <path
+        android:fillColor="#D9DED9"
+        android:pathData="M100,26m-8,0a8,8 0,1 1,16,0a8,8 0,1 1,-16,0" />
+</vector>

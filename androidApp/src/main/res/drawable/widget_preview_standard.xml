@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Skeleton for standard 2x2 widgets (amount / usage). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:fillColor="#FBFDF8"
+        android:pathData="M16,0h88c8.8,0 16,7.2 16,16v88c0,8.8 -7.2,16 -16,16h-88c-8.8,0 -16,-7.2 -16,-16v-88c0,-8.8 7.2,-16 16,-16z" />
+    <path
+        android:fillColor="#D9DED9"
+        android:pathData="M18,18h40c3,0 6,3 6,6v6c0,3 -3,6 -6,6h-40c-3,0 -6,-3 -6,-6v-6c0,-3 3,-6 6,-6z" />
+    <path
+        android:fillColor="#D9DED9"
+        android:pathData="M96,27m-8,0a8,8 0,1 1,16,0a8,8 0,1 1,-16,0" />
+    <path
+        android:fillColor="#D9DED9"
+        android:pathData="M18,68h84c5,0 10,5 10,10v22c0,5 -5,10 -10,10h-84c-5,0 -10,-5 -10,-10v-22c0,-5 5,-10 10,-10z" />
+</vector>

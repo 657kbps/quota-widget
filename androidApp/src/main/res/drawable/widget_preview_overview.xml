@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Skeleton: overview — header + three row blocks (no per-element bones). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:fillColor="#FBFDF8"
+        android:pathData="M16,0h88c8.8,0 16,7.2 16,16v88c0,8.8 -7.2,16 -16,16h-88c-8.8,0 -16,-7.2 -16,-16v-88c0,-8.8 7.2,-16 16,-16z" />
+    <path
+        android:fillColor="#D9DED9"
+        android:pathData="M18,16h40c3,0 6,3 6,6v6c0,3 -3,6 -6,6h-40c-3,0 -6,-3 -6,-6v-6c0,-3 3,-6 6,-6z" />
+    <path
+        android:fillColor="#D9DED9"
+        android:pathData="M96,25m-8,0a8,8 0,1 1,16,0a8,8 0,1 1,-16,0" />
+    <!-- Three merged row blocks, clear of rounded corners -->
+    <path
+        android:fillColor="#D9DED9"
+        android:pathData="M18,44h84c4,0 8,4 8,8v4c0,4 -4,8 -8,8h-84c-4,0 -8,-4 -8,-8v-4c0,-4 4,-8 8,-8z" />
+    <path
+        android:fillColor="#D9DED9"
+        android:pathData="M18,68h84c4,0 8,4 8,8v4c0,4 -4,8 -8,8h-84c-4,0 -8,-4 -8,-8v-4c0,-4 4,-8 8,-8z" />
+    <path
+        android:fillColor="#D9DED9"
+        android:pathData="M18,92h84c4,0 8,4 8,8v4c0,4 -4,8 -8,8h-84c-4,0 -8,-4 -8,-8v-4c0,-4 4,-8 8,-8z" />
+</vector>
