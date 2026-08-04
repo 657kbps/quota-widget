@@ -15,9 +15,6 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 15
         versionName = (findProperty("versionName") as String?) ?: "1.8.0"
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
-        }
     }
     packaging {
         resources {
@@ -49,10 +46,16 @@ android {
         getByName("debug") {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            ndk {
+                abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64")
+            }
         }
         getByName("release") {
             isMinifyEnabled = true
             isShrinkResources = true
+            ndk {
+                abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
