@@ -88,7 +88,7 @@ class CodexHomeState internal constructor(
                 windows = widgetState.snapshot.windows,
                 windowKind = settings.widgetWindowKind,
                 usageDisplayMode = settings.usageDisplayMode,
-                fallback = widgetState.snapshot.primaryDisplay,
+                fallback = resources.getString(R.string.usage_unavailable),
             )
             WidgetDisplayState.Loading -> lastDisplay ?: loadingMsg
             is WidgetDisplayState.Error -> lastDisplay
@@ -130,6 +130,25 @@ fun CodexHomeEffects(
     val observed by state.repository().observeWidgetState(PlatformIds.CODEX)
         .collectAsStateWithLifecycle(initialValue = WidgetDisplayState.NotConfigured)
     val windows = (observed as? WidgetDisplayState.Success)?.snapshot?.windows.orEmpty()
+    val repoSettings by state.repository().observeCodexSettings()
+        .collectAsStateWithLifecycle(initialValue = state.settings)
+
+    // Keep in-memory settings aligned with DataStore (e.g. provider window-kind clamp).
+    LaunchedEffect(repoSettings, state.loaded) {
+        if (!state.loaded) return@LaunchedEffect
+        val previous = state.settings
+        if (repoSettings == previous) return@LaunchedEffect
+        state.settings = repoSettings
+        if (state.draftWindowKind == previous.widgetWindowKind) {
+            state.draftWindowKind = repoSettings.widgetWindowKind
+        }
+        if (state.draftUsageDisplayMode == previous.usageDisplayMode) {
+            state.draftUsageDisplayMode = repoSettings.usageDisplayMode
+        }
+        if (state.draftUsageProgressStyle == previous.usageProgressStyle) {
+            state.draftUsageProgressStyle = repoSettings.usageProgressStyle
+        }
+    }
 
     LaunchedEffect(
         observed,
@@ -143,7 +162,7 @@ fun CodexHomeEffects(
             windows = success.snapshot.windows,
             windowKind = state.settings.widgetWindowKind,
             usageDisplayMode = state.settings.usageDisplayMode,
-            fallback = success.snapshot.primaryDisplay,
+            fallback = resources.getString(R.string.usage_unavailable),
         )
     }
 
@@ -221,13 +240,10 @@ fun CodexHomeEffects(
                 state.applyDraft(next)
                 when (val refreshState = onRefreshPlatform(PlatformIds.CODEX)) {
                     is WidgetDisplayState.Success -> {
-                        val preferred = defaultUsageWindowKind(refreshState.snapshot.windows)
-                        val updated = next.copy(widgetWindowKind = preferred)
-                        if (updated.widgetWindowKind != next.widgetWindowKind) {
-                            state.repository().saveCodexSettings(updated)
-                        }
-                        state.settings = updated
-                        state.applyDraft(updated)
+                        // Provider may clamp widgetWindowKind; reload persisted settings.
+                        val persisted = state.repository().getCodexSettings()
+                        state.settings = persisted
+                        state.applyDraft(persisted)
                         state.error = null
                     }
                     is WidgetDisplayState.Error -> {
@@ -320,7 +336,10 @@ fun ColumnScope.CodexHomeContent(
                 state.isBusy = true
                 state.error = null
                 try {
-                    val next = state.settings.copy(
+                    // Base on latest persisted tokens/settings so a background clamp
+                    // is not overwritten with a stale in-memory snapshot.
+                    val latest = state.repository().getCodexSettings()
+                    val next = latest.copy(
                         widgetWindowKind = state.draftWindowKind,
                         usageDisplayMode = state.draftUsageDisplayMode,
                         usageProgressStyle = state.draftUsageProgressStyle,
@@ -342,6 +361,9 @@ fun ColumnScope.CodexHomeContent(
                             state.error = msgNeedsReauth
                         }
                         else -> {
+                            val persisted = state.repository().getCodexSettings()
+                            state.settings = persisted
+                            state.applyDraft(persisted)
                             state.error = null
                         }
                     }

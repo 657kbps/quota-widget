@@ -33,6 +33,7 @@ import com.kuyermqi.quotawidget.domain.formatUsageDisplayPercent
 import com.kuyermqi.quotawidget.domain.newApiUsageProgressDisplayMode
 import com.kuyermqi.quotawidget.domain.newApiUsageProgressUsedPercent
 import com.kuyermqi.quotawidget.domain.newApiUsageWidgetShowsProgress
+import com.kuyermqi.quotawidget.domain.resolveCodexUsageSummaryWindowKind
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.widget.BalanceBlock
 import com.kuyermqi.quotawidget.widget.WidgetDateFormatter
@@ -132,8 +133,13 @@ internal fun UsagePercentSuccessBlock(
     showProgress: Boolean,
     compact: Boolean = false,
 ) {
+    val effectiveWindowKind = if (snapshot.platformId == PlatformIds.CODEX) {
+        resolveCodexUsageSummaryWindowKind(snapshot.windows, windowKind) ?: windowKind
+    } else {
+        windowKind
+    }
     val used = snapshot.windows
-        .find { it.kind == windowKind.toQuotaWindowKind() }
+        .find { it.kind == effectiveWindowKind.toQuotaWindowKind() }
         ?.usedPercent
     val usageText = when {
         snapshot.platformId == PlatformIds.NEW_API ->

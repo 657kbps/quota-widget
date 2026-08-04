@@ -171,6 +171,47 @@ class FormatBalanceTest {
     }
 
     @Test
+    fun clampCodexWidgetWindowKind_keepsCurrentWhenAvailable() {
+        val windows = listOf(
+            QuotaWindow(kind = QuotaWindowKind.WEEKLY, usedPercent = 20.0),
+            QuotaWindow(kind = QuotaWindowKind.MONTHLY, usedPercent = 5.0),
+        )
+        assertEquals(
+            UsageWindowKind.WEEKLY,
+            clampCodexWidgetWindowKind(UsageWindowKind.WEEKLY, windows),
+        )
+        assertEquals(
+            UsageWindowKind.MONTHLY,
+            clampCodexWidgetWindowKind(UsageWindowKind.MONTHLY, windows),
+        )
+    }
+
+    @Test
+    fun clampCodexWidgetWindowKind_fallsBackToSmallestAvailable() {
+        val monthlyOnly = listOf(
+            QuotaWindow(kind = QuotaWindowKind.MONTHLY, usedPercent = 0.0),
+        )
+        assertEquals(
+            UsageWindowKind.MONTHLY,
+            clampCodexWidgetWindowKind(UsageWindowKind.WEEKLY, monthlyOnly),
+        )
+        assertEquals(
+            UsageWindowKind.WEEKLY,
+            clampCodexWidgetWindowKind(
+                UsageWindowKind.ROLLING,
+                listOf(
+                    QuotaWindow(kind = QuotaWindowKind.WEEKLY, usedPercent = 12.0),
+                    QuotaWindow(kind = QuotaWindowKind.MONTHLY, usedPercent = 40.0),
+                ),
+            ),
+        )
+        assertEquals(
+            UsageWindowKind.WEEKLY,
+            clampCodexWidgetWindowKind(UsageWindowKind.WEEKLY, emptyList()),
+        )
+    }
+
+    @Test
     fun presentCodexOverviewWindowKinds_listsPresentKindsWithoutRequiringPercent() {
         assertEquals(
             listOf(QuotaWindowKind.WEEKLY, QuotaWindowKind.MONTHLY),

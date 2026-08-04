@@ -3,7 +3,9 @@ package com.kuyermqi.quotawidget.provider
 import com.kuyermqi.quotawidget.codex.CodexOAuth
 import com.kuyermqi.quotawidget.codex.CodexUsageClient
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
+import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
+import com.kuyermqi.quotawidget.domain.clampCodexWidgetWindowKind
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.platform.QuotaPlatform
@@ -27,11 +29,24 @@ class CodexQuotaProvider(
         if (CodexOAuth.isAccessTokenExpiringSoon(settings.expiresAtEpochMs)) {
             settings = refreshAndPersist(repo, settings)
         }
-        return try {
+        val snapshot = try {
             usageClient.fetchUsage(settings.accessToken, settings.accountId)
         } catch (e: SessionExpiredException) {
             settings = refreshAndPersist(repo, settings)
             usageClient.fetchUsage(settings.accessToken, settings.accountId)
+        }
+        persistClampedWindowKind(repo, settings, snapshot.windows)
+        return snapshot
+    }
+
+    private suspend fun persistClampedWindowKind(
+        repo: PlatformSettingsRepository,
+        settings: CodexSettings,
+        windows: List<QuotaWindow>,
+    ) {
+        val nextKind = clampCodexWidgetWindowKind(settings.widgetWindowKind, windows)
+        if (nextKind != settings.widgetWindowKind) {
+            repo.saveCodexSettings(settings.copy(widgetWindowKind = nextKind))
         }
     }
 

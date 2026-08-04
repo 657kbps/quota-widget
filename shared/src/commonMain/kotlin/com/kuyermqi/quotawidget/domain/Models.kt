@@ -140,6 +140,19 @@ fun resolveCodexUsageSummaryWindowKind(
 }
 
 /**
+ * Persistable Codex widget window: keep [current] when available, otherwise the
+ * smallest window present in [windows].
+ */
+fun clampCodexWidgetWindowKind(
+    current: UsageWindowKind,
+    windows: List<QuotaWindow>,
+): UsageWindowKind {
+    val available = availableUsageWindowKinds(windows)
+    if (available.isEmpty() || current in available) return current
+    return defaultUsageWindowKind(windows)
+}
+
+/**
  * Codex overview rows: kinds present in [windows] (presence only, not usedPercent).
  * Empty when none of the usage windows appear.
  */
