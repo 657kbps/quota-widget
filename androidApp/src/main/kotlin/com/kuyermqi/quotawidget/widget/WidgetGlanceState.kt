@@ -19,8 +19,8 @@ import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.DEFAULT_CUSTOM_SEED_COLOR_ARGB
 import com.kuyermqi.quotawidget.domain.DEFAULT_REFRESH_INTERVAL_MINUTES
 import com.kuyermqi.quotawidget.domain.DarkThemeMode
-import com.kuyermqi.quotawidget.domain.OpenCodeUsageDisplayMode
-import com.kuyermqi.quotawidget.domain.OpenCodeWidgetWindowKind
+import com.kuyermqi.quotawidget.domain.UsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
@@ -32,6 +32,7 @@ import com.kuyermqi.quotawidget.domain.encodeQuotaWindows
 import com.kuyermqi.quotawidget.domain.formatBalance
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
+import com.kuyermqi.quotawidget.settings.CodexSettings
 import com.kuyermqi.quotawidget.settings.OpenCodeGoSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 
@@ -58,6 +59,8 @@ object WidgetGlanceState {
     val seedColorKey = intPreferencesKey("qw_seed_color")
     val openCodeWindowKindKey = stringPreferencesKey("qw_opencode_window_kind")
     val openCodeUsageDisplayModeKey = stringPreferencesKey("qw_opencode_usage_display")
+    val codexWindowKindKey = stringPreferencesKey("qw_codex_window_kind")
+    val codexUsageDisplayModeKey = stringPreferencesKey("qw_codex_usage_display")
 
     private object Status {
         const val NOT_CONFIGURED = "not_configured"
@@ -91,6 +94,9 @@ object WidgetGlanceState {
             OpenCodeGoOverviewWidget::class.java,
             PlatformIds.OPENCODE_GO,
         ),
+        Target(CodexWidget(), CodexWidget::class.java, PlatformIds.CODEX),
+        Target(CodexCompactWidget(), CodexCompactWidget::class.java, PlatformIds.CODEX),
+        Target(CodexOverviewWidget(), CodexOverviewWidget::class.java, PlatformIds.CODEX),
     )
 
     suspend fun syncAndUpdate(context: Context, reason: String) {
@@ -98,6 +104,7 @@ object WidgetGlanceState {
         val repo = app.settingsRepository
         val appSettings = repo.getAppSettings()
         val openCodeSettings = repo.getOpenCodeGoSettings()
+        val codexSettings = repo.getCodexSettings()
         Log.i(TAG, "syncAndUpdate reason=$reason")
 
         val manager = GlanceAppWidgetManager(context)
@@ -115,6 +122,9 @@ object WidgetGlanceState {
                             appSettings = appSettings,
                             openCodeSettings = openCodeSettings.takeIf {
                                 target.platformId == PlatformIds.OPENCODE_GO
+                            },
+                            codexSettings = codexSettings.takeIf {
+                                target.platformId == PlatformIds.CODEX
                             },
                         )
                     }
@@ -151,9 +161,14 @@ object WidgetGlanceState {
         } else {
             null
         }
+        val codexSettings = if (platformId == PlatformIds.CODEX) {
+            repo.getCodexSettings()
+        } else {
+            null
+        }
         updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
             prefs.toMutablePreferences().apply {
-                write(phase, display, appSettings, openCodeSettings)
+                write(phase, display, appSettings, openCodeSettings, codexSettings)
             }
         }
         val verify = getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
@@ -175,11 +190,19 @@ object WidgetGlanceState {
         refreshIntervalMinutes = DEFAULT_REFRESH_INTERVAL_MINUTES,
     )
 
-    fun Preferences.toOpenCodeWidgetWindowKind(): OpenCodeWidgetWindowKind =
-        OpenCodeWidgetWindowKind.fromStorage(this[openCodeWindowKindKey])
+    fun Preferences.toOpenCodeUsageWindowKind(): UsageWindowKind =
+        UsageWindowKind.fromStorage(this[openCodeWindowKindKey])
 
-    fun Preferences.toOpenCodeUsageDisplayMode(): OpenCodeUsageDisplayMode =
-        OpenCodeUsageDisplayMode.fromStorage(this[openCodeUsageDisplayModeKey])
+    fun Preferences.toOpenCodeUsageDisplayMode(): UsageDisplayMode =
+        UsageDisplayMode.fromStorage(this[openCodeUsageDisplayModeKey])
+
+    fun Preferences.toCodexUsageWindowKind(): UsageWindowKind =
+        this[codexWindowKindKey]
+            ?.let { UsageWindowKind.fromStorage(it) }
+            ?: UsageWindowKind.WEEKLY
+
+    fun Preferences.toCodexUsageDisplayMode(): UsageDisplayMode =
+        UsageDisplayMode.fromStorage(this[codexUsageDisplayModeKey])
 
     fun Preferences.toDisplayState(): WidgetDisplayState {
         return when (this[statusKey]) {
@@ -224,6 +247,7 @@ object WidgetGlanceState {
         display: WidgetDisplayState,
         appSettings: AppSettings,
         openCodeSettings: OpenCodeGoSettings?,
+        codexSettings: CodexSettings?,
     ) {
         this[refreshPhaseKey] = phase.name
         this[darkThemeModeKey] = appSettings.darkThemeMode.name
@@ -232,6 +256,10 @@ object WidgetGlanceState {
         if (openCodeSettings != null) {
             this[openCodeWindowKindKey] = openCodeSettings.widgetWindowKind.name
             this[openCodeUsageDisplayModeKey] = openCodeSettings.usageDisplayMode.name
+        }
+        if (codexSettings != null) {
+            this[codexWindowKindKey] = codexSettings.widgetWindowKind.name
+            this[codexUsageDisplayModeKey] = codexSettings.usageDisplayMode.name
         }
         when (display) {
             WidgetDisplayState.NotConfigured -> {

@@ -1,4 +1,4 @@
-package com.kuyermqi.quotawidget.widget
+package com.kuyermqi.quotawidget.widget.usage
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
@@ -10,21 +10,21 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
-import com.kuyermqi.quotawidget.domain.OpenCodeUsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.displayUsageFillFraction
 import com.kuyermqi.quotawidget.domain.isUsageNearLimitForDisplay
 import kotlin.math.roundToInt
 
 /**
- * Segmented usage progress for OpenCode Glance widgets.
+ * Segmented usage progress for Glance percent widgets.
  * Fill and warning color follow [usageDisplayMode].
  */
 @Composable
-internal fun OpenCodeUsageProgressBar(
+internal fun UsageProgressBar(
     usedPercent: Double,
-    usageDisplayMode: OpenCodeUsageDisplayMode,
+    usageDisplayMode: UsageDisplayMode,
 ) {
-    OpenCodeSegmentProgressBar(
+    UsageSegmentProgressBar(
         fillFraction = displayUsageFillFraction(usedPercent, usageDisplayMode),
         nearLimit = isUsageNearLimitForDisplay(usedPercent, usageDisplayMode),
     )
@@ -35,7 +35,7 @@ internal fun OpenCodeUsageProgressBar(
  * but usage itself is past the warning threshold.
  */
 @Composable
-internal fun OpenCodeSegmentProgressBar(
+internal fun UsageSegmentProgressBar(
     fillFraction: Float,
     nearLimit: Boolean,
 ) {

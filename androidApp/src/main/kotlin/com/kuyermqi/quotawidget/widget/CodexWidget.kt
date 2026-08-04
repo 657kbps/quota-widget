@@ -10,52 +10,52 @@ import androidx.glance.currentState
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.kuyermqi.quotawidget.platform.PlatformIds
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toOpenCodeUsageDisplayMode
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toOpenCodeUsageWindowKind
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toCodexUsageDisplayMode
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toCodexUsageWindowKind
 import com.kuyermqi.quotawidget.widget.usage.UsagePercentCompactContent
 import com.kuyermqi.quotawidget.widget.usage.UsagePercentWidgetContent
 
-class OpenCodeGoWidget : GlanceAppWidget() {
+class CodexWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
     override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        providePlatformGlance(context, id, PlatformIds.OPENCODE_GO) { state, refreshPhase, openApp, platformTitle ->
+        providePlatformGlance(context, id, PlatformIds.CODEX) { state, refreshPhase, openApp, platformTitle ->
             val prefs = currentState<Preferences>()
             UsagePercentWidgetContent(
-                platformId = PlatformIds.OPENCODE_GO,
+                platformId = PlatformIds.CODEX,
                 platformTitle = platformTitle,
                 state = state,
                 refreshPhase = refreshPhase,
                 openApp = openApp,
-                windowKind = prefs.toOpenCodeUsageWindowKind(),
-                usageDisplayMode = prefs.toOpenCodeUsageDisplayMode(),
+                windowKind = prefs.toCodexUsageWindowKind(),
+                usageDisplayMode = prefs.toCodexUsageDisplayMode(),
             )
         }
     }
 }
 
-class OpenCodeGoCompactWidget : GlanceAppWidget() {
+class CodexCompactWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
     override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        providePlatformGlance(context, id, PlatformIds.OPENCODE_GO) { state, refreshPhase, openApp, _ ->
+        providePlatformGlance(context, id, PlatformIds.CODEX) { state, refreshPhase, openApp, _ ->
             val prefs = currentState<Preferences>()
             UsagePercentCompactContent(
-                platformId = PlatformIds.OPENCODE_GO,
+                platformId = PlatformIds.CODEX,
                 state = state,
                 refreshPhase = refreshPhase,
                 openApp = openApp,
-                windowKind = prefs.toOpenCodeUsageWindowKind(),
-                usageDisplayMode = prefs.toOpenCodeUsageDisplayMode(),
+                windowKind = prefs.toCodexUsageWindowKind(),
+                usageDisplayMode = prefs.toCodexUsageDisplayMode(),
             )
         }
     }
 }
 
-class OpenCodeGoWidgetReceiver : GlanceAppWidgetReceiver() {
-    override val glanceAppWidget: GlanceAppWidget = OpenCodeGoWidget()
+class CodexWidgetReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = CodexWidget()
 
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
@@ -63,8 +63,8 @@ class OpenCodeGoWidgetReceiver : GlanceAppWidgetReceiver() {
     }
 }
 
-class OpenCodeGoCompactWidgetReceiver : GlanceAppWidgetReceiver() {
-    override val glanceAppWidget: GlanceAppWidget = OpenCodeGoCompactWidget()
+class CodexCompactWidgetReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = CodexCompactWidget()
 
     override fun onEnabled(context: Context) {
         super.onEnabled(context)

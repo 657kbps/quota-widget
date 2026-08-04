@@ -138,6 +138,8 @@ internal suspend fun maybeRefreshIfConfigured(
             app.settingsRepository.getDeepSeekSettings().apiKey.isNotBlank()
         PlatformIds.OPENCODE_GO ->
             app.settingsRepository.getOpenCodeGoSettings().isConfigured
+        PlatformIds.CODEX ->
+            app.settingsRepository.getCodexSettings().isConfigured
         else -> false
     }
     if (!configured) return

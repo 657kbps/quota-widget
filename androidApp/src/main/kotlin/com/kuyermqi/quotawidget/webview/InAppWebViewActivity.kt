@@ -10,6 +10,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.ViewGroup
 import android.webkit.CookieManager
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
@@ -37,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.AppSettings
+import com.kuyermqi.quotawidget.domain.codex.CodexLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.opencode.OpenCodeLoginWebViewFlow
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
@@ -83,7 +85,12 @@ class InAppWebViewActivity : ComponentActivity(), InAppWebViewHost {
             finish()
             return
         }
-        flow = createFlow(flowId).orPassthrough()
+        val createdFlow = createFlow(flowId)
+        if (flowId.isNotBlank() && createdFlow == null) {
+            finish()
+            return
+        }
+        flow = createdFlow.orPassthrough()
         flow.onPrepare()
         setContent {
             val context = LocalContext.current
@@ -167,6 +174,7 @@ class InAppWebViewActivity : ComponentActivity(), InAppWebViewHost {
     private fun createFlow(flowId: String): InAppWebViewFlow? =
         when (flowId) {
             OpenCodeLoginWebViewFlow.FLOW_ID -> OpenCodeLoginWebViewFlow(this)
+            CodexLoginWebViewFlow.FLOW_ID -> CodexLoginWebViewFlow.fromIntent(this, intent)
             else -> null
         }
 
@@ -192,10 +200,24 @@ class InAppWebViewActivity : ComponentActivity(), InAppWebViewHost {
     }
 }
 
-/** Applies viewport layout fix, then forwards [onPageFinished] to the flow client. */
+/**
+ * Applies viewport layout fix, then forwards navigation callbacks to the flow client.
+ * Must forward [shouldOverrideUrlLoading] so OAuth flows can intercept localhost redirects
+ * without starting a local callback server.
+ */
 private class LayoutFixingWebViewClient(
     private val delegate: WebViewClient,
 ) : WebViewClient() {
+    override fun shouldOverrideUrlLoading(
+        view: WebView?,
+        request: WebResourceRequest?,
+    ): Boolean = delegate.shouldOverrideUrlLoading(view, request)
+
+    @Deprecated("Deprecated in Java")
+    override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean =
+        @Suppress("DEPRECATION")
+        delegate.shouldOverrideUrlLoading(view, url)
+
     override fun onPageFinished(view: WebView?, url: String?) {
         view?.injectFullViewportLayoutFix()
         delegate.onPageFinished(view, url)
