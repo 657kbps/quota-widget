@@ -13,11 +13,13 @@ class FakePlatformSettingsRepository(
     deepSeek: DeepSeekSettings = DeepSeekSettings(),
     openCode: OpenCodeGoSettings = OpenCodeGoSettings(),
     codex: CodexSettings = CodexSettings(),
+    newApi: NewApiSettings = NewApiSettings(),
     widgetStates: Map<String, WidgetDisplayState> = emptyMap(),
 ) : PlatformSettingsRepository {
     private val deepSeekFlow = MutableStateFlow(deepSeek)
     private val openCodeFlow = MutableStateFlow(openCode)
     private val codexFlow = MutableStateFlow(codex)
+    private val newApiFlow = MutableStateFlow(newApi)
     private val widgetFlows = mutableMapOf(
         PlatformIds.DEEPSEEK to MutableStateFlow(
             widgetStates[PlatformIds.DEEPSEEK] ?: WidgetDisplayState.NotConfigured,
@@ -27,6 +29,9 @@ class FakePlatformSettingsRepository(
         ),
         PlatformIds.CODEX to MutableStateFlow(
             widgetStates[PlatformIds.CODEX] ?: WidgetDisplayState.NotConfigured,
+        ),
+        PlatformIds.NEW_API to MutableStateFlow(
+            widgetStates[PlatformIds.NEW_API] ?: WidgetDisplayState.NotConfigured,
         ),
     )
     private val refreshPhases = mutableMapOf<String, RefreshIconPhase>()
@@ -82,6 +87,25 @@ class FakePlatformSettingsRepository(
             usageProgressStyle = current.usageProgressStyle,
         )
         widgetFlow(PlatformIds.CODEX).value = WidgetDisplayState.NotConfigured
+    }
+
+    override fun observeNewApiSettings(): Flow<NewApiSettings> = newApiFlow.asStateFlow()
+    override suspend fun getNewApiSettings(): NewApiSettings = newApiFlow.value
+    override suspend fun saveNewApiSettings(settings: NewApiSettings) {
+        newApiFlow.value = settings
+        if (!settings.isConfigured) {
+            widgetFlow(PlatformIds.NEW_API).value = WidgetDisplayState.NotConfigured
+        }
+    }
+
+    override suspend fun clearNewApiSettings() {
+        val current = newApiFlow.value
+        newApiFlow.value = NewApiSettings(
+            quotaPerUsd = current.quotaPerUsd,
+            usageDisplayMode = current.usageDisplayMode,
+            usageProgressStyle = current.usageProgressStyle,
+        )
+        widgetFlow(PlatformIds.NEW_API).value = WidgetDisplayState.NotConfigured
     }
 
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =

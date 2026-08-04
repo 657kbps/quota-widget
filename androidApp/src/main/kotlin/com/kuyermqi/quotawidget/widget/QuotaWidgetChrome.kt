@@ -140,6 +140,8 @@ internal suspend fun maybeRefreshIfConfigured(
             app.settingsRepository.getOpenCodeGoSettings().isConfigured
         PlatformIds.CODEX ->
             app.settingsRepository.getCodexSettings().isConfigured
+        PlatformIds.NEW_API ->
+            app.settingsRepository.getNewApiSettings().isConfigured
         else -> false
     }
     if (!configured) return

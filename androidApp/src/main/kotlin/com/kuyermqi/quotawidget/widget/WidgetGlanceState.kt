@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -34,6 +35,7 @@ import com.kuyermqi.quotawidget.domain.formatBalance
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.settings.CodexSettings
+import com.kuyermqi.quotawidget.settings.NewApiSettings
 import com.kuyermqi.quotawidget.settings.OpenCodeGoSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 
@@ -55,6 +57,11 @@ object WidgetGlanceState {
     val formattedKey = stringPreferencesKey("qw_formatted")
     val windowsKey = stringPreferencesKey("qw_windows")
     val updatedAtKey = longPreferencesKey("qw_updated_at")
+    val unlimitedKey = booleanPreferencesKey("qw_unlimited")
+    val usedDisplayKey = stringPreferencesKey("qw_used_display")
+    val emptyLimitedQuotaKey = booleanPreferencesKey("qw_empty_limited_quota")
+    val tokenExpiredKey = booleanPreferencesKey("qw_token_expired")
+    val quotaOverspentKey = booleanPreferencesKey("qw_quota_overspent")
     val darkThemeModeKey = stringPreferencesKey("qw_dark_theme_mode")
     val themeColorModeKey = stringPreferencesKey("qw_theme_color_mode")
     val seedColorKey = intPreferencesKey("qw_seed_color")
@@ -64,6 +71,8 @@ object WidgetGlanceState {
     val codexWindowKindKey = stringPreferencesKey("qw_codex_window_kind")
     val codexUsageDisplayModeKey = stringPreferencesKey("qw_codex_usage_display")
     val codexUsageProgressStyleKey = stringPreferencesKey("qw_codex_usage_progress_style")
+    val newApiUsageDisplayModeKey = stringPreferencesKey("qw_new_api_usage_display")
+    val newApiUsageProgressStyleKey = stringPreferencesKey("qw_new_api_usage_progress_style")
 
     private object Status {
         const val NOT_CONFIGURED = "not_configured"
@@ -100,6 +109,13 @@ object WidgetGlanceState {
         Target(CodexWidget(), CodexWidget::class.java, PlatformIds.CODEX),
         Target(CodexCompactWidget(), CodexCompactWidget::class.java, PlatformIds.CODEX),
         Target(CodexOverviewWidget(), CodexOverviewWidget::class.java, PlatformIds.CODEX),
+        Target(NewApiBalanceWidget(), NewApiBalanceWidget::class.java, PlatformIds.NEW_API),
+        Target(
+            NewApiBalanceCompactWidget(),
+            NewApiBalanceCompactWidget::class.java,
+            PlatformIds.NEW_API,
+        ),
+        Target(NewApiUsageWidget(), NewApiUsageWidget::class.java, PlatformIds.NEW_API),
     )
 
     suspend fun syncAndUpdate(context: Context, reason: String) {
@@ -108,6 +124,7 @@ object WidgetGlanceState {
         val appSettings = repo.getAppSettings()
         val openCodeSettings = repo.getOpenCodeGoSettings()
         val codexSettings = repo.getCodexSettings()
+        val newApiSettings = repo.getNewApiSettings()
         Log.i(TAG, "syncAndUpdate reason=$reason")
 
         val manager = GlanceAppWidgetManager(context)
@@ -128,6 +145,9 @@ object WidgetGlanceState {
                             },
                             codexSettings = codexSettings.takeIf {
                                 target.platformId == PlatformIds.CODEX
+                            },
+                            newApiSettings = newApiSettings.takeIf {
+                                target.platformId == PlatformIds.NEW_API
                             },
                         )
                     }
@@ -169,9 +189,14 @@ object WidgetGlanceState {
         } else {
             null
         }
+        val newApiSettings = if (platformId == PlatformIds.NEW_API) {
+            repo.getNewApiSettings()
+        } else {
+            null
+        }
         updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
             prefs.toMutablePreferences().apply {
-                write(phase, display, appSettings, openCodeSettings, codexSettings)
+                write(phase, display, appSettings, openCodeSettings, codexSettings, newApiSettings)
             }
         }
         val verify = getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
@@ -213,6 +238,12 @@ object WidgetGlanceState {
     fun Preferences.toCodexUsageProgressStyle(): UsageProgressStyle =
         UsageProgressStyle.fromStorage(this[codexUsageProgressStyleKey])
 
+    fun Preferences.toNewApiUsageDisplayMode(): UsageDisplayMode =
+        UsageDisplayMode.fromStorage(this[newApiUsageDisplayModeKey])
+
+    fun Preferences.toNewApiUsageProgressStyle(): UsageProgressStyle =
+        UsageProgressStyle.fromStorage(this[newApiUsageProgressStyleKey])
+
     fun Preferences.toDisplayState(): WidgetDisplayState {
         return when (this[statusKey]) {
             Status.LOADING -> WidgetDisplayState.Loading
@@ -244,6 +275,11 @@ object WidgetGlanceState {
                         updatedAtEpochMs = this[updatedAtKey] ?: 0L,
                         currency = currency,
                         totalBalance = total,
+                        unlimitedQuota = this[unlimitedKey] == true,
+                        usedDisplay = this[usedDisplayKey].orEmpty(),
+                        emptyLimitedQuota = this[emptyLimitedQuotaKey] == true,
+                        tokenExpired = this[tokenExpiredKey] == true,
+                        quotaOverspent = this[quotaOverspentKey] == true,
                     ),
                 )
             }
@@ -257,6 +293,7 @@ object WidgetGlanceState {
         appSettings: AppSettings,
         openCodeSettings: OpenCodeGoSettings?,
         codexSettings: CodexSettings?,
+        newApiSettings: NewApiSettings?,
     ) {
         this[refreshPhaseKey] = phase.name
         this[darkThemeModeKey] = appSettings.darkThemeMode.name
@@ -271,6 +308,10 @@ object WidgetGlanceState {
             this[codexWindowKindKey] = codexSettings.widgetWindowKind.name
             this[codexUsageDisplayModeKey] = codexSettings.usageDisplayMode.name
             this[codexUsageProgressStyleKey] = codexSettings.usageProgressStyle.name
+        }
+        if (newApiSettings != null) {
+            this[newApiUsageDisplayModeKey] = newApiSettings.usageDisplayMode.name
+            this[newApiUsageProgressStyleKey] = newApiSettings.usageProgressStyle.name
         }
         when (display) {
             WidgetDisplayState.NotConfigured -> {
@@ -298,6 +339,15 @@ object WidgetGlanceState {
                 this[formattedKey] = display.snapshot.primaryDisplay
                 this[windowsKey] = encodeQuotaWindows(display.snapshot.windows)
                 this[updatedAtKey] = display.snapshot.updatedAtEpochMs
+                this[unlimitedKey] = display.snapshot.unlimitedQuota
+                this[emptyLimitedQuotaKey] = display.snapshot.emptyLimitedQuota
+                this[tokenExpiredKey] = display.snapshot.tokenExpired
+                this[quotaOverspentKey] = display.snapshot.quotaOverspent
+                if (display.snapshot.usedDisplay.isBlank()) {
+                    remove(usedDisplayKey)
+                } else {
+                    this[usedDisplayKey] = display.snapshot.usedDisplay
+                }
                 remove(errorKey)
             }
         }

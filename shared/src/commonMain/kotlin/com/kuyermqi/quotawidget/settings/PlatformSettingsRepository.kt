@@ -45,6 +45,21 @@ data class CodexSettings(
             accountId.isNotBlank()
 }
 
+data class NewApiSettings(
+    val baseUrl: String = "",
+    val apiKey: String = "",
+    /** Quota points that equal 1 USD. Default matches NewAPI convention (500000:1). */
+    val quotaPerUsd: Long = DEFAULT_NEW_API_QUOTA_PER_USD,
+    val usageDisplayMode: UsageDisplayMode = UsageDisplayMode.USED,
+    val usageProgressStyle: UsageProgressStyle = UsageProgressStyle.BAR,
+) {
+    val isConfigured: Boolean
+        get() = baseUrl.isNotBlank() && apiKey.isNotBlank()
+}
+
+/** NewAPI common default: 500_000 quota = 1 USD. */
+const val DEFAULT_NEW_API_QUOTA_PER_USD = 500_000L
+
 interface PlatformSettingsRepository {
     fun observeDeepSeekSettings(): Flow<DeepSeekSettings>
     suspend fun getDeepSeekSettings(): DeepSeekSettings
@@ -59,6 +74,11 @@ interface PlatformSettingsRepository {
     suspend fun getCodexSettings(): CodexSettings
     suspend fun saveCodexSettings(settings: CodexSettings)
     suspend fun clearCodexSettings()
+
+    fun observeNewApiSettings(): Flow<NewApiSettings>
+    suspend fun getNewApiSettings(): NewApiSettings
+    suspend fun saveNewApiSettings(settings: NewApiSettings)
+    suspend fun clearNewApiSettings()
 
     fun observeWidgetState(platformId: String): Flow<WidgetDisplayState>
     suspend fun getWidgetState(platformId: String): WidgetDisplayState

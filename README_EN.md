@@ -26,7 +26,7 @@
 
 ## Features
 
-- **Multi-platform monitoring**: DeepSeek balance, OpenCode Go usage, and Codex subscription usage (weekly / monthly)
+- **Multi-platform monitoring**: DeepSeek balance, OpenCode Go usage, Codex subscription usage (weekly / monthly), and NewAPI token balance / usage
 - **Multiple widget sizes**: Standard, compact, and usage overview layouts
 - **Background refresh**: WorkManager periodic updates plus tap-to-refresh
 - **Secure storage**: API keys / OAuth tokens encrypted with Tink before DataStore persistence
@@ -41,6 +41,7 @@
 | **DeepSeek** | API account balance | Standard · Compact |
 | **OpenCode Go** | Rolling / weekly / monthly usage or remaining (configurable) | Standard · Compact · Overview |
 | **Codex** | Weekly / monthly usage or remaining (in-app OAuth login) | Standard · Compact · Overview |
+| **NewAPI** | Token balance (USD) and usage/remaining percent (configurable Base URL + API Key) | Balance standard · Balance compact · Usage |
 
 ## Download
 

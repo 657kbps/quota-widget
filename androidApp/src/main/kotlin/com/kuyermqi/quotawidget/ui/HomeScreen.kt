@@ -48,10 +48,13 @@ import com.kuyermqi.quotawidget.ui.home.CodexHomeContent
 import com.kuyermqi.quotawidget.ui.home.CodexHomeEffects
 import com.kuyermqi.quotawidget.ui.home.DeepSeekHomeContent
 import com.kuyermqi.quotawidget.ui.home.DeepSeekHomeEffects
+import com.kuyermqi.quotawidget.ui.home.NewApiHomeContent
+import com.kuyermqi.quotawidget.ui.home.NewApiHomeEffects
 import com.kuyermqi.quotawidget.ui.home.OpenCodeGoHomeContent
 import com.kuyermqi.quotawidget.ui.home.OpenCodeGoHomeEffects
 import com.kuyermqi.quotawidget.ui.home.rememberCodexHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberDeepSeekHomeState
+import com.kuyermqi.quotawidget.ui.home.rememberNewApiHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberOpenCodeGoHomeState
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState
@@ -97,10 +100,12 @@ fun HomeScreen(
     val deepSeek = rememberDeepSeekHomeState(settingsRepository)
     val openCode = rememberOpenCodeGoHomeState(settingsRepository)
     val codex = rememberCodexHomeState(settingsRepository)
+    val newApi = rememberNewApiHomeState(settingsRepository)
 
     val deepSeekWidgetState = DeepSeekHomeEffects(deepSeek)
     val openCodeBindings = OpenCodeGoHomeEffects(openCode, onRefreshPlatform)
     val codexBindings = CodexHomeEffects(codex, onRefreshPlatform)
+    val newApiWidgetState = NewApiHomeEffects(newApi)
 
     val hasVisibleTips = tipLoaded && (
         showBatteryOptimizationTip || showOemBackgroundTip || showPlatformTip
@@ -149,12 +154,19 @@ fun HomeScreen(
             loadingMsg = msgLoadingBalance,
             reauthMsg = msgNeedsReauth,
         )
+        PlatformIds.NEW_API -> newApi.summaryLabel(
+            resources = resources,
+            widgetState = newApiWidgetState,
+            loadingMsg = msgLoadingBalance,
+            reauthMsg = msgNeedsReauth,
+        )
         else -> null
     }
 
     suspend fun refreshAll(showPullIndicator: Boolean = false) {
         val anyConfigured =
-            deepSeek.isConfigured || openCode.isConfigured || codex.isConfigured
+            deepSeek.isConfigured || openCode.isConfigured ||
+                codex.isConfigured || newApi.isConfigured
         if (!anyConfigured) return
         if (showPullIndicator) isRefreshing = true
         try {
@@ -175,7 +187,10 @@ fun HomeScreen(
         deepSeek.applyLoaded(settingsRepository.getDeepSeekSettings())
         openCode.applyLoaded(settingsRepository.getOpenCodeGoSettings())
         codex.applyLoaded(settingsRepository.getCodexSettings())
-        if (deepSeek.isConfigured || openCode.isConfigured || codex.isConfigured) {
+        newApi.applyLoaded(settingsRepository.getNewApiSettings())
+        if (deepSeek.isConfigured || openCode.isConfigured ||
+            codex.isConfigured || newApi.isConfigured
+        ) {
             refreshAll(showPullIndicator = false)
         }
     }
@@ -307,6 +322,10 @@ fun HomeScreen(
                             PlatformIds.CODEX -> CodexHomeContent(
                                 state = codex,
                                 bindings = codexBindings,
+                                onRefreshPlatform = onRefreshPlatform,
+                            )
+                            PlatformIds.NEW_API -> NewApiHomeContent(
+                                state = newApi,
                                 onRefreshPlatform = onRefreshPlatform,
                             )
                         }

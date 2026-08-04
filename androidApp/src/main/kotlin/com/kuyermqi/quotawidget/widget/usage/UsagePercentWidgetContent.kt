@@ -27,7 +27,13 @@ import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.domain.formatNewApiUsageWidgetTitle
+import com.kuyermqi.quotawidget.domain.formatNewApiWidgetFooter
 import com.kuyermqi.quotawidget.domain.formatUsageDisplayPercent
+import com.kuyermqi.quotawidget.domain.newApiUsageProgressDisplayMode
+import com.kuyermqi.quotawidget.domain.newApiUsageProgressUsedPercent
+import com.kuyermqi.quotawidget.domain.newApiUsageWidgetShowsProgress
+import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.widget.BalanceBlock
 import com.kuyermqi.quotawidget.widget.WidgetDateFormatter
 import com.kuyermqi.quotawidget.widget.WidgetHeader
@@ -129,10 +135,28 @@ internal fun UsagePercentSuccessBlock(
     val used = snapshot.windows
         .find { it.kind == windowKind.toQuotaWindowKind() }
         ?.usedPercent
-    val usageText = if (used != null) {
-        formatUsageDisplayPercent(used, usageDisplayMode)
+    val usageText = when {
+        snapshot.platformId == PlatformIds.NEW_API ->
+            formatNewApiUsageWidgetTitle(snapshot, usageDisplayMode)
+                ?: contextString(R.string.usage_unavailable)
+        used != null -> formatUsageDisplayPercent(used, usageDisplayMode)
+        else -> contextString(R.string.usage_unavailable)
+    }
+    val showUsageProgress = showProgress &&
+        if (snapshot.platformId == PlatformIds.NEW_API) {
+            newApiUsageWidgetShowsProgress(snapshot)
+        } else {
+            used != null
+        }
+    val progressUsed = if (snapshot.platformId == PlatformIds.NEW_API) {
+        newApiUsageProgressUsedPercent(snapshot, usageDisplayMode)
     } else {
-        snapshot.primaryDisplay.ifBlank { contextString(R.string.usage_unavailable) }
+        used
+    }
+    val progressMode = if (snapshot.platformId == PlatformIds.NEW_API) {
+        newApiUsageProgressDisplayMode(snapshot, usageDisplayMode)
+    } else {
+        usageDisplayMode
     }
     Column(modifier = GlanceModifier.fillMaxWidth()) {
         Text(
@@ -149,27 +173,38 @@ internal fun UsagePercentSuccessBlock(
             maxLines = 1,
             modifier = GlanceModifier.clickableNoRipple(openApp),
         )
-        if (showProgress && used != null) {
+        if (showUsageProgress && progressUsed != null) {
             Spacer(GlanceModifier.height(8.dp))
             when (usageProgressStyle) {
                 UsageProgressStyle.CAPSULE ->
                     UsageCapsuleProgressTrack(
-                        usedPercent = used,
-                        usageDisplayMode = usageDisplayMode,
+                        usedPercent = progressUsed,
+                        usageDisplayMode = progressMode,
                         height = if (compact) 10.dp else 12.dp,
                     )
                 UsageProgressStyle.BAR ->
                     UsageProgressBar(
-                        usedPercent = used,
-                        usageDisplayMode = usageDisplayMode,
+                        usedPercent = progressUsed,
+                        usageDisplayMode = progressMode,
                     )
             }
             Spacer(GlanceModifier.height(10.dp))
         } else {
             Spacer(GlanceModifier.height(4.dp))
         }
+        val updated =
+            "更新于 ${WidgetDateFormatter.formatUpdatedAt(snapshot.updatedAtEpochMs)}"
+        val footer = if (snapshot.platformId == PlatformIds.NEW_API) {
+            formatNewApiWidgetFooter(
+                snapshot = snapshot,
+                expiredLabel = contextString(R.string.new_api_token_expired),
+                updatedAtText = updated,
+            )
+        } else {
+            updated
+        }
         Text(
-            text = "更新于 ${WidgetDateFormatter.formatUpdatedAt(snapshot.updatedAtEpochMs)}",
+            text = footer,
             style = TextStyle(
                 color = GlanceTheme.colors.onSurfaceVariant,
                 fontSize = if (compact) 11.sp else 12.sp,

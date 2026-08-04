@@ -13,6 +13,7 @@ object PlatformIds {
     const val DEEPSEEK = "deepseek"
     const val OPENCODE_GO = "opencode_go"
     const val CODEX = "codex"
+    const val NEW_API = "new_api"
 }
 
 object PlatformRegistry {
@@ -28,6 +29,10 @@ object PlatformRegistry {
         object : QuotaPlatform {
             override val id = PlatformIds.CODEX
             override val displayName = "Codex"
+        },
+        object : QuotaPlatform {
+            override val id = PlatformIds.NEW_API
+            override val displayName = "NewAPI"
         },
     )
 

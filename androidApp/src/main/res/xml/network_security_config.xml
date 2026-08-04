@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <base-config cleartextTrafficPermitted="false" />
+    <!-- NewAPI 等自托管实例可能使用 http:// 地址 -->
+    <base-config cleartextTrafficPermitted="true" />
 </network-security-config>

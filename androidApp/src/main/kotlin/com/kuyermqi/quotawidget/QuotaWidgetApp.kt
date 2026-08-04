@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.work.WorkManager
 import com.kuyermqi.quotawidget.provider.CodexQuotaProvider
 import com.kuyermqi.quotawidget.provider.DeepSeekQuotaProvider
+import com.kuyermqi.quotawidget.provider.NewApiQuotaProvider
 import com.kuyermqi.quotawidget.provider.OpenCodeGoQuotaProvider
 import com.kuyermqi.quotawidget.refresh.BalanceRefreshInteractor
 import com.kuyermqi.quotawidget.settings.AndroidPlatformSettingsRepository
@@ -52,6 +53,7 @@ class QuotaWidgetApp : Application() {
                 DeepSeekQuotaProvider(),
                 OpenCodeGoQuotaProvider(),
                 CodexQuotaProvider(),
+                NewApiQuotaProvider(),
             ),
         )
         updateCheckInteractor = UpdateCheckInteractor(

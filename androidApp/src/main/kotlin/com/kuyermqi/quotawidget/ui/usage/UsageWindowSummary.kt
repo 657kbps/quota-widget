@@ -56,10 +56,12 @@ private fun usageSummaryStringRes(
         UsageWindowKind.ROLLING -> R.string.usage_used_rolling
         UsageWindowKind.WEEKLY -> R.string.usage_used_weekly
         UsageWindowKind.MONTHLY -> R.string.usage_used_monthly
+        UsageWindowKind.TOKEN -> R.string.usage_used_token
     }
     UsageDisplayMode.REMAINING -> when (kind) {
         UsageWindowKind.ROLLING -> R.string.usage_remaining_rolling
         UsageWindowKind.WEEKLY -> R.string.usage_remaining_weekly
         UsageWindowKind.MONTHLY -> R.string.usage_remaining_monthly
+        UsageWindowKind.TOKEN -> R.string.usage_remaining_token
     }
 }

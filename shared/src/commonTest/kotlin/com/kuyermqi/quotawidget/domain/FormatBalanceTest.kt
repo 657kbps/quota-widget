@@ -12,6 +12,12 @@ class FormatBalanceTest {
     }
 
     @Test
+    fun formatBalance_preservesNegativeSignForSubDollarAmounts() {
+        assertEquals("$-0.10", formatBalance(CurrencyPreference.USD, "-0.1"))
+        assertEquals("￥-0.01", formatBalance(CurrencyPreference.CNY, "-0.01"))
+    }
+
+    @Test
     fun formatBalance_usesSuffixForLargeAmounts() {
         assertEquals("￥12K", formatBalance(CurrencyPreference.CNY, "12345"))
         assertEquals("$2M", formatBalance(CurrencyPreference.USD, "1500000"))

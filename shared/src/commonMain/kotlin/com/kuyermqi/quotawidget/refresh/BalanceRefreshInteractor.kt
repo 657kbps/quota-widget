@@ -26,6 +26,9 @@ class BalanceRefreshInteractor(
         if (settingsRepository.getCodexSettings().isConfigured) {
             results += refresh(PlatformIds.CODEX)
         }
+        if (settingsRepository.getNewApiSettings().isConfigured) {
+            results += refresh(PlatformIds.NEW_API)
+        }
         return results
     }
 

@@ -61,6 +61,10 @@ fun ColumnScope.UsageDisplayPrefsSection(
     windowKindChoices: List<UsageWindowKind>,
     showWindowKindPicker: Boolean,
     overviewKinds: List<QuotaWindowKind>,
+    showResetLabels: Boolean = true,
+    showProgressStyle: Boolean = true,
+    /** When true, preview percent/fill is always 0% regardless of display mode. */
+    forceZeroProgressPreview: Boolean = false,
 ) {
     if (showWindowKindPicker && windowKindChoices.isNotEmpty()) {
         Text(
@@ -101,26 +105,28 @@ fun ColumnScope.UsageDisplayPrefsSection(
             onClick = { onUsageDisplayModeChange(UsageDisplayMode.REMAINING) },
         )
     }
-    Spacer(modifier = Modifier.height(16.dp))
-    Text(
-        text = stringResource(R.string.usage_progress_style_label),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Spacer(modifier = Modifier.height(6.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        UsageWindowChip(
-            selected = usageProgressStyle == UsageProgressStyle.BAR,
-            label = stringResource(R.string.usage_progress_style_bar),
-            enabled = enabled,
-            onClick = { onUsageProgressStyleChange(UsageProgressStyle.BAR) },
+    if (showProgressStyle) {
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = stringResource(R.string.usage_progress_style_label),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        UsageWindowChip(
-            selected = usageProgressStyle == UsageProgressStyle.CAPSULE,
-            label = stringResource(R.string.usage_progress_style_capsule),
-            enabled = enabled,
-            onClick = { onUsageProgressStyleChange(UsageProgressStyle.CAPSULE) },
-        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            UsageWindowChip(
+                selected = usageProgressStyle == UsageProgressStyle.BAR,
+                label = stringResource(R.string.usage_progress_style_bar),
+                enabled = enabled,
+                onClick = { onUsageProgressStyleChange(UsageProgressStyle.BAR) },
+            )
+            UsageWindowChip(
+                selected = usageProgressStyle == UsageProgressStyle.CAPSULE,
+                label = stringResource(R.string.usage_progress_style_capsule),
+                enabled = enabled,
+                onClick = { onUsageProgressStyleChange(UsageProgressStyle.CAPSULE) },
+            )
+        }
     }
     if (windows.isNotEmpty() && overviewKinds.isNotEmpty()) {
         Spacer(modifier = Modifier.height(16.dp))
@@ -143,6 +149,8 @@ fun ColumnScope.UsageDisplayPrefsSection(
                         window = windows.find { it.kind == kind },
                         usageDisplayMode = usageDisplayMode,
                         usageProgressStyle = usageProgressStyle,
+                        showResetLabel = showResetLabels,
+                        forceZeroProgress = forceZeroProgressPreview,
                     )
                 }
             }
@@ -171,11 +179,14 @@ private fun UsageWindowBar(
     window: QuotaWindow?,
     usageDisplayMode: UsageDisplayMode,
     usageProgressStyle: UsageProgressStyle,
+    showResetLabel: Boolean,
+    forceZeroProgress: Boolean = false,
 ) {
-    val used = window?.usedPercent ?: 0.0
-    val progress = displayUsageFillFraction(used, usageDisplayMode)
-    val percentText = formatUsageDisplayPercent(used, usageDisplayMode)
-    val nearLimit = isUsageNearLimitForDisplay(used, usageDisplayMode)
+    val used = if (forceZeroProgress) 0.0 else (window?.usedPercent ?: 0.0)
+    val mode = if (forceZeroProgress) UsageDisplayMode.USED else usageDisplayMode
+    val progress = displayUsageFillFraction(used, mode)
+    val percentText = formatUsageDisplayPercent(used, mode)
+    val nearLimit = isUsageNearLimitForDisplay(used, mode)
     val scheme = MaterialTheme.colorScheme
     Column(modifier = Modifier.fillMaxWidth()) {
         when (usageProgressStyle) {
@@ -259,12 +270,14 @@ private fun UsageWindowBar(
                 )
             }
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = formatUsageResetLabel(window?.resetInSec),
-            style = MaterialTheme.typography.bodySmall,
-            color = scheme.onSurfaceVariant,
-        )
+        if (showResetLabel) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = formatUsageResetLabel(window?.resetInSec),
+                style = MaterialTheme.typography.bodySmall,
+                color = scheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -272,6 +285,7 @@ private fun usageWindowKindLabelRes(kind: UsageWindowKind): Int = when (kind) {
     UsageWindowKind.ROLLING -> R.string.usage_window_rolling
     UsageWindowKind.WEEKLY -> R.string.usage_window_weekly
     UsageWindowKind.MONTHLY -> R.string.usage_window_monthly
+    UsageWindowKind.TOKEN -> R.string.usage_window_token
 }
 
 /** Matches overview widget comfortable density (12.sp inside 28.dp bar). */

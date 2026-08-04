@@ -181,6 +181,48 @@ class AndroidPlatformSettingsRepository(
         )
     }
 
+    override fun observeNewApiSettings(): Flow<NewApiSettings> =
+        dataStore.data.map { prefs -> prefs.toNewApiSettings() }
+
+    override suspend fun getNewApiSettings(): NewApiSettings =
+        dataStore.data.first().toNewApiSettings()
+
+    override suspend fun saveNewApiSettings(settings: NewApiSettings) {
+        dataStore.edit { prefs ->
+            if (!settings.isConfigured) {
+                prefs.remove(Keys.NEW_API_BASE_URL)
+                prefs.remove(Keys.NEW_API_KEY_ENC)
+                prefs.clearWidgetPayload(PlatformIds.NEW_API)
+                prefs[widgetStatusKey(PlatformIds.NEW_API)] = Status.NOT_CONFIGURED
+            } else {
+                prefs[Keys.NEW_API_BASE_URL] = settings.baseUrl.trim().trimEnd('/')
+                prefs[Keys.NEW_API_KEY_ENC] = encrypt(settings.apiKey, NEW_API_KEY_AD)
+                val status = prefs[widgetStatusKey(PlatformIds.NEW_API)]
+                if (status == null ||
+                    status == Status.NOT_CONFIGURED ||
+                    status == Status.NEEDS_REAUTH
+                ) {
+                    prefs[widgetStatusKey(PlatformIds.NEW_API)] = Status.LOADING
+                }
+            }
+            prefs[Keys.NEW_API_USAGE_DISPLAY] = settings.usageDisplayMode.name
+            prefs[Keys.NEW_API_USAGE_PROGRESS_STYLE] = settings.usageProgressStyle.name
+            prefs[Keys.NEW_API_QUOTA_PER_USD] = settings.quotaPerUsd.takeIf { it > 0L }
+                ?: DEFAULT_NEW_API_QUOTA_PER_USD
+        }
+    }
+
+    override suspend fun clearNewApiSettings() {
+        val current = getNewApiSettings()
+        saveNewApiSettings(
+            NewApiSettings(
+                quotaPerUsd = current.quotaPerUsd,
+                usageDisplayMode = current.usageDisplayMode,
+                usageProgressStyle = current.usageProgressStyle,
+            ),
+        )
+    }
+
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =
         dataStore.data.map { prefs -> prefs.toWidgetState(platformId) }
 
@@ -204,6 +246,15 @@ class AndroidPlatformSettingsRepository(
             prefs[widgetFormattedKey(platformId)] = snapshot.primaryDisplay
             prefs[widgetUpdatedAtKey(platformId)] = snapshot.updatedAtEpochMs
             prefs[widgetWindowsKey(platformId)] = encodeQuotaWindows(snapshot.windows)
+            prefs[widgetUnlimitedKey(platformId)] = snapshot.unlimitedQuota
+            prefs[widgetEmptyLimitedQuotaKey(platformId)] = snapshot.emptyLimitedQuota
+            prefs[widgetTokenExpiredKey(platformId)] = snapshot.tokenExpired
+            prefs[widgetQuotaOverspentKey(platformId)] = snapshot.quotaOverspent
+            if (snapshot.usedDisplay.isBlank()) {
+                prefs.remove(widgetUsedDisplayKey(platformId))
+            } else {
+                prefs[widgetUsedDisplayKey(platformId)] = snapshot.usedDisplay
+            }
             prefs.remove(widgetErrorKey(platformId))
         }
     }
@@ -274,6 +325,7 @@ class AndroidPlatformSettingsRepository(
                 PlatformIds.DEEPSEEK,
                 PlatformIds.OPENCODE_GO,
                 PlatformIds.CODEX,
+                PlatformIds.NEW_API,
             )) {
                 prefs[refreshPhaseKey(platformId)] = RefreshIconPhase.Idle.name
             }
@@ -387,11 +439,31 @@ class AndroidPlatformSettingsRepository(
         )
     }
 
+    private fun Preferences.toNewApiSettings(): NewApiSettings {
+        val encrypted = this[Keys.NEW_API_KEY_ENC]
+        val apiKey = encrypted
+            ?.let { runCatching { decrypt(it, NEW_API_KEY_AD) }.getOrDefault("") }
+            .orEmpty()
+        val quotaPerUsd = this[Keys.NEW_API_QUOTA_PER_USD]
+            ?.takeIf { it > 0L }
+            ?: DEFAULT_NEW_API_QUOTA_PER_USD
+        return NewApiSettings(
+            baseUrl = this[Keys.NEW_API_BASE_URL].orEmpty(),
+            apiKey = apiKey,
+            quotaPerUsd = quotaPerUsd,
+            usageDisplayMode = UsageDisplayMode.fromStorage(this[Keys.NEW_API_USAGE_DISPLAY]),
+            usageProgressStyle = UsageProgressStyle.fromStorage(
+                this[Keys.NEW_API_USAGE_PROGRESS_STYLE],
+            ),
+        )
+    }
+
     private fun Preferences.isConfigured(platformId: String): Boolean =
         when (platformId) {
             PlatformIds.DEEPSEEK -> toDeepSeekSettings().apiKey.isNotBlank()
             PlatformIds.OPENCODE_GO -> toOpenCodeGoSettings().isConfigured
             PlatformIds.CODEX -> toCodexSettings().isConfigured
+            PlatformIds.NEW_API -> toNewApiSettings().isConfigured
             else -> false
         }
 
@@ -442,6 +514,11 @@ class AndroidPlatformSettingsRepository(
                             ?: 0L,
                         currency = currency,
                         totalBalance = total,
+                        unlimitedQuota = this[widgetUnlimitedKey(platformId)] == true,
+                        usedDisplay = this[widgetUsedDisplayKey(platformId)].orEmpty(),
+                        emptyLimitedQuota = this[widgetEmptyLimitedQuotaKey(platformId)] == true,
+                        tokenExpired = this[widgetTokenExpiredKey(platformId)] == true,
+                        quotaOverspent = this[widgetQuotaOverspentKey(platformId)] == true,
                     ),
                 )
             }
@@ -452,6 +529,10 @@ class AndroidPlatformSettingsRepository(
     private fun defaultWindows(platformId: String): List<QuotaWindow> =
         when (platformId) {
             PlatformIds.DEEPSEEK -> listOf(QuotaWindow(kind = QuotaWindowKind.BALANCE))
+            PlatformIds.NEW_API -> listOf(
+                QuotaWindow(kind = QuotaWindowKind.BALANCE),
+                QuotaWindow(kind = QuotaWindowKind.TOKEN),
+            )
             else -> emptyList()
         }
 
@@ -491,6 +572,11 @@ class AndroidPlatformSettingsRepository(
         remove(widgetCurrencyKey(platformId))
         remove(widgetTotalKey(platformId))
         remove(widgetUpdatedAtKey(platformId))
+        remove(widgetUnlimitedKey(platformId))
+        remove(widgetUsedDisplayKey(platformId))
+        remove(widgetEmptyLimitedQuotaKey(platformId))
+        remove(widgetTokenExpiredKey(platformId))
+        remove(widgetQuotaOverspentKey(platformId))
     }
 
     private fun encrypt(plain: String, associatedData: ByteArray): String {
@@ -523,6 +609,11 @@ class AndroidPlatformSettingsRepository(
         val CODEX_WIDGET_WINDOW = stringPreferencesKey("codex_widget_window")
         val CODEX_USAGE_DISPLAY = stringPreferencesKey("codex_usage_display")
         val CODEX_USAGE_PROGRESS_STYLE = stringPreferencesKey("codex_usage_progress_style")
+        val NEW_API_BASE_URL = stringPreferencesKey("new_api_base_url")
+        val NEW_API_KEY_ENC = stringPreferencesKey("new_api_key_enc")
+        val NEW_API_QUOTA_PER_USD = longPreferencesKey("new_api_quota_per_usd")
+        val NEW_API_USAGE_DISPLAY = stringPreferencesKey("new_api_usage_display")
+        val NEW_API_USAGE_PROGRESS_STYLE = stringPreferencesKey("new_api_usage_progress_style")
         val ACTIVE_PLATFORM_ID = stringPreferencesKey("active_platform_id")
         val LEGACY_WIDGET_STATUS = stringPreferencesKey("widget_status")
         val LEGACY_WIDGET_ERROR = stringPreferencesKey("widget_error")
@@ -559,6 +650,7 @@ class AndroidPlatformSettingsRepository(
         private val CODEX_ACCESS_AD = "codex_access_token".encodeToByteArray()
         private val CODEX_REFRESH_AD = "codex_refresh_token".encodeToByteArray()
         private val CODEX_ID_AD = "codex_id_token".encodeToByteArray()
+        private val NEW_API_KEY_AD = "new_api_key".encodeToByteArray()
 
         private fun widgetStatusKey(platformId: String) =
             stringPreferencesKey("widget_${platformId}_status")
@@ -586,6 +678,21 @@ class AndroidPlatformSettingsRepository(
 
         private fun widgetUpdatedAtKey(platformId: String) =
             longPreferencesKey("widget_${platformId}_updated_at")
+
+        private fun widgetUnlimitedKey(platformId: String) =
+            booleanPreferencesKey("widget_${platformId}_unlimited")
+
+        private fun widgetUsedDisplayKey(platformId: String) =
+            stringPreferencesKey("widget_${platformId}_used_display")
+
+        private fun widgetEmptyLimitedQuotaKey(platformId: String) =
+            booleanPreferencesKey("widget_${platformId}_empty_limited_quota")
+
+        private fun widgetTokenExpiredKey(platformId: String) =
+            booleanPreferencesKey("widget_${platformId}_token_expired")
+
+        private fun widgetQuotaOverspentKey(platformId: String) =
+            booleanPreferencesKey("widget_${platformId}_quota_overspent")
 
         private fun refreshPhaseKey(platformId: String) =
             stringPreferencesKey("refresh_${platformId}_icon_phase")
