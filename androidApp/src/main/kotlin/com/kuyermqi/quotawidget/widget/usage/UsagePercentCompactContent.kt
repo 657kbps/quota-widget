@@ -22,6 +22,7 @@ import androidx.glance.text.TextStyle
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.widget.RefreshButton
@@ -37,6 +38,7 @@ fun UsagePercentCompactContent(
     openApp: Action,
     windowKind: UsageWindowKind,
     usageDisplayMode: UsageDisplayMode,
+    usageProgressStyle: UsageProgressStyle,
 ) {
     Box(
         modifier = GlanceModifier
@@ -68,6 +70,7 @@ fun UsagePercentCompactContent(
                             snapshot = state.snapshot,
                             windowKind = windowKind,
                             usageDisplayMode = usageDisplayMode,
+                            usageProgressStyle = usageProgressStyle,
                             openApp = openApp,
                             showProgress = false,
                             compact = true,

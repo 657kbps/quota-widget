@@ -67,6 +67,9 @@
     <string name="usage_display_label">小组件中展示的数值</string>
     <string name="usage_display_used">用量</string>
     <string name="usage_display_remaining">余量</string>
+    <string name="usage_progress_style_label">进度条样式</string>
+    <string name="usage_progress_style_bar">正常</string>
+    <string name="usage_progress_style_capsule">胶囊</string>
     <string name="usage_remaining_rolling">滚动余量 %1$s</string>
     <string name="usage_remaining_weekly">每周余量 %1$s</string>
     <string name="usage_remaining_monthly">每月余量 %1$s</string>

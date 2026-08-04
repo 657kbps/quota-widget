@@ -11,6 +11,7 @@ import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toOpenCodeUsageDisplayMode
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toOpenCodeUsageProgressStyle
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toOpenCodeUsageWindowKind
 import com.kuyermqi.quotawidget.widget.usage.UsagePercentCompactContent
 import com.kuyermqi.quotawidget.widget.usage.UsagePercentWidgetContent
@@ -30,6 +31,7 @@ class OpenCodeGoWidget : GlanceAppWidget() {
                 openApp = openApp,
                 windowKind = prefs.toOpenCodeUsageWindowKind(),
                 usageDisplayMode = prefs.toOpenCodeUsageDisplayMode(),
+                usageProgressStyle = prefs.toOpenCodeUsageProgressStyle(),
             )
         }
     }
@@ -49,6 +51,7 @@ class OpenCodeGoCompactWidget : GlanceAppWidget() {
                 openApp = openApp,
                 windowKind = prefs.toOpenCodeUsageWindowKind(),
                 usageDisplayMode = prefs.toOpenCodeUsageDisplayMode(),
+                usageProgressStyle = prefs.toOpenCodeUsageProgressStyle(),
             )
         }
     }

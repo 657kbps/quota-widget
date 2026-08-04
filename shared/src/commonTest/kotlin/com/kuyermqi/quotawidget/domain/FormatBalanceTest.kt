@@ -89,6 +89,16 @@ class FormatBalanceTest {
     }
 
     @Test
+    fun usageProgressStyle_defaultsToBar() {
+        assertEquals(UsageProgressStyle.BAR, UsageProgressStyle.fromStorage(null))
+        assertEquals(UsageProgressStyle.BAR, UsageProgressStyle.fromStorage("unknown"))
+        assertEquals(
+            UsageProgressStyle.CAPSULE,
+            UsageProgressStyle.fromStorage("CAPSULE"),
+        )
+    }
+
+    @Test
     fun defaultUsageWindowKind_picksShortestAvailable() {
         assertEquals(
             UsageWindowKind.MONTHLY,

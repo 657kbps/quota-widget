@@ -21,6 +21,7 @@ import android.content.res.Resources
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.opencode.OpenCodeLoginWebViewFlow
@@ -50,6 +51,8 @@ class OpenCodeGoHomeState internal constructor(
         internal set
     var draftUsageDisplayMode by mutableStateOf(UsageDisplayMode.USED)
         internal set
+    var draftUsageProgressStyle by mutableStateOf(UsageProgressStyle.BAR)
+        internal set
     var lastDisplay by mutableStateOf<String?>(null)
         internal set
     var isBusy by mutableStateOf(false)
@@ -73,7 +76,8 @@ class OpenCodeGoHomeState internal constructor(
             draftWorkspaceId != settings.workspaceId ||
                 draftWorkspaceName != settings.workspaceName ||
                 draftWindowKind != settings.widgetWindowKind ||
-                draftUsageDisplayMode != settings.usageDisplayMode
+                draftUsageDisplayMode != settings.usageDisplayMode ||
+                draftUsageProgressStyle != settings.usageProgressStyle
             )
 
     fun applyDraft(next: OpenCodeGoSettings = settings) {
@@ -81,6 +85,7 @@ class OpenCodeGoHomeState internal constructor(
         draftWorkspaceName = next.workspaceName
         draftWindowKind = next.widgetWindowKind
         draftUsageDisplayMode = next.usageDisplayMode
+        draftUsageProgressStyle = next.usageProgressStyle
     }
 
     fun applyLoaded(next: OpenCodeGoSettings) {
@@ -211,6 +216,7 @@ fun OpenCodeGoHomeEffects(
                     authCookie = authCookie,
                     widgetWindowKind = state.draftWindowKind,
                     usageDisplayMode = state.draftUsageDisplayMode,
+                    usageProgressStyle = state.draftUsageProgressStyle,
                 )
                 state.repository().saveOpenCodeGoSettings(next)
                 state.settings = next
@@ -236,6 +242,7 @@ fun OpenCodeGoHomeEffects(
                             state = state,
                             keepWindowKind = next.widgetWindowKind,
                             keepUsageDisplayMode = next.usageDisplayMode,
+                            keepUsageProgressStyle = next.usageProgressStyle,
                         )
                         state.error = msgLoginFailed
                     }
@@ -292,6 +299,11 @@ fun ColumnScope.OpenCodeGoHomeContent(
             state.draftUsageDisplayMode = mode
             state.error = null
         },
+        usageProgressStyle = state.draftUsageProgressStyle,
+        onUsageProgressStyleChange = { style ->
+            state.draftUsageProgressStyle = style
+            state.error = null
+        },
         onWorkspaceSelected = { workspace ->
             state.draftWorkspaceId = workspace.id
             state.draftWorkspaceName = workspace.name
@@ -307,6 +319,7 @@ fun ColumnScope.OpenCodeGoHomeContent(
                         state = state,
                         keepWindowKind = state.draftWindowKind,
                         keepUsageDisplayMode = state.draftUsageDisplayMode,
+                        keepUsageProgressStyle = state.draftUsageProgressStyle,
                     )
                     WidgetGlanceState.syncAndUpdate(context, "opencode_logout")
                 } finally {
@@ -324,6 +337,7 @@ fun ColumnScope.OpenCodeGoHomeContent(
                         workspaceName = state.draftWorkspaceName,
                         widgetWindowKind = state.draftWindowKind,
                         usageDisplayMode = state.draftUsageDisplayMode,
+                        usageProgressStyle = state.draftUsageProgressStyle,
                     )
                     state.repository().saveOpenCodeGoSettings(next)
                     state.settings = next
@@ -337,6 +351,7 @@ fun ColumnScope.OpenCodeGoHomeContent(
                                 state = state,
                                 keepWindowKind = next.widgetWindowKind,
                                 keepUsageDisplayMode = next.usageDisplayMode,
+                                keepUsageProgressStyle = next.usageProgressStyle,
                             )
                             state.error = msgNeedsReauth
                         }
@@ -358,11 +373,13 @@ private suspend fun clearOpenCodeSession(
     state: OpenCodeGoHomeState,
     keepWindowKind: UsageWindowKind,
     keepUsageDisplayMode: UsageDisplayMode,
+    keepUsageProgressStyle: UsageProgressStyle,
 ) {
     state.repository().clearOpenCodeGoSettings()
     state.settings = OpenCodeGoSettings(
         widgetWindowKind = keepWindowKind,
         usageDisplayMode = keepUsageDisplayMode,
+        usageProgressStyle = keepUsageProgressStyle,
     )
     state.applyDraft()
     state.workspaces = emptyList()

@@ -13,6 +13,7 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toOpenCodeUsageDisplayMode
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toOpenCodeUsageProgressStyle
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeComfortable
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeCompact
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewWidgetContent
@@ -31,13 +32,15 @@ class OpenCodeGoOverviewWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         providePlatformGlance(context, id, PlatformIds.OPENCODE_GO) { state, refreshPhase, openApp, platformTitle ->
+            val prefs = currentState<Preferences>()
             UsageOverviewWidgetContent(
                 platformId = PlatformIds.OPENCODE_GO,
                 platformTitle = platformTitle,
                 state = state,
                 refreshPhase = refreshPhase,
                 openApp = openApp,
-                usageDisplayMode = currentState<Preferences>().toOpenCodeUsageDisplayMode(),
+                usageDisplayMode = prefs.toOpenCodeUsageDisplayMode(),
+                usageProgressStyle = prefs.toOpenCodeUsageProgressStyle(),
                 overviewKinds = listOf(
                     QuotaWindowKind.FIVE_HOUR,
                     QuotaWindowKind.WEEKLY,

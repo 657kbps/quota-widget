@@ -32,6 +32,7 @@ import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.formatUsageDisplayPercent
 import com.kuyermqi.quotawidget.domain.usage.usageWindowLabelRes
@@ -56,6 +57,7 @@ private data class OverviewDensity(
     val updatedGap: Dp,
     val labelSize: TextUnit,
     val updatedSize: TextUnit,
+    val capsuleHeight: Dp,
 )
 
 private val CompactDensity = OverviewDensity(
@@ -69,6 +71,7 @@ private val CompactDensity = OverviewDensity(
     updatedGap = 6.dp,
     labelSize = 11.sp,
     updatedSize = 10.sp,
+    capsuleHeight = 24.dp,
 )
 
 private val ComfortableDensity = OverviewDensity(
@@ -82,6 +85,7 @@ private val ComfortableDensity = OverviewDensity(
     updatedGap = 10.dp,
     labelSize = 12.sp,
     updatedSize = 12.sp,
+    capsuleHeight = 28.dp,
 )
 
 @Composable
@@ -92,6 +96,7 @@ fun UsageOverviewWidgetContent(
     refreshPhase: RefreshIconPhase,
     openApp: Action,
     usageDisplayMode: UsageDisplayMode,
+    usageProgressStyle: UsageProgressStyle,
     overviewKinds: List<QuotaWindowKind>,
 ) {
     val density = if (LocalSize.current.height >= UsageOverviewSizeComfortable.height) {
@@ -167,6 +172,7 @@ fun UsageOverviewWidgetContent(
                         openApp = openApp,
                         density = density,
                         usageDisplayMode = usageDisplayMode,
+                        usageProgressStyle = usageProgressStyle,
                         overviewKinds = overviewKinds,
                     )
                 }
@@ -181,6 +187,7 @@ private fun UsageOverviewSuccessBlock(
     openApp: Action,
     density: OverviewDensity,
     usageDisplayMode: UsageDisplayMode,
+    usageProgressStyle: UsageProgressStyle,
     overviewKinds: List<QuotaWindowKind>,
 ) {
     val kinds = overviewKinds.ifEmpty {
@@ -199,6 +206,7 @@ private fun UsageOverviewSuccessBlock(
                 openApp = openApp,
                 density = density,
                 usageDisplayMode = usageDisplayMode,
+                usageProgressStyle = usageProgressStyle,
             )
         }
         Spacer(GlanceModifier.height(density.updatedGap))
@@ -221,46 +229,63 @@ private fun OverviewUsageRow(
     openApp: Action,
     density: OverviewDensity,
     usageDisplayMode: UsageDisplayMode,
+    usageProgressStyle: UsageProgressStyle,
 ) {
     val used = window?.usedPercent
-    Column(
-        modifier = GlanceModifier
-            .fillMaxWidth()
-            .clickableNoRipple(openApp),
-    ) {
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = label,
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = density.labelSize,
-                    fontWeight = FontWeight.Medium,
-                ),
-                maxLines = 1,
-                modifier = GlanceModifier.defaultWeight(),
-            )
-            Text(
-                text = used?.let { formatUsageDisplayPercent(it, usageDisplayMode) }
-                    ?: contextString(R.string.usage_unavailable),
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = density.labelSize,
-                    fontWeight = FontWeight.Bold,
-                ),
-                maxLines = 1,
-            )
-        }
-        Spacer(GlanceModifier.height(density.labelBarGap))
-        if (used != null) {
-            UsageProgressBar(
+    val percentText = used?.let { formatUsageDisplayPercent(it, usageDisplayMode) }
+        ?: contextString(R.string.usage_unavailable)
+    when (usageProgressStyle) {
+        UsageProgressStyle.CAPSULE -> {
+            UsageCapsuleProgressBar(
+                label = label,
+                percentText = percentText,
                 usedPercent = used,
                 usageDisplayMode = usageDisplayMode,
+                height = density.capsuleHeight,
+                labelSize = density.labelSize,
+                percentSize = density.labelSize,
             )
-        } else {
-            UsageSegmentProgressBar(fillFraction = 0f, nearLimit = false)
+        }
+        UsageProgressStyle.BAR -> {
+            Column(
+                modifier = GlanceModifier
+                    .fillMaxWidth()
+                    .clickableNoRipple(openApp),
+            ) {
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = label,
+                        style = TextStyle(
+                            color = GlanceTheme.colors.onSurface,
+                            fontSize = density.labelSize,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                        maxLines = 1,
+                        modifier = GlanceModifier.defaultWeight(),
+                    )
+                    Text(
+                        text = percentText,
+                        style = TextStyle(
+                            color = GlanceTheme.colors.onSurface,
+                            fontSize = density.labelSize,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        maxLines = 1,
+                    )
+                }
+                Spacer(GlanceModifier.height(density.labelBarGap))
+                if (used != null) {
+                    UsageProgressBar(
+                        usedPercent = used,
+                        usageDisplayMode = usageDisplayMode,
+                    )
+                } else {
+                    UsageBarProgressIndicator(fillFraction = 0f, nearLimit = false)
+                }
+            }
         }
     }
 }

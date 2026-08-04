@@ -19,6 +19,7 @@ import android.content.res.Resources
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
@@ -41,6 +42,8 @@ class CodexHomeState internal constructor(
         internal set
     var draftUsageDisplayMode by mutableStateOf(UsageDisplayMode.USED)
         internal set
+    var draftUsageProgressStyle by mutableStateOf(UsageProgressStyle.BAR)
+        internal set
     var lastDisplay by mutableStateOf<String?>(null)
         internal set
     var isBusy by mutableStateOf(false)
@@ -56,12 +59,14 @@ class CodexHomeState internal constructor(
     val isDirty: Boolean
         get() = loaded && settings.isConfigured && (
             draftWindowKind != settings.widgetWindowKind ||
-                draftUsageDisplayMode != settings.usageDisplayMode
+                draftUsageDisplayMode != settings.usageDisplayMode ||
+                draftUsageProgressStyle != settings.usageProgressStyle
             )
 
     fun applyDraft(next: CodexSettings = settings) {
         draftWindowKind = next.widgetWindowKind
         draftUsageDisplayMode = next.usageDisplayMode
+        draftUsageProgressStyle = next.usageProgressStyle
     }
 
     fun applyLoaded(next: CodexSettings) {
@@ -209,6 +214,7 @@ fun CodexHomeEffects(
                         .orEmpty(),
                     widgetWindowKind = state.draftWindowKind,
                     usageDisplayMode = state.draftUsageDisplayMode,
+                    usageProgressStyle = state.draftUsageProgressStyle,
                 )
                 state.repository().saveCodexSettings(next)
                 state.settings = next
@@ -232,6 +238,7 @@ fun CodexHomeEffects(
                             state = state,
                             keepWindowKind = next.widgetWindowKind,
                             keepUsageDisplayMode = next.usageDisplayMode,
+                            keepUsageProgressStyle = next.usageProgressStyle,
                         )
                         state.error = msgLoginFailed
                     }
@@ -285,6 +292,11 @@ fun ColumnScope.CodexHomeContent(
             state.draftUsageDisplayMode = mode
             state.error = null
         },
+        usageProgressStyle = state.draftUsageProgressStyle,
+        onUsageProgressStyleChange = { style ->
+            state.draftUsageProgressStyle = style
+            state.error = null
+        },
         onLogin = bindings.onLogin,
         onLogout = {
             scope.launch {
@@ -295,6 +307,7 @@ fun ColumnScope.CodexHomeContent(
                         state = state,
                         keepWindowKind = state.draftWindowKind,
                         keepUsageDisplayMode = state.draftUsageDisplayMode,
+                        keepUsageProgressStyle = state.draftUsageProgressStyle,
                     )
                     WidgetGlanceState.syncAndUpdate(context, "codex_logout")
                 } finally {
@@ -310,6 +323,7 @@ fun ColumnScope.CodexHomeContent(
                     val next = state.settings.copy(
                         widgetWindowKind = state.draftWindowKind,
                         usageDisplayMode = state.draftUsageDisplayMode,
+                        usageProgressStyle = state.draftUsageProgressStyle,
                     )
                     state.repository().saveCodexSettings(next)
                     state.settings = next
@@ -323,6 +337,7 @@ fun ColumnScope.CodexHomeContent(
                                 state = state,
                                 keepWindowKind = next.widgetWindowKind,
                                 keepUsageDisplayMode = next.usageDisplayMode,
+                                keepUsageProgressStyle = next.usageProgressStyle,
                             )
                             state.error = msgNeedsReauth
                         }
@@ -343,11 +358,13 @@ private suspend fun clearCodexSession(
     state: CodexHomeState,
     keepWindowKind: UsageWindowKind,
     keepUsageDisplayMode: UsageDisplayMode,
+    keepUsageProgressStyle: UsageProgressStyle,
 ) {
     state.repository().clearCodexSettings()
     state.settings = CodexSettings(
         widgetWindowKind = keepWindowKind,
         usageDisplayMode = keepUsageDisplayMode,
+        usageProgressStyle = keepUsageProgressStyle,
     )
     state.applyDraft()
     state.lastDisplay = null

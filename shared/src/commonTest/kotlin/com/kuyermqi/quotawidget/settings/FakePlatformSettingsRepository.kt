@@ -56,11 +56,11 @@ class FakePlatformSettingsRepository(
     }
 
     override suspend fun clearOpenCodeGoSettings() {
-        val window = openCodeFlow.value.widgetWindowKind
-        val displayMode = openCodeFlow.value.usageDisplayMode
+        val current = openCodeFlow.value
         openCodeFlow.value = OpenCodeGoSettings(
-            widgetWindowKind = window,
-            usageDisplayMode = displayMode,
+            widgetWindowKind = current.widgetWindowKind,
+            usageDisplayMode = current.usageDisplayMode,
+            usageProgressStyle = current.usageProgressStyle,
         )
         widgetFlow(PlatformIds.OPENCODE_GO).value = WidgetDisplayState.NotConfigured
     }
@@ -75,11 +75,11 @@ class FakePlatformSettingsRepository(
     }
 
     override suspend fun clearCodexSettings() {
-        val window = codexFlow.value.widgetWindowKind
-        val displayMode = codexFlow.value.usageDisplayMode
+        val current = codexFlow.value
         codexFlow.value = CodexSettings(
-            widgetWindowKind = window,
-            usageDisplayMode = displayMode,
+            widgetWindowKind = current.widgetWindowKind,
+            usageDisplayMode = current.usageDisplayMode,
+            usageProgressStyle = current.usageProgressStyle,
         )
         widgetFlow(PlatformIds.CODEX).value = WidgetDisplayState.NotConfigured
     }

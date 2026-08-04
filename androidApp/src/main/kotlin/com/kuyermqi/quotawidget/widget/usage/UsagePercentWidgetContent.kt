@@ -24,6 +24,7 @@ import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.formatUsageDisplayPercent
@@ -45,6 +46,7 @@ fun UsagePercentWidgetContent(
     openApp: Action,
     windowKind: UsageWindowKind,
     usageDisplayMode: UsageDisplayMode,
+    usageProgressStyle: UsageProgressStyle,
 ) {
     Box(
         modifier = GlanceModifier
@@ -98,6 +100,7 @@ fun UsagePercentWidgetContent(
                         snapshot = state.snapshot,
                         windowKind = windowKind,
                         usageDisplayMode = usageDisplayMode,
+                        usageProgressStyle = usageProgressStyle,
                         openApp = openApp,
                         showProgress = true,
                     )
@@ -118,6 +121,7 @@ internal fun UsagePercentSuccessBlock(
     snapshot: QuotaSnapshot,
     windowKind: UsageWindowKind,
     usageDisplayMode: UsageDisplayMode,
+    usageProgressStyle: UsageProgressStyle,
     openApp: Action,
     showProgress: Boolean,
     compact: Boolean = false,
@@ -145,17 +149,22 @@ internal fun UsagePercentSuccessBlock(
             maxLines = 1,
             modifier = GlanceModifier.clickableNoRipple(openApp),
         )
-        if (showProgress) {
+        if (showProgress && used != null) {
             Spacer(GlanceModifier.height(8.dp))
-            if (used != null) {
-                UsageProgressBar(
-                    usedPercent = used,
-                    usageDisplayMode = usageDisplayMode,
-                )
-                Spacer(GlanceModifier.height(10.dp))
-            } else {
-                Spacer(GlanceModifier.height(4.dp))
+            when (usageProgressStyle) {
+                UsageProgressStyle.CAPSULE ->
+                    UsageCapsuleProgressTrack(
+                        usedPercent = used,
+                        usageDisplayMode = usageDisplayMode,
+                        height = if (compact) 10.dp else 12.dp,
+                    )
+                UsageProgressStyle.BAR ->
+                    UsageProgressBar(
+                        usedPercent = used,
+                        usageDisplayMode = usageDisplayMode,
+                    )
             }
+            Spacer(GlanceModifier.height(10.dp))
         } else {
             Spacer(GlanceModifier.height(4.dp))
         }

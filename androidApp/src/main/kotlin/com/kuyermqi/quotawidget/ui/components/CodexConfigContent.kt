@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
 import com.kuyermqi.quotawidget.domain.presentCodexOverviewWindowKinds
@@ -38,6 +39,8 @@ fun ColumnScope.CodexConfigContent(
     onWidgetWindowKindChange: (UsageWindowKind) -> Unit,
     usageDisplayMode: UsageDisplayMode,
     onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
+    usageProgressStyle: UsageProgressStyle,
+    onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
     onLogin: () -> Unit,
     onLogout: () -> Unit,
     onSave: () -> Unit,
@@ -86,6 +89,8 @@ fun ColumnScope.CodexConfigContent(
             onWidgetWindowKindChange = onWidgetWindowKindChange,
             usageDisplayMode = usageDisplayMode,
             onUsageDisplayModeChange = onUsageDisplayModeChange,
+            usageProgressStyle = usageProgressStyle,
+            onUsageProgressStyleChange = onUsageProgressStyleChange,
             enabled = !isBusy,
             windowKindChoices = availableWindowKinds,
             showWindowKindPicker = availableWindowKinds.size >= 2,

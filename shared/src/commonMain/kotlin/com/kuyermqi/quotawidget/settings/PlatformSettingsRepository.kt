@@ -3,6 +3,7 @@ package com.kuyermqi.quotawidget.settings
 import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
@@ -20,6 +21,7 @@ data class OpenCodeGoSettings(
     val authCookie: String = "",
     val widgetWindowKind: UsageWindowKind = UsageWindowKind.ROLLING,
     val usageDisplayMode: UsageDisplayMode = UsageDisplayMode.USED,
+    val usageProgressStyle: UsageProgressStyle = UsageProgressStyle.BAR,
 ) {
     val isConfigured: Boolean
         get() = workspaceId.isNotBlank() && authCookie.isNotBlank()
@@ -35,6 +37,7 @@ data class CodexSettings(
     val planType: String = "",
     val widgetWindowKind: UsageWindowKind = UsageWindowKind.WEEKLY,
     val usageDisplayMode: UsageDisplayMode = UsageDisplayMode.USED,
+    val usageProgressStyle: UsageProgressStyle = UsageProgressStyle.BAR,
 ) {
     val isConfigured: Boolean
         get() = accessToken.isNotBlank() &&

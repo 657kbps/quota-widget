@@ -32,6 +32,7 @@ import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.opencode.OpenCodeWorkspace
 
@@ -52,6 +53,8 @@ fun ColumnScope.OpenCodeGoConfigContent(
     onWidgetWindowKindChange: (UsageWindowKind) -> Unit,
     usageDisplayMode: UsageDisplayMode,
     onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
+    usageProgressStyle: UsageProgressStyle,
+    onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
     onWorkspaceSelected: (OpenCodeWorkspace) -> Unit,
     onLogin: () -> Unit,
     onLogout: () -> Unit,
@@ -95,6 +98,8 @@ fun ColumnScope.OpenCodeGoConfigContent(
             onWidgetWindowKindChange = onWidgetWindowKindChange,
             usageDisplayMode = usageDisplayMode,
             onUsageDisplayModeChange = onUsageDisplayModeChange,
+            usageProgressStyle = usageProgressStyle,
+            onUsageProgressStyleChange = onUsageProgressStyleChange,
             enabled = !isBusy,
             windowKindChoices = listOf(
                 UsageWindowKind.ROLLING,

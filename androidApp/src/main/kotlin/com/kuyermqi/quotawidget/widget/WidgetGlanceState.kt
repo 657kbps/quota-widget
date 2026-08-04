@@ -20,6 +20,7 @@ import com.kuyermqi.quotawidget.domain.DEFAULT_CUSTOM_SEED_COLOR_ARGB
 import com.kuyermqi.quotawidget.domain.DEFAULT_REFRESH_INTERVAL_MINUTES
 import com.kuyermqi.quotawidget.domain.DarkThemeMode
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -59,8 +60,10 @@ object WidgetGlanceState {
     val seedColorKey = intPreferencesKey("qw_seed_color")
     val openCodeWindowKindKey = stringPreferencesKey("qw_opencode_window_kind")
     val openCodeUsageDisplayModeKey = stringPreferencesKey("qw_opencode_usage_display")
+    val openCodeUsageProgressStyleKey = stringPreferencesKey("qw_opencode_usage_progress_style")
     val codexWindowKindKey = stringPreferencesKey("qw_codex_window_kind")
     val codexUsageDisplayModeKey = stringPreferencesKey("qw_codex_usage_display")
+    val codexUsageProgressStyleKey = stringPreferencesKey("qw_codex_usage_progress_style")
 
     private object Status {
         const val NOT_CONFIGURED = "not_configured"
@@ -196,6 +199,9 @@ object WidgetGlanceState {
     fun Preferences.toOpenCodeUsageDisplayMode(): UsageDisplayMode =
         UsageDisplayMode.fromStorage(this[openCodeUsageDisplayModeKey])
 
+    fun Preferences.toOpenCodeUsageProgressStyle(): UsageProgressStyle =
+        UsageProgressStyle.fromStorage(this[openCodeUsageProgressStyleKey])
+
     fun Preferences.toCodexUsageWindowKind(): UsageWindowKind =
         this[codexWindowKindKey]
             ?.let { UsageWindowKind.fromStorage(it) }
@@ -203,6 +209,9 @@ object WidgetGlanceState {
 
     fun Preferences.toCodexUsageDisplayMode(): UsageDisplayMode =
         UsageDisplayMode.fromStorage(this[codexUsageDisplayModeKey])
+
+    fun Preferences.toCodexUsageProgressStyle(): UsageProgressStyle =
+        UsageProgressStyle.fromStorage(this[codexUsageProgressStyleKey])
 
     fun Preferences.toDisplayState(): WidgetDisplayState {
         return when (this[statusKey]) {
@@ -256,10 +265,12 @@ object WidgetGlanceState {
         if (openCodeSettings != null) {
             this[openCodeWindowKindKey] = openCodeSettings.widgetWindowKind.name
             this[openCodeUsageDisplayModeKey] = openCodeSettings.usageDisplayMode.name
+            this[openCodeUsageProgressStyleKey] = openCodeSettings.usageProgressStyle.name
         }
         if (codexSettings != null) {
             this[codexWindowKindKey] = codexSettings.widgetWindowKind.name
             this[codexUsageDisplayModeKey] = codexSettings.usageDisplayMode.name
+            this[codexUsageProgressStyleKey] = codexSettings.usageProgressStyle.name
         }
         when (display) {
             WidgetDisplayState.NotConfigured -> {

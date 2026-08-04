@@ -163,6 +163,24 @@ enum class UsageDisplayMode {
     }
 }
 
+/** Progress bar layout for usage widgets (percent and overview). */
+enum class UsageProgressStyle {
+    /** Continuous thin bar; labels outside the bar. */
+    BAR,
+    /**
+     * Rounded usage track.
+     * Overview embeds label and percent inside a rounded rectangle;
+     * percent widgets draw a pill track under the large value.
+     */
+    CAPSULE,
+    ;
+
+    companion object {
+        fun fromStorage(value: String?): UsageProgressStyle =
+            entries.find { it.name == value } ?: BAR
+    }
+}
+
 @Serializable
 data class QuotaWindow(
     val kind: QuotaWindowKind,

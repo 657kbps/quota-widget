@@ -22,6 +22,7 @@ import com.kuyermqi.quotawidget.domain.DarkThemeMode
 import com.kuyermqi.quotawidget.domain.DEFAULT_CUSTOM_SEED_COLOR_ARGB
 import com.kuyermqi.quotawidget.domain.DEFAULT_REFRESH_INTERVAL_MINUTES
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -102,6 +103,7 @@ class AndroidPlatformSettingsRepository(
             }
             prefs[Keys.OPENCODE_WIDGET_WINDOW] = settings.widgetWindowKind.name
             prefs[Keys.OPENCODE_USAGE_DISPLAY] = settings.usageDisplayMode.name
+            prefs[Keys.OPENCODE_USAGE_PROGRESS_STYLE] = settings.usageProgressStyle.name
         }
     }
 
@@ -111,6 +113,7 @@ class AndroidPlatformSettingsRepository(
             OpenCodeGoSettings(
                 widgetWindowKind = current.widgetWindowKind,
                 usageDisplayMode = current.usageDisplayMode,
+                usageProgressStyle = current.usageProgressStyle,
             ),
         )
     }
@@ -163,6 +166,7 @@ class AndroidPlatformSettingsRepository(
             }
             prefs[Keys.CODEX_WIDGET_WINDOW] = settings.widgetWindowKind.name
             prefs[Keys.CODEX_USAGE_DISPLAY] = settings.usageDisplayMode.name
+            prefs[Keys.CODEX_USAGE_PROGRESS_STYLE] = settings.usageProgressStyle.name
         }
     }
 
@@ -172,6 +176,7 @@ class AndroidPlatformSettingsRepository(
             CodexSettings(
                 widgetWindowKind = current.widgetWindowKind,
                 usageDisplayMode = current.usageDisplayMode,
+                usageProgressStyle = current.usageProgressStyle,
             ),
         )
     }
@@ -355,6 +360,9 @@ class AndroidPlatformSettingsRepository(
             authCookie = authCookie,
             widgetWindowKind = UsageWindowKind.fromStorage(this[Keys.OPENCODE_WIDGET_WINDOW]),
             usageDisplayMode = UsageDisplayMode.fromStorage(this[Keys.OPENCODE_USAGE_DISPLAY]),
+            usageProgressStyle = UsageProgressStyle.fromStorage(
+                this[Keys.OPENCODE_USAGE_PROGRESS_STYLE],
+            ),
         )
     }
 
@@ -373,6 +381,9 @@ class AndroidPlatformSettingsRepository(
                 ?.let { UsageWindowKind.fromStorage(it) }
                 ?: UsageWindowKind.WEEKLY,
             usageDisplayMode = UsageDisplayMode.fromStorage(this[Keys.CODEX_USAGE_DISPLAY]),
+            usageProgressStyle = UsageProgressStyle.fromStorage(
+                this[Keys.CODEX_USAGE_PROGRESS_STYLE],
+            ),
         )
     }
 
@@ -500,6 +511,8 @@ class AndroidPlatformSettingsRepository(
         val OPENCODE_AUTH_COOKIE_ENC = stringPreferencesKey("opencode_auth_cookie_enc")
         val OPENCODE_WIDGET_WINDOW = stringPreferencesKey("opencode_go_widget_window")
         val OPENCODE_USAGE_DISPLAY = stringPreferencesKey("opencode_go_usage_display")
+        val OPENCODE_USAGE_PROGRESS_STYLE =
+            stringPreferencesKey("opencode_go_usage_progress_style")
         val CODEX_ACCESS_ENC = stringPreferencesKey("codex_access_token_enc")
         val CODEX_REFRESH_ENC = stringPreferencesKey("codex_refresh_token_enc")
         val CODEX_ID_ENC = stringPreferencesKey("codex_id_token_enc")
@@ -509,6 +522,7 @@ class AndroidPlatformSettingsRepository(
         val CODEX_PLAN_TYPE = stringPreferencesKey("codex_plan_type")
         val CODEX_WIDGET_WINDOW = stringPreferencesKey("codex_widget_window")
         val CODEX_USAGE_DISPLAY = stringPreferencesKey("codex_usage_display")
+        val CODEX_USAGE_PROGRESS_STYLE = stringPreferencesKey("codex_usage_progress_style")
         val ACTIVE_PLATFORM_ID = stringPreferencesKey("active_platform_id")
         val LEGACY_WIDGET_STATUS = stringPreferencesKey("widget_status")
         val LEGACY_WIDGET_ERROR = stringPreferencesKey("widget_error")

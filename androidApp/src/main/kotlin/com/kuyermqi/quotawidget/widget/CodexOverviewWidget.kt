@@ -14,6 +14,7 @@ import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.presentCodexOverviewWindowKinds
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toCodexUsageDisplayMode
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toCodexUsageProgressStyle
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeComfortable
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeCompact
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewWidgetContent
@@ -34,13 +35,15 @@ class CodexOverviewWidget : GlanceAppWidget() {
                     presentCodexOverviewWindowKinds(state.snapshot.windows)
                 else -> emptyList()
             }
+            val prefs = currentState<Preferences>()
             UsageOverviewWidgetContent(
                 platformId = PlatformIds.CODEX,
                 platformTitle = platformTitle,
                 state = state,
                 refreshPhase = refreshPhase,
                 openApp = openApp,
-                usageDisplayMode = currentState<Preferences>().toCodexUsageDisplayMode(),
+                usageDisplayMode = prefs.toCodexUsageDisplayMode(),
+                usageProgressStyle = prefs.toCodexUsageProgressStyle(),
                 overviewKinds = overviewKinds,
             )
         }
