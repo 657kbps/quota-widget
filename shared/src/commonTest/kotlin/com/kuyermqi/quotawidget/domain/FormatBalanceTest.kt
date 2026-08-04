@@ -2,6 +2,7 @@ package com.kuyermqi.quotawidget.domain
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class FormatBalanceTest {
     @Test
@@ -17,8 +18,8 @@ class FormatBalanceTest {
     }
 
     @Test
-    fun formatOpenCodePrimaryDisplay_joinsWindows() {
-        val display = formatOpenCodePrimaryDisplay(
+    fun formatUsagePrimaryDisplay_joinsWindows() {
+        val display = formatUsagePrimaryDisplay(
             listOf(
                 QuotaWindow(kind = QuotaWindowKind.FIVE_HOUR, usedPercent = 19.5),
                 QuotaWindow(kind = QuotaWindowKind.WEEKLY, usedPercent = 30.0),
@@ -29,61 +30,144 @@ class FormatBalanceTest {
     }
 
     @Test
-    fun formatOpenCodeRemainingRolling_usesRemainingPercent() {
-        val remaining = formatOpenCodeRemainingRolling(
+    fun formatUsageRemainingRolling_usesRemainingPercent() {
+        val remaining = formatUsageRemainingRolling(
             listOf(QuotaWindow(kind = QuotaWindowKind.FIVE_HOUR, usedPercent = 32.0)),
         )
         assertEquals("68 %", remaining)
     }
 
     @Test
-    fun formatOpenCodeUsagePercent_followsDisplayMode() {
-        assertEquals("90 %", formatOpenCodeUsagePercent(90.0, OpenCodeUsageDisplayMode.USED))
-        assertEquals("10 %", formatOpenCodeUsagePercent(90.0, OpenCodeUsageDisplayMode.REMAINING))
+    fun formatUsageDisplayPercent_followsDisplayMode() {
+        assertEquals("90 %", formatUsageDisplayPercent(90.0, UsageDisplayMode.USED))
+        assertEquals("10 %", formatUsageDisplayPercent(90.0, UsageDisplayMode.REMAINING))
     }
 
     @Test
     fun displayUsageFillFraction_followsDisplayMode() {
-        assertEquals(0.9f, displayUsageFillFraction(90.0, OpenCodeUsageDisplayMode.USED))
-        assertEquals(0.1f, displayUsageFillFraction(90.0, OpenCodeUsageDisplayMode.REMAINING))
+        assertEquals(0.9f, displayUsageFillFraction(90.0, UsageDisplayMode.USED))
+        assertEquals(0.1f, displayUsageFillFraction(90.0, UsageDisplayMode.REMAINING))
     }
 
     @Test
     fun isUsageNearLimitForDisplay_warnsNearLimitInBothModes() {
-        assertEquals(true, isUsageNearLimitForDisplay(90.0, OpenCodeUsageDisplayMode.USED))
-        assertEquals(true, isUsageNearLimitForDisplay(90.0, OpenCodeUsageDisplayMode.REMAINING))
-        assertEquals(false, isUsageNearLimitForDisplay(89.9, OpenCodeUsageDisplayMode.USED))
-        assertEquals(false, isUsageNearLimitForDisplay(89.9, OpenCodeUsageDisplayMode.REMAINING))
+        assertEquals(true, isUsageNearLimitForDisplay(90.0, UsageDisplayMode.USED))
+        assertEquals(true, isUsageNearLimitForDisplay(90.0, UsageDisplayMode.REMAINING))
+        assertEquals(false, isUsageNearLimitForDisplay(89.9, UsageDisplayMode.USED))
+        assertEquals(false, isUsageNearLimitForDisplay(89.9, UsageDisplayMode.REMAINING))
     }
 
     @Test
-    fun formatOpenCodeUsageForWindow_usesSelectedMode() {
+    fun formatUsageForWindow_usesSelectedMode() {
         val windows = listOf(QuotaWindow(kind = QuotaWindowKind.WEEKLY, usedPercent = 25.0))
         assertEquals(
             "25 %",
-            formatOpenCodeUsageForWindow(
+            formatUsageForWindow(
                 windows,
-                OpenCodeWidgetWindowKind.WEEKLY,
-                OpenCodeUsageDisplayMode.USED,
+                UsageWindowKind.WEEKLY,
+                UsageDisplayMode.USED,
             ),
         )
         assertEquals(
             "75 %",
-            formatOpenCodeUsageForWindow(
+            formatUsageForWindow(
                 windows,
-                OpenCodeWidgetWindowKind.WEEKLY,
-                OpenCodeUsageDisplayMode.REMAINING,
+                UsageWindowKind.WEEKLY,
+                UsageDisplayMode.REMAINING,
             ),
         )
     }
 
     @Test
     fun openCodeUsageDisplayMode_defaultsToUsed() {
-        assertEquals(OpenCodeUsageDisplayMode.USED, OpenCodeUsageDisplayMode.fromStorage(null))
-        assertEquals(OpenCodeUsageDisplayMode.USED, OpenCodeUsageDisplayMode.fromStorage("unknown"))
+        assertEquals(UsageDisplayMode.USED, UsageDisplayMode.fromStorage(null))
+        assertEquals(UsageDisplayMode.USED, UsageDisplayMode.fromStorage("unknown"))
         assertEquals(
-            OpenCodeUsageDisplayMode.REMAINING,
-            OpenCodeUsageDisplayMode.fromStorage("REMAINING"),
+            UsageDisplayMode.REMAINING,
+            UsageDisplayMode.fromStorage("REMAINING"),
+        )
+    }
+
+    @Test
+    fun defaultUsageWindowKind_picksShortestAvailable() {
+        assertEquals(
+            UsageWindowKind.MONTHLY,
+            defaultUsageWindowKind(
+                listOf(QuotaWindow(kind = QuotaWindowKind.MONTHLY, usedPercent = 10.0)),
+            ),
+        )
+        assertEquals(
+            UsageWindowKind.WEEKLY,
+            defaultUsageWindowKind(
+                listOf(
+                    QuotaWindow(kind = QuotaWindowKind.WEEKLY, usedPercent = 10.0),
+                    QuotaWindow(kind = QuotaWindowKind.MONTHLY, usedPercent = 20.0),
+                ),
+            ),
+        )
+        assertEquals(
+            UsageWindowKind.ROLLING,
+            defaultUsageWindowKind(
+                listOf(
+                    QuotaWindow(kind = QuotaWindowKind.FIVE_HOUR, usedPercent = 5.0),
+                    QuotaWindow(kind = QuotaWindowKind.WEEKLY, usedPercent = 10.0),
+                    QuotaWindow(kind = QuotaWindowKind.MONTHLY, usedPercent = 20.0),
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun availableUsageWindowKinds_listsPresentKindsShortestFirst() {
+        assertEquals(
+            listOf(UsageWindowKind.MONTHLY),
+            availableUsageWindowKinds(
+                listOf(QuotaWindow(kind = QuotaWindowKind.MONTHLY, usedPercent = 0.0)),
+            ),
+        )
+        assertEquals(
+            listOf(UsageWindowKind.WEEKLY, UsageWindowKind.MONTHLY),
+            availableUsageWindowKinds(
+                listOf(
+                    QuotaWindow(kind = QuotaWindowKind.MONTHLY, usedPercent = 1.0),
+                    QuotaWindow(kind = QuotaWindowKind.WEEKLY, usedPercent = 2.0),
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun resolveCodexUsageSummaryWindowKind_prefersRequestedThenFallsBack() {
+        val windows = listOf(
+            QuotaWindow(kind = QuotaWindowKind.MONTHLY, usedPercent = 10.0),
+        )
+        assertEquals(
+            UsageWindowKind.MONTHLY,
+            resolveCodexUsageSummaryWindowKind(windows, UsageWindowKind.MONTHLY),
+        )
+        assertEquals(
+            UsageWindowKind.MONTHLY,
+            resolveCodexUsageSummaryWindowKind(windows, UsageWindowKind.WEEKLY),
+        )
+        assertNull(
+            resolveCodexUsageSummaryWindowKind(emptyList(), UsageWindowKind.WEEKLY),
+        )
+    }
+
+    @Test
+    fun presentCodexOverviewWindowKinds_listsPresentKindsWithoutRequiringPercent() {
+        assertEquals(
+            listOf(QuotaWindowKind.WEEKLY, QuotaWindowKind.MONTHLY),
+            presentCodexOverviewWindowKinds(
+                listOf(
+                    QuotaWindow(kind = QuotaWindowKind.WEEKLY, usedPercent = null),
+                    QuotaWindow(kind = QuotaWindowKind.MONTHLY, usedPercent = 1.0),
+                ),
+            ),
+        )
+        assertEquals(
+            emptyList(),
+            presentCodexOverviewWindowKinds(emptyList()),
         )
     }
 }

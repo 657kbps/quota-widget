@@ -73,8 +73,8 @@ enum class QuotaWindowKind {
     BALANCE,
 }
 
-/** Which OpenCode Go usage window the dedicated widget displays. */
-enum class OpenCodeWidgetWindowKind {
+/** Which usage window a percent widget displays (OpenCode Go, Codex, …). */
+enum class UsageWindowKind {
     ROLLING,
     WEEKLY,
     MONTHLY,
@@ -87,19 +87,78 @@ enum class OpenCodeWidgetWindowKind {
     }
 
     companion object {
-        fun fromStorage(value: String?): OpenCodeWidgetWindowKind =
+        fun fromStorage(value: String?): UsageWindowKind =
             entries.find { it.name == value } ?: ROLLING
     }
 }
 
-/** Whether OpenCode surfaces show used percent or remaining percent. */
-enum class OpenCodeUsageDisplayMode {
+/**
+ * Smallest available usage window for widget default:
+ * 5h → weekly → monthly.
+ */
+fun defaultUsageWindowKind(windows: List<QuotaWindow>): UsageWindowKind {
+    val kinds = windows.mapNotNull { window ->
+        window.usedPercent?.let { window.kind }
+    }.toSet()
+    return when {
+        QuotaWindowKind.FIVE_HOUR in kinds -> UsageWindowKind.ROLLING
+        QuotaWindowKind.WEEKLY in kinds -> UsageWindowKind.WEEKLY
+        QuotaWindowKind.MONTHLY in kinds -> UsageWindowKind.MONTHLY
+        else -> UsageWindowKind.MONTHLY
+    }
+}
+
+/** Widget window kinds that have data in [windows], shortest first. */
+fun availableUsageWindowKinds(windows: List<QuotaWindow>): List<UsageWindowKind> =
+    buildList {
+        if (windows.any { it.kind == QuotaWindowKind.FIVE_HOUR && it.usedPercent != null }) {
+            add(UsageWindowKind.ROLLING)
+        }
+        if (windows.any { it.kind == QuotaWindowKind.WEEKLY && it.usedPercent != null }) {
+            add(UsageWindowKind.WEEKLY)
+        }
+        if (windows.any { it.kind == QuotaWindowKind.MONTHLY && it.usedPercent != null }) {
+            add(UsageWindowKind.MONTHLY)
+        }
+    }
+
+/** Prefer [preferred]; if that window has no data, use the smallest available kind.
+ * Codex-only — OpenCode summaries must not use this fallback.
+ */
+fun resolveCodexUsageSummaryWindowKind(
+    windows: List<QuotaWindow>,
+    preferred: UsageWindowKind,
+): UsageWindowKind? {
+    if (windows.any { it.kind == preferred.toQuotaWindowKind() && it.usedPercent != null }) {
+        return preferred
+    }
+    return availableUsageWindowKinds(windows).firstOrNull()
+}
+
+/**
+ * Codex overview rows: kinds present in [windows] (presence only, not usedPercent).
+ * Empty when none of the usage windows appear.
+ */
+fun presentCodexOverviewWindowKinds(windows: List<QuotaWindow>): List<QuotaWindowKind> =
+    buildList {
+        if (windows.any { it.kind == QuotaWindowKind.FIVE_HOUR }) {
+            add(QuotaWindowKind.FIVE_HOUR)
+        }
+        if (windows.any { it.kind == QuotaWindowKind.WEEKLY }) {
+            add(QuotaWindowKind.WEEKLY)
+        }
+        if (windows.any { it.kind == QuotaWindowKind.MONTHLY }) {
+            add(QuotaWindowKind.MONTHLY)
+        }
+    }
+/** Whether usage surfaces show used percent or remaining percent. */
+enum class UsageDisplayMode {
     USED,
     REMAINING,
     ;
 
     companion object {
-        fun fromStorage(value: String?): OpenCodeUsageDisplayMode =
+        fun fromStorage(value: String?): UsageDisplayMode =
             entries.find { it.name == value } ?: USED
     }
 }
@@ -178,10 +237,10 @@ fun isUsageNearLimit(usedPercent: Double): Boolean =
 
 fun isUsageNearLimitForDisplay(
     usedPercent: Double,
-    mode: OpenCodeUsageDisplayMode,
+    mode: UsageDisplayMode,
 ): Boolean = when (mode) {
-    OpenCodeUsageDisplayMode.USED -> isUsageNearLimit(usedPercent)
-    OpenCodeUsageDisplayMode.REMAINING ->
+    UsageDisplayMode.USED -> isUsageNearLimit(usedPercent)
+    UsageDisplayMode.REMAINING ->
         remainingUsagePercent(usedPercent) <= REMAINING_NEAR_LIMIT_PERCENT
 }
 
@@ -194,7 +253,7 @@ fun formatUsagePercent(percent: Double): String {
     }
 }
 
-fun formatOpenCodePrimaryDisplay(windows: List<QuotaWindow>): String {
+fun formatUsagePrimaryDisplay(windows: List<QuotaWindow>): String {
     val parts = buildList {
         windows.find { it.kind == QuotaWindowKind.FIVE_HOUR }?.usedPercent?.let {
             add("5h ${formatUsagePercent(it)}")
@@ -214,44 +273,44 @@ fun remainingUsagePercent(usedPercent: Double): Double =
 
 fun displayUsagePercent(
     usedPercent: Double,
-    mode: OpenCodeUsageDisplayMode,
+    mode: UsageDisplayMode,
 ): Double = when (mode) {
-    OpenCodeUsageDisplayMode.USED -> usedPercent.coerceIn(0.0, 100.0)
-    OpenCodeUsageDisplayMode.REMAINING -> remainingUsagePercent(usedPercent)
+    UsageDisplayMode.USED -> usedPercent.coerceIn(0.0, 100.0)
+    UsageDisplayMode.REMAINING -> remainingUsagePercent(usedPercent)
 }
 
 fun displayUsageFillFraction(
     usedPercent: Double,
-    mode: OpenCodeUsageDisplayMode,
+    mode: UsageDisplayMode,
 ): Float = (displayUsagePercent(usedPercent, mode) / 100.0).toFloat().coerceIn(0f, 1f)
 
 fun formatRemainingUsagePercent(usedPercent: Double): String =
     formatUsagePercent(remainingUsagePercent(usedPercent))
 
-fun formatOpenCodeUsagePercent(
+fun formatUsageDisplayPercent(
     usedPercent: Double,
-    mode: OpenCodeUsageDisplayMode,
+    mode: UsageDisplayMode,
 ): String = formatUsagePercent(displayUsagePercent(usedPercent, mode))
 
-fun formatOpenCodeRemainingForWindow(
+fun formatUsageRemainingForWindow(
     windows: List<QuotaWindow>,
-    windowKind: OpenCodeWidgetWindowKind = OpenCodeWidgetWindowKind.ROLLING,
+    windowKind: UsageWindowKind = UsageWindowKind.ROLLING,
 ): String? {
     val used = windows.find { it.kind == windowKind.toQuotaWindowKind() }?.usedPercent ?: return null
     return formatRemainingUsagePercent(used)
 }
 
-fun formatOpenCodeUsageForWindow(
+fun formatUsageForWindow(
     windows: List<QuotaWindow>,
-    windowKind: OpenCodeWidgetWindowKind = OpenCodeWidgetWindowKind.ROLLING,
-    mode: OpenCodeUsageDisplayMode = OpenCodeUsageDisplayMode.USED,
+    windowKind: UsageWindowKind = UsageWindowKind.ROLLING,
+    mode: UsageDisplayMode = UsageDisplayMode.USED,
 ): String? {
     val used = windows.find { it.kind == windowKind.toQuotaWindowKind() }?.usedPercent ?: return null
-    return formatOpenCodeUsagePercent(used, mode)
+    return formatUsageDisplayPercent(used, mode)
 }
 
-fun formatOpenCodeRemainingRolling(windows: List<QuotaWindow>): String? =
-    formatOpenCodeRemainingForWindow(windows, OpenCodeWidgetWindowKind.ROLLING)
+fun formatUsageRemainingRolling(windows: List<QuotaWindow>): String? =
+    formatUsageRemainingForWindow(windows, UsageWindowKind.ROLLING)
 
 private fun formatWhole(value: Double): String =
     kotlin.math.round(value).toLong().toString()

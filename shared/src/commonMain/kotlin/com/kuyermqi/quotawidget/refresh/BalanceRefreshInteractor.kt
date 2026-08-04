@@ -23,6 +23,9 @@ class BalanceRefreshInteractor(
         if (settingsRepository.getOpenCodeGoSettings().isConfigured) {
             results += refresh(PlatformIds.OPENCODE_GO)
         }
+        if (settingsRepository.getCodexSettings().isConfigured) {
+            results += refresh(PlatformIds.CODEX)
+        }
         return results
     }
 

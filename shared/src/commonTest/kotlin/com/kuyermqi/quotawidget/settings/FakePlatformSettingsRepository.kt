@@ -12,16 +12,21 @@ import kotlinx.coroutines.flow.asStateFlow
 class FakePlatformSettingsRepository(
     deepSeek: DeepSeekSettings = DeepSeekSettings(),
     openCode: OpenCodeGoSettings = OpenCodeGoSettings(),
+    codex: CodexSettings = CodexSettings(),
     widgetStates: Map<String, WidgetDisplayState> = emptyMap(),
 ) : PlatformSettingsRepository {
     private val deepSeekFlow = MutableStateFlow(deepSeek)
     private val openCodeFlow = MutableStateFlow(openCode)
+    private val codexFlow = MutableStateFlow(codex)
     private val widgetFlows = mutableMapOf(
         PlatformIds.DEEPSEEK to MutableStateFlow(
             widgetStates[PlatformIds.DEEPSEEK] ?: WidgetDisplayState.NotConfigured,
         ),
         PlatformIds.OPENCODE_GO to MutableStateFlow(
             widgetStates[PlatformIds.OPENCODE_GO] ?: WidgetDisplayState.NotConfigured,
+        ),
+        PlatformIds.CODEX to MutableStateFlow(
+            widgetStates[PlatformIds.CODEX] ?: WidgetDisplayState.NotConfigured,
         ),
     )
     private val refreshPhases = mutableMapOf<String, RefreshIconPhase>()
@@ -58,6 +63,25 @@ class FakePlatformSettingsRepository(
             usageDisplayMode = displayMode,
         )
         widgetFlow(PlatformIds.OPENCODE_GO).value = WidgetDisplayState.NotConfigured
+    }
+
+    override fun observeCodexSettings(): Flow<CodexSettings> = codexFlow.asStateFlow()
+    override suspend fun getCodexSettings(): CodexSettings = codexFlow.value
+    override suspend fun saveCodexSettings(settings: CodexSettings) {
+        codexFlow.value = settings
+        if (!settings.isConfigured) {
+            widgetFlow(PlatformIds.CODEX).value = WidgetDisplayState.NotConfigured
+        }
+    }
+
+    override suspend fun clearCodexSettings() {
+        val window = codexFlow.value.widgetWindowKind
+        val displayMode = codexFlow.value.usageDisplayMode
+        codexFlow.value = CodexSettings(
+            widgetWindowKind = window,
+            usageDisplayMode = displayMode,
+        )
+        widgetFlow(PlatformIds.CODEX).value = WidgetDisplayState.NotConfigured
     }
 
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =

@@ -3,8 +3,8 @@ package com.kuyermqi.quotawidget.opencode
 import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
-import com.kuyermqi.quotawidget.domain.formatOpenCodePrimaryDisplay
-import com.kuyermqi.quotawidget.domain.formatOpenCodeRemainingRolling
+import com.kuyermqi.quotawidget.domain.formatUsagePrimaryDisplay
+import com.kuyermqi.quotawidget.domain.formatUsageRemainingRolling
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.util.currentTimeMillis
@@ -83,8 +83,8 @@ class OpenCodeGoClient(
             platformId = PlatformIds.OPENCODE_GO,
             platformName = PlatformRegistry.displayName(PlatformIds.OPENCODE_GO),
             windows = windows,
-            primaryDisplay = formatOpenCodeRemainingRolling(windows)
-                ?: formatOpenCodePrimaryDisplay(windows),
+            primaryDisplay = formatUsageRemainingRolling(windows)
+                ?: formatUsagePrimaryDisplay(windows),
             updatedAtEpochMs = currentTimeMillis(),
         )
     }

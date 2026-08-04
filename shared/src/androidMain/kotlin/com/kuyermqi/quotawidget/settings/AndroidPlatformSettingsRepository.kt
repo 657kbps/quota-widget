@@ -21,8 +21,8 @@ import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.DarkThemeMode
 import com.kuyermqi.quotawidget.domain.DEFAULT_CUSTOM_SEED_COLOR_ARGB
 import com.kuyermqi.quotawidget.domain.DEFAULT_REFRESH_INTERVAL_MINUTES
-import com.kuyermqi.quotawidget.domain.OpenCodeUsageDisplayMode
-import com.kuyermqi.quotawidget.domain.OpenCodeWidgetWindowKind
+import com.kuyermqi.quotawidget.domain.UsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
@@ -109,6 +109,67 @@ class AndroidPlatformSettingsRepository(
         val current = getOpenCodeGoSettings()
         saveOpenCodeGoSettings(
             OpenCodeGoSettings(
+                widgetWindowKind = current.widgetWindowKind,
+                usageDisplayMode = current.usageDisplayMode,
+            ),
+        )
+    }
+
+    override fun observeCodexSettings(): Flow<CodexSettings> =
+        dataStore.data.map { prefs -> prefs.toCodexSettings() }
+
+    override suspend fun getCodexSettings(): CodexSettings =
+        dataStore.data.first().toCodexSettings()
+
+    override suspend fun saveCodexSettings(settings: CodexSettings) {
+        dataStore.edit { prefs ->
+            if (!settings.isConfigured) {
+                prefs.remove(Keys.CODEX_ACCESS_ENC)
+                prefs.remove(Keys.CODEX_REFRESH_ENC)
+                prefs.remove(Keys.CODEX_ID_ENC)
+                prefs.remove(Keys.CODEX_ACCOUNT_ID)
+                prefs.remove(Keys.CODEX_EXPIRES_AT)
+                prefs.remove(Keys.CODEX_EMAIL)
+                prefs.remove(Keys.CODEX_PLAN_TYPE)
+                prefs.clearWidgetPayload(PlatformIds.CODEX)
+                prefs[widgetStatusKey(PlatformIds.CODEX)] = Status.NOT_CONFIGURED
+            } else {
+                prefs[Keys.CODEX_ACCESS_ENC] = encrypt(settings.accessToken, CODEX_ACCESS_AD)
+                prefs[Keys.CODEX_REFRESH_ENC] = encrypt(settings.refreshToken, CODEX_REFRESH_AD)
+                if (settings.idToken.isBlank()) {
+                    prefs.remove(Keys.CODEX_ID_ENC)
+                } else {
+                    prefs[Keys.CODEX_ID_ENC] = encrypt(settings.idToken, CODEX_ID_AD)
+                }
+                prefs[Keys.CODEX_ACCOUNT_ID] = settings.accountId
+                prefs[Keys.CODEX_EXPIRES_AT] = settings.expiresAtEpochMs
+                if (settings.email.isBlank()) {
+                    prefs.remove(Keys.CODEX_EMAIL)
+                } else {
+                    prefs[Keys.CODEX_EMAIL] = settings.email
+                }
+                if (settings.planType.isBlank()) {
+                    prefs.remove(Keys.CODEX_PLAN_TYPE)
+                } else {
+                    prefs[Keys.CODEX_PLAN_TYPE] = settings.planType
+                }
+                val status = prefs[widgetStatusKey(PlatformIds.CODEX)]
+                if (status == null ||
+                    status == Status.NOT_CONFIGURED ||
+                    status == Status.NEEDS_REAUTH
+                ) {
+                    prefs[widgetStatusKey(PlatformIds.CODEX)] = Status.LOADING
+                }
+            }
+            prefs[Keys.CODEX_WIDGET_WINDOW] = settings.widgetWindowKind.name
+            prefs[Keys.CODEX_USAGE_DISPLAY] = settings.usageDisplayMode.name
+        }
+    }
+
+    override suspend fun clearCodexSettings() {
+        val current = getCodexSettings()
+        saveCodexSettings(
+            CodexSettings(
                 widgetWindowKind = current.widgetWindowKind,
                 usageDisplayMode = current.usageDisplayMode,
             ),
@@ -204,7 +265,11 @@ class AndroidPlatformSettingsRepository(
 
     override suspend fun clearAllRefreshIconPhases() {
         dataStore.edit { prefs ->
-            for (platformId in listOf(PlatformIds.DEEPSEEK, PlatformIds.OPENCODE_GO)) {
+            for (platformId in listOf(
+                PlatformIds.DEEPSEEK,
+                PlatformIds.OPENCODE_GO,
+                PlatformIds.CODEX,
+            )) {
                 prefs[refreshPhaseKey(platformId)] = RefreshIconPhase.Idle.name
             }
             prefs.remove(Keys.LEGACY_REFRESH_ICON_PHASE)
@@ -288,8 +353,26 @@ class AndroidPlatformSettingsRepository(
             workspaceId = this[Keys.OPENCODE_WORKSPACE_ID].orEmpty(),
             workspaceName = this[Keys.OPENCODE_WORKSPACE_NAME].orEmpty(),
             authCookie = authCookie,
-            widgetWindowKind = OpenCodeWidgetWindowKind.fromStorage(this[Keys.OPENCODE_WIDGET_WINDOW]),
-            usageDisplayMode = OpenCodeUsageDisplayMode.fromStorage(this[Keys.OPENCODE_USAGE_DISPLAY]),
+            widgetWindowKind = UsageWindowKind.fromStorage(this[Keys.OPENCODE_WIDGET_WINDOW]),
+            usageDisplayMode = UsageDisplayMode.fromStorage(this[Keys.OPENCODE_USAGE_DISPLAY]),
+        )
+    }
+
+    private fun Preferences.toCodexSettings(): CodexSettings {
+        fun decryptOrEmpty(key: Preferences.Key<String>, ad: ByteArray): String =
+            this[key]?.let { runCatching { decrypt(it, ad) }.getOrDefault("") }.orEmpty()
+        return CodexSettings(
+            accessToken = decryptOrEmpty(Keys.CODEX_ACCESS_ENC, CODEX_ACCESS_AD),
+            refreshToken = decryptOrEmpty(Keys.CODEX_REFRESH_ENC, CODEX_REFRESH_AD),
+            idToken = decryptOrEmpty(Keys.CODEX_ID_ENC, CODEX_ID_AD),
+            accountId = this[Keys.CODEX_ACCOUNT_ID].orEmpty(),
+            expiresAtEpochMs = this[Keys.CODEX_EXPIRES_AT] ?: 0L,
+            email = this[Keys.CODEX_EMAIL].orEmpty(),
+            planType = this[Keys.CODEX_PLAN_TYPE].orEmpty(),
+            widgetWindowKind = this[Keys.CODEX_WIDGET_WINDOW]
+                ?.let { UsageWindowKind.fromStorage(it) }
+                ?: UsageWindowKind.WEEKLY,
+            usageDisplayMode = UsageDisplayMode.fromStorage(this[Keys.CODEX_USAGE_DISPLAY]),
         )
     }
 
@@ -297,6 +380,7 @@ class AndroidPlatformSettingsRepository(
         when (platformId) {
             PlatformIds.DEEPSEEK -> toDeepSeekSettings().apiKey.isNotBlank()
             PlatformIds.OPENCODE_GO -> toOpenCodeGoSettings().isConfigured
+            PlatformIds.CODEX -> toCodexSettings().isConfigured
             else -> false
         }
 
@@ -416,6 +500,15 @@ class AndroidPlatformSettingsRepository(
         val OPENCODE_AUTH_COOKIE_ENC = stringPreferencesKey("opencode_auth_cookie_enc")
         val OPENCODE_WIDGET_WINDOW = stringPreferencesKey("opencode_go_widget_window")
         val OPENCODE_USAGE_DISPLAY = stringPreferencesKey("opencode_go_usage_display")
+        val CODEX_ACCESS_ENC = stringPreferencesKey("codex_access_token_enc")
+        val CODEX_REFRESH_ENC = stringPreferencesKey("codex_refresh_token_enc")
+        val CODEX_ID_ENC = stringPreferencesKey("codex_id_token_enc")
+        val CODEX_ACCOUNT_ID = stringPreferencesKey("codex_account_id")
+        val CODEX_EXPIRES_AT = longPreferencesKey("codex_expires_at")
+        val CODEX_EMAIL = stringPreferencesKey("codex_email")
+        val CODEX_PLAN_TYPE = stringPreferencesKey("codex_plan_type")
+        val CODEX_WIDGET_WINDOW = stringPreferencesKey("codex_widget_window")
+        val CODEX_USAGE_DISPLAY = stringPreferencesKey("codex_usage_display")
         val ACTIVE_PLATFORM_ID = stringPreferencesKey("active_platform_id")
         val LEGACY_WIDGET_STATUS = stringPreferencesKey("widget_status")
         val LEGACY_WIDGET_ERROR = stringPreferencesKey("widget_error")
@@ -449,6 +542,9 @@ class AndroidPlatformSettingsRepository(
     companion object {
         private val API_KEY_AD = "deepseek_api_key".encodeToByteArray()
         private val OPENCODE_AUTH_AD = "opencode_auth_cookie".encodeToByteArray()
+        private val CODEX_ACCESS_AD = "codex_access_token".encodeToByteArray()
+        private val CODEX_REFRESH_AD = "codex_refresh_token".encodeToByteArray()
+        private val CODEX_ID_AD = "codex_id_token".encodeToByteArray()
 
         private fun widgetStatusKey(platformId: String) =
             stringPreferencesKey("widget_${platformId}_status")
