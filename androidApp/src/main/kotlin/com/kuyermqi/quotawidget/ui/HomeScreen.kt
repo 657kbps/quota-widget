@@ -1,9 +1,5 @@
 package com.kuyermqi.quotawidget.ui
 
-import android.app.Activity
-import android.webkit.CookieManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -39,34 +35,27 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import android.content.res.Resources
 import com.kuyermqi.quotawidget.R
-import com.kuyermqi.quotawidget.domain.CurrencyPreference
-import com.kuyermqi.quotawidget.domain.OpenCodeUsageDisplayMode
-import com.kuyermqi.quotawidget.domain.OpenCodeWidgetWindowKind
-import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
-import com.kuyermqi.quotawidget.domain.formatOpenCodeUsageForWindow
-import com.kuyermqi.quotawidget.domain.opencode.OpenCodeLoginWebViewFlow
-import com.kuyermqi.quotawidget.opencode.OpenCodeGoClient
-import com.kuyermqi.quotawidget.opencode.OpenCodeWorkspace
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
-import com.kuyermqi.quotawidget.settings.DeepSeekSettings
-import com.kuyermqi.quotawidget.settings.OpenCodeGoSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
-import com.kuyermqi.quotawidget.ui.components.DeepSeekConfigContent
-import com.kuyermqi.quotawidget.ui.components.OpenCodeGoConfigContent
 import com.kuyermqi.quotawidget.ui.components.PlatformConfigItem
 import com.kuyermqi.quotawidget.ui.components.TipBanner
 import com.kuyermqi.quotawidget.ui.components.isIgnoringBatteryOptimizations
 import com.kuyermqi.quotawidget.ui.components.requestIgnoreBatteryOptimizations
+import com.kuyermqi.quotawidget.ui.home.CodexHomeContent
+import com.kuyermqi.quotawidget.ui.home.CodexHomeEffects
+import com.kuyermqi.quotawidget.ui.home.DeepSeekHomeContent
+import com.kuyermqi.quotawidget.ui.home.DeepSeekHomeEffects
+import com.kuyermqi.quotawidget.ui.home.OpenCodeGoHomeContent
+import com.kuyermqi.quotawidget.ui.home.OpenCodeGoHomeEffects
+import com.kuyermqi.quotawidget.ui.home.rememberCodexHomeState
+import com.kuyermqi.quotawidget.ui.home.rememberDeepSeekHomeState
+import com.kuyermqi.quotawidget.ui.home.rememberOpenCodeGoHomeState
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 data class FocusPlatformRequest(
     val platformId: String,
@@ -92,214 +81,26 @@ fun HomeScreen(
     val resources = LocalResources.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val listState = rememberLazyListState()
-    val msgLoginFailed = stringResource(R.string.opencode_login_failed)
-    val msgWorkspacesLoadFailed = stringResource(R.string.opencode_workspaces_load_failed)
-    val msgWorkspaceMissing = stringResource(R.string.opencode_workspace_missing)
     val msgNeedsReauth = stringResource(R.string.widget_needs_reauth)
     val msgLoadingBalance = stringResource(R.string.widget_loading_balance)
+    val msgOpenCodeWorkspaceMissing = stringResource(R.string.opencode_workspace_missing)
+    val msgOpenCodeWorkspacesLoadFailed = stringResource(R.string.opencode_workspaces_load_failed)
+
     var showBatteryOptimizationTip by remember {
         mutableStateOf(!context.isIgnoringBatteryOptimizations())
-    }
-    var savedDeepSeek by remember { mutableStateOf(DeepSeekSettings()) }
-    var draftApiKey by remember { mutableStateOf("") }
-    var draftCurrency by remember { mutableStateOf(CurrencyPreference.CNY) }
-    var openCodeSettings by remember { mutableStateOf(OpenCodeGoSettings()) }
-    var draftOpenCodeWorkspaceId by remember { mutableStateOf("") }
-    var draftOpenCodeWorkspaceName by remember { mutableStateOf("") }
-    var draftOpenCodeWindowKind by remember {
-        mutableStateOf(OpenCodeWidgetWindowKind.ROLLING)
-    }
-    var draftOpenCodeUsageDisplayMode by remember {
-        mutableStateOf(OpenCodeUsageDisplayMode.USED)
     }
     var expandedPlatformId by remember { mutableStateOf<String?>(null) }
     var highlightPlatformId by remember { mutableStateOf<String?>(null) }
     var highlightNonce by remember { mutableStateOf<Long?>(null) }
-    var loaded by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
-    var isSaving by remember { mutableStateOf(false) }
-    var isOpenCodeBusy by remember { mutableStateOf(false) }
-    var saveError by remember { mutableStateOf<String?>(null) }
-    var openCodeError by remember { mutableStateOf<String?>(null) }
-    var opencodeWorkspaces by remember { mutableStateOf<List<OpenCodeWorkspace>>(emptyList()) }
-    var isLoadingWorkspaces by remember { mutableStateOf(false) }
-    var workspacesError by remember { mutableStateOf<String?>(null) }
-    var lastDeepSeekDisplay by remember { mutableStateOf<String?>(null) }
-    var lastOpenCodeDisplay by remember { mutableStateOf<String?>(null) }
-    val openCodeClient = remember { OpenCodeGoClient() }
-    DisposableEffect(openCodeClient) {
-        onDispose { openCodeClient.close() }
-    }
 
-    fun applyOpenCodeDraft(settings: OpenCodeGoSettings) {
-        draftOpenCodeWorkspaceId = settings.workspaceId
-        draftOpenCodeWorkspaceName = settings.workspaceName
-        draftOpenCodeWindowKind = settings.widgetWindowKind
-        draftOpenCodeUsageDisplayMode = settings.usageDisplayMode
-    }
+    val deepSeek = rememberDeepSeekHomeState(settingsRepository)
+    val openCode = rememberOpenCodeGoHomeState(settingsRepository)
+    val codex = rememberCodexHomeState(settingsRepository)
 
-    suspend fun clearOpenCodeSession(
-        keepWindowKind: OpenCodeWidgetWindowKind,
-        keepUsageDisplayMode: OpenCodeUsageDisplayMode,
-    ) {
-        settingsRepository.clearOpenCodeGoSettings()
-        openCodeSettings = OpenCodeGoSettings(
-            widgetWindowKind = keepWindowKind,
-            usageDisplayMode = keepUsageDisplayMode,
-        )
-        applyOpenCodeDraft(openCodeSettings)
-        opencodeWorkspaces = emptyList()
-        workspacesError = null
-        CookieManager.getInstance().removeAllCookies(null)
-        CookieManager.getInstance().flush()
-        lastOpenCodeDisplay = null
-    }
-
-    /**
-     * Fetches workspace list. Does not persist picker changes except when
-     * [persistMissingSelection] is true (login bootstrap): if the saved id is absent,
-     * the first workspace is written so quota refresh has a valid target.
-     * On normal refresh, a missing saved id only updates the draft (marks dirty).
-     */
-    suspend fun loadOpenCodeWorkspaces(
-        settings: OpenCodeGoSettings = openCodeSettings,
-        persistMissingSelection: Boolean = false,
-    ): OpenCodeGoSettings {
-        if (!settings.isConfigured) {
-            opencodeWorkspaces = emptyList()
-            workspacesError = null
-            return settings
-        }
-        isLoadingWorkspaces = true
-        workspacesError = null
-        return try {
-            val list = withContext(Dispatchers.IO) {
-                openCodeClient.listWorkspaces(settings.authCookie)
-            }
-            opencodeWorkspaces = list
-            if (list.isEmpty()) return settings
-            val matched = list.find { it.id == settings.workspaceId }
-            if (matched != null) {
-                // Display name comes from the live list; do not auto-persist name.
-                return settings
-            }
-            val first = list.first()
-            if (persistMissingSelection) {
-                val next = settings.copy(
-                    workspaceId = first.id,
-                    workspaceName = first.name,
-                )
-                settingsRepository.saveOpenCodeGoSettings(next)
-                openCodeSettings = next
-                applyOpenCodeDraft(next)
-                next
-            } else {
-                val draftStillOnSaved = draftOpenCodeWorkspaceId == settings.workspaceId
-                val draftMissing = list.none { it.id == draftOpenCodeWorkspaceId }
-                if (draftStillOnSaved || draftMissing) {
-                    draftOpenCodeWorkspaceId = first.id
-                    draftOpenCodeWorkspaceName = first.name
-                }
-                workspacesError = msgWorkspaceMissing
-                settings
-            }
-        } catch (e: Exception) {
-            android.util.Log.w(
-                "OpenCodeGo",
-                "listWorkspaces failed: ${e.message}",
-                e,
-            )
-            workspacesError = msgWorkspacesLoadFailed
-            settings
-        } finally {
-            isLoadingWorkspaces = false
-        }
-    }
-
-    val deepSeekWidgetState by settingsRepository.observeWidgetState(PlatformIds.DEEPSEEK)
-        .collectAsStateWithLifecycle(initialValue = WidgetDisplayState.NotConfigured)
-    val openCodeWidgetState by settingsRepository.observeWidgetState(PlatformIds.OPENCODE_GO)
-        .collectAsStateWithLifecycle(initialValue = WidgetDisplayState.NotConfigured)
-
-    val openCodeLoginLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult(),
-    ) { result ->
-        if (result.resultCode != Activity.RESULT_OK) {
-            openCodeError = msgLoginFailed
-            return@rememberLauncherForActivityResult
-        }
-        val workspaceId = result.data
-            ?.getStringExtra(OpenCodeLoginWebViewFlow.EXTRA_RESULT_WORKSPACE_ID)
-            .orEmpty()
-        val authCookie = result.data
-            ?.getStringExtra(OpenCodeLoginWebViewFlow.EXTRA_RESULT_AUTH_COOKIE)
-            .orEmpty()
-        if (workspaceId.isBlank() || authCookie.isBlank()) {
-            openCodeError = msgLoginFailed
-            return@rememberLauncherForActivityResult
-        }
-        scope.launch {
-            isOpenCodeBusy = true
-            openCodeError = null
-            try {
-                var next = OpenCodeGoSettings(
-                    workspaceId = workspaceId,
-                    authCookie = authCookie,
-                    widgetWindowKind = draftOpenCodeWindowKind,
-                    usageDisplayMode = draftOpenCodeUsageDisplayMode,
-                )
-                settingsRepository.saveOpenCodeGoSettings(next)
-                openCodeSettings = next
-                applyOpenCodeDraft(next)
-                next = loadOpenCodeWorkspaces(next, persistMissingSelection = true)
-                applyOpenCodeDraft(next)
-                when (val refresh = onRefreshPlatform(PlatformIds.OPENCODE_GO)) {
-                    is WidgetDisplayState.Success -> {
-                        openCodeError = null
-                    }
-                    is WidgetDisplayState.Error -> {
-                        // Keep credentials only when fetch failed for a non-auth reason.
-                        openCodeError = refresh.message
-                    }
-                    WidgetDisplayState.NeedsReauth -> {
-                        // Cookie was captured but session is still public/invalid — don't leave
-                        // a contradictory "已登录" + "需登录" state.
-                        clearOpenCodeSession(
-                            keepWindowKind = next.widgetWindowKind,
-                            keepUsageDisplayMode = next.usageDisplayMode,
-                        )
-                        openCodeError = msgLoginFailed
-                    }
-                    else -> {
-                        openCodeError = null
-                    }
-                }
-                WidgetGlanceState.syncAndUpdate(context, "opencode_login")
-            } finally {
-                isOpenCodeBusy = false
-            }
-        }
-    }
-
-    LaunchedEffect(deepSeekWidgetState) {
-        val success = deepSeekWidgetState as? WidgetDisplayState.Success ?: return@LaunchedEffect
-        lastDeepSeekDisplay = success.snapshot.primaryDisplay
-    }
-    LaunchedEffect(
-        openCodeWidgetState,
-        openCodeSettings.widgetWindowKind,
-        openCodeSettings.usageDisplayMode,
-        resources,
-    ) {
-        val success = openCodeWidgetState as? WidgetDisplayState.Success ?: return@LaunchedEffect
-        lastOpenCodeDisplay = formatOpenCodeUsageSummary(
-            resources = resources,
-            windows = success.snapshot.windows,
-            windowKind = openCodeSettings.widgetWindowKind,
-            usageDisplayMode = openCodeSettings.usageDisplayMode,
-            fallback = success.snapshot.primaryDisplay,
-        )
-    }
+    val deepSeekWidgetState = DeepSeekHomeEffects(deepSeek)
+    val openCodeBindings = OpenCodeGoHomeEffects(openCode, onRefreshPlatform)
+    val codexBindings = CodexHomeEffects(codex, onRefreshPlatform)
 
     val hasVisibleTips = tipLoaded && (
         showBatteryOptimizationTip || showOemBackgroundTip || showPlatformTip
@@ -329,59 +130,40 @@ fun HomeScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    fun summaryLabelFor(platformId: String): String? {
-        val configured = when (platformId) {
-            PlatformIds.DEEPSEEK -> savedDeepSeek.apiKey.isNotBlank()
-            PlatformIds.OPENCODE_GO -> openCodeSettings.isConfigured
-            else -> false
-        }
-        if (!configured) return null
-        val state = when (platformId) {
-            PlatformIds.DEEPSEEK -> deepSeekWidgetState
-            PlatformIds.OPENCODE_GO -> openCodeWidgetState
-            else -> return null
-        }
-        fun deepSeekBalanceLabel(amount: String): String =
-            resources.getString(R.string.deepseek_balance_summary, amount)
-        return when (state) {
-            is WidgetDisplayState.Success -> when (platformId) {
-                PlatformIds.OPENCODE_GO ->
-                    formatOpenCodeUsageSummary(
-                        resources = resources,
-                        windows = state.snapshot.windows,
-                        windowKind = openCodeSettings.widgetWindowKind,
-                        usageDisplayMode = openCodeSettings.usageDisplayMode,
-                        fallback = state.snapshot.primaryDisplay,
-                    )
-                PlatformIds.DEEPSEEK -> deepSeekBalanceLabel(state.snapshot.primaryDisplay)
-                else -> state.snapshot.primaryDisplay
-            }
-            WidgetDisplayState.Loading -> when (platformId) {
-                PlatformIds.DEEPSEEK -> lastDeepSeekDisplay?.let(::deepSeekBalanceLabel)
-                    ?: msgLoadingBalance
-                PlatformIds.OPENCODE_GO -> lastOpenCodeDisplay ?: msgLoadingBalance
-                else -> null
-            }
-            is WidgetDisplayState.Error -> when (platformId) {
-                PlatformIds.DEEPSEEK -> lastDeepSeekDisplay?.let(::deepSeekBalanceLabel)
-                PlatformIds.OPENCODE_GO -> lastOpenCodeDisplay
-                else -> null
-            }
-            WidgetDisplayState.NeedsReauth -> msgNeedsReauth
-            WidgetDisplayState.NotConfigured -> null
-        }
+    fun summaryLabelFor(platformId: String): String? = when (platformId) {
+        PlatformIds.DEEPSEEK -> deepSeek.summaryLabel(
+            resources = resources,
+            widgetState = deepSeekWidgetState,
+            loadingMsg = msgLoadingBalance,
+            reauthMsg = msgNeedsReauth,
+        )
+        PlatformIds.OPENCODE_GO -> openCode.summaryLabel(
+            resources = resources,
+            widgetState = openCodeBindings.widgetState,
+            loadingMsg = msgLoadingBalance,
+            reauthMsg = msgNeedsReauth,
+        )
+        PlatformIds.CODEX -> codex.summaryLabel(
+            resources = resources,
+            widgetState = codexBindings.widgetState,
+            loadingMsg = msgLoadingBalance,
+            reauthMsg = msgNeedsReauth,
+        )
+        else -> null
     }
 
     suspend fun refreshAll(showPullIndicator: Boolean = false) {
         val anyConfigured =
-            savedDeepSeek.apiKey.isNotBlank() || openCodeSettings.isConfigured
+            deepSeek.isConfigured || openCode.isConfigured || codex.isConfigured
         if (!anyConfigured) return
         if (showPullIndicator) isRefreshing = true
         try {
             onRefreshAllConfigured()
-            if (openCodeSettings.isConfigured) {
-                // List only — do not persist workspace changes; user must Save.
-                loadOpenCodeWorkspaces(persistMissingSelection = false)
+            if (openCode.isConfigured) {
+                openCode.reloadWorkspacesForHomeRefresh(
+                    msgWorkspaceMissing = msgOpenCodeWorkspaceMissing,
+                    msgWorkspacesLoadFailed = msgOpenCodeWorkspacesLoadFailed,
+                )
             }
             WidgetGlanceState.syncAndUpdate(context, "home_refresh")
         } finally {
@@ -390,30 +172,13 @@ fun HomeScreen(
     }
 
     LaunchedEffect(Unit) {
-        val deepSeek = settingsRepository.getDeepSeekSettings()
-        savedDeepSeek = deepSeek
-        draftApiKey = deepSeek.apiKey
-        draftCurrency = deepSeek.currency
-        openCodeSettings = settingsRepository.getOpenCodeGoSettings()
-        applyOpenCodeDraft(openCodeSettings)
-        loaded = true
-        if (deepSeek.apiKey.isNotBlank() || openCodeSettings.isConfigured) {
+        deepSeek.applyLoaded(settingsRepository.getDeepSeekSettings())
+        openCode.applyLoaded(settingsRepository.getOpenCodeGoSettings())
+        codex.applyLoaded(settingsRepository.getCodexSettings())
+        if (deepSeek.isConfigured || openCode.isConfigured || codex.isConfigured) {
             refreshAll(showPullIndicator = false)
         }
     }
-
-    val isDirty = loaded && (
-        draftApiKey != savedDeepSeek.apiKey || draftCurrency != savedDeepSeek.currency
-        )
-    val isOpenCodeDirty = loaded && openCodeSettings.isConfigured && (
-        draftOpenCodeWorkspaceId != openCodeSettings.workspaceId ||
-            draftOpenCodeWorkspaceName != openCodeSettings.workspaceName ||
-            draftOpenCodeWindowKind != openCodeSettings.widgetWindowKind ||
-            draftOpenCodeUsageDisplayMode != openCodeSettings.usageDisplayMode
-        )
-
-    val openCodeWindows =
-        (openCodeWidgetState as? WidgetDisplayState.Success)?.snapshot?.windows.orEmpty()
 
     Scaffold(
         topBar = {
@@ -487,7 +252,7 @@ fun HomeScreen(
                                             InAppWebViewActivity.createIntent(
                                                 context = context,
                                                 url = oemGuideUrl,
-                                                title = "DontKillMyApp",
+                                                title = "Don‘t Kill My App",
                                             ),
                                         )
                                     },
@@ -530,141 +295,19 @@ fun HomeScreen(
                         },
                     ) {
                         when (platform.id) {
-                            PlatformIds.DEEPSEEK -> DeepSeekConfigContent(
-                                apiKey = draftApiKey,
-                                onApiKeyChange = {
-                                    draftApiKey = it
-                                    saveError = null
-                                },
-                                currency = draftCurrency,
-                                onCurrencyChange = {
-                                    draftCurrency = it
-                                    saveError = null
-                                },
-                                isDirty = isDirty,
-                                isSaving = isSaving,
-                                saveError = saveError,
-                                onSave = {
-                                    scope.launch {
-                                        val next = DeepSeekSettings(
-                                            apiKey = draftApiKey.trim(),
-                                            currency = draftCurrency,
-                                        )
-                                        isSaving = true
-                                        saveError = null
-                                        try {
-                                            settingsRepository.saveDeepSeekSettings(next)
-                                            savedDeepSeek = next
-                                            draftApiKey = next.apiKey
-                                            if (next.apiKey.isBlank()) {
-                                                lastDeepSeekDisplay = null
-                                            }
-                                            saveError = when (
-                                                val result = onRefreshPlatform(PlatformIds.DEEPSEEK)
-                                            ) {
-                                                is WidgetDisplayState.Error -> result.message
-                                                else -> null
-                                            }
-                                            WidgetGlanceState.syncAndUpdate(context, "deepseek_save")
-                                        } finally {
-                                            isSaving = false
-                                        }
-                                    }
-                                },
+                            PlatformIds.DEEPSEEK -> DeepSeekHomeContent(
+                                state = deepSeek,
+                                onRefreshPlatform = onRefreshPlatform,
                             )
-                            PlatformIds.OPENCODE_GO -> OpenCodeGoConfigContent(
-                                isLoggedIn = openCodeSettings.isConfigured &&
-                                    openCodeWidgetState !is WidgetDisplayState.NeedsReauth,
-                                isBusy = isOpenCodeBusy,
-                                isDirty = isOpenCodeDirty,
-                                errorMessage = openCodeError,
-                                windows = openCodeWindows,
-                                workspaces = opencodeWorkspaces,
-                                selectedWorkspaceId = draftOpenCodeWorkspaceId,
-                                selectedWorkspaceName = draftOpenCodeWorkspaceName,
-                                isLoadingWorkspaces = isLoadingWorkspaces,
-                                workspacesError = workspacesError,
-                                widgetWindowKind = draftOpenCodeWindowKind,
-                                onWidgetWindowKindChange = { kind ->
-                                    draftOpenCodeWindowKind = kind
-                                    openCodeError = null
-                                },
-                                usageDisplayMode = draftOpenCodeUsageDisplayMode,
-                                onUsageDisplayModeChange = { mode ->
-                                    draftOpenCodeUsageDisplayMode = mode
-                                    openCodeError = null
-                                },
-                                onWorkspaceSelected = { workspace ->
-                                    draftOpenCodeWorkspaceId = workspace.id
-                                    draftOpenCodeWorkspaceName = workspace.name
-                                    openCodeError = null
-                                },
-                                onLogin = {
-                                    openCodeError = null
-                                    openCodeLoginLauncher.launch(
-                                        OpenCodeLoginWebViewFlow.createIntent(context),
-                                    )
-                                },
-                                onLogout = {
-                                    scope.launch {
-                                        isOpenCodeBusy = true
-                                        openCodeError = null
-                                        try {
-                                            clearOpenCodeSession(
-                                                keepWindowKind = draftOpenCodeWindowKind,
-                                                keepUsageDisplayMode = draftOpenCodeUsageDisplayMode,
-                                            )
-                                            WidgetGlanceState.syncAndUpdate(
-                                                context,
-                                                "opencode_logout",
-                                            )
-                                        } finally {
-                                            isOpenCodeBusy = false
-                                        }
-                                    }
-                                },
-                                onSave = {
-                                    scope.launch {
-                                        isOpenCodeBusy = true
-                                        openCodeError = null
-                                        try {
-                                            val next = openCodeSettings.copy(
-                                                workspaceId = draftOpenCodeWorkspaceId,
-                                                workspaceName = draftOpenCodeWorkspaceName,
-                                                widgetWindowKind = draftOpenCodeWindowKind,
-                                                usageDisplayMode = draftOpenCodeUsageDisplayMode,
-                                            )
-                                            settingsRepository.saveOpenCodeGoSettings(next)
-                                            openCodeSettings = next
-                                            applyOpenCodeDraft(next)
-                                            when (
-                                                val result =
-                                                    onRefreshPlatform(PlatformIds.OPENCODE_GO)
-                                            ) {
-                                                is WidgetDisplayState.Error -> {
-                                                    openCodeError = result.message
-                                                }
-                                                WidgetDisplayState.NeedsReauth -> {
-                                                    clearOpenCodeSession(
-                                                        keepWindowKind = next.widgetWindowKind,
-                                                        keepUsageDisplayMode = next.usageDisplayMode,
-                                                    )
-                                                    openCodeError = msgNeedsReauth
-                                                }
-                                                else -> {
-                                                    openCodeError = null
-                                                    workspacesError = null
-                                                }
-                                            }
-                                            WidgetGlanceState.syncAndUpdate(
-                                                context,
-                                                "opencode_save",
-                                            )
-                                        } finally {
-                                            isOpenCodeBusy = false
-                                        }
-                                    }
-                                },
+                            PlatformIds.OPENCODE_GO -> OpenCodeGoHomeContent(
+                                state = openCode,
+                                bindings = openCodeBindings,
+                                onRefreshPlatform = onRefreshPlatform,
+                            )
+                            PlatformIds.CODEX -> CodexHomeContent(
+                                state = codex,
+                                bindings = codexBindings,
+                                onRefreshPlatform = onRefreshPlatform,
                             )
                         }
                     }
@@ -672,28 +315,4 @@ fun HomeScreen(
             }
         }
     }
-}
-
-private fun formatOpenCodeUsageSummary(
-    resources: Resources,
-    windows: List<QuotaWindow>,
-    windowKind: OpenCodeWidgetWindowKind,
-    usageDisplayMode: OpenCodeUsageDisplayMode,
-    fallback: String,
-): String {
-    val percent = formatOpenCodeUsageForWindow(windows, windowKind, usageDisplayMode)
-        ?: return fallback
-    val resId = when (usageDisplayMode) {
-        OpenCodeUsageDisplayMode.USED -> when (windowKind) {
-            OpenCodeWidgetWindowKind.ROLLING -> R.string.opencode_used_rolling
-            OpenCodeWidgetWindowKind.WEEKLY -> R.string.opencode_used_weekly
-            OpenCodeWidgetWindowKind.MONTHLY -> R.string.opencode_used_monthly
-        }
-        OpenCodeUsageDisplayMode.REMAINING -> when (windowKind) {
-            OpenCodeWidgetWindowKind.ROLLING -> R.string.opencode_remaining_rolling
-            OpenCodeWidgetWindowKind.WEEKLY -> R.string.opencode_remaining_weekly
-            OpenCodeWidgetWindowKind.MONTHLY -> R.string.opencode_remaining_monthly
-        }
-    }
-    return resources.getString(resId, percent)
 }
