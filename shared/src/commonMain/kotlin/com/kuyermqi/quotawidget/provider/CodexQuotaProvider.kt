@@ -1,5 +1,6 @@
 package com.kuyermqi.quotawidget.provider
 
+import com.kuyermqi.quotawidget.codex.CodexDebugLog
 import com.kuyermqi.quotawidget.codex.CodexOAuth
 import com.kuyermqi.quotawidget.codex.CodexTokenBundle
 import com.kuyermqi.quotawidget.codex.CodexUsageClient
@@ -12,6 +13,7 @@ import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.platform.QuotaPlatform
 import com.kuyermqi.quotawidget.settings.CodexSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
+import com.kuyermqi.quotawidget.util.currentTimeMillis
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -47,15 +49,30 @@ class CodexQuotaProvider internal constructor(
     override suspend fun fetch(repo: PlatformSettingsRepository): QuotaSnapshot {
         var settings = repo.getCodexSettings()
         require(settings.isConfigured) { "Codex 未登录" }
-        if (CodexOAuth.isAccessTokenExpiringSoon(settings.expiresAtEpochMs)) {
+        val expiring = CodexOAuth.isAccessTokenExpiringSoon(settings.expiresAtEpochMs)
+        CodexDebugLog.i(
+            "fetch start expiringSoon=$expiring " +
+                "expiresAt=${settings.expiresAtEpochMs} now=${currentTimeMillis()} " +
+                "at=${CodexDebugLog.tokenFp(settings.accessToken)} " +
+                "rt=${CodexDebugLog.tokenFp(settings.refreshToken)} " +
+                "account=${settings.accountId.takeLast(6)}",
+        )
+        if (expiring) {
             settings = refreshAndPersist(repo, settings, force = false)
         }
         val snapshot = try {
             usageFetcher.fetchUsage(settings.accessToken, settings.accountId)
         } catch (e: SessionExpiredException) {
+            CodexDebugLog.w(
+                "usage sessionExpired; force refresh msg=${e.message} " +
+                    "at=${CodexDebugLog.tokenFp(settings.accessToken)}",
+            )
             settings = refreshAndPersist(repo, settings, force = true)
             usageFetcher.fetchUsage(settings.accessToken, settings.accountId)
         }
+        CodexDebugLog.i(
+            "fetch ok display=${snapshot.primaryDisplay} windows=${snapshot.windows.size}",
+        )
         persistClampedWindowKind(repo, settings, snapshot.windows)
         return snapshot
     }
@@ -79,24 +96,48 @@ class CodexQuotaProvider internal constructor(
         return refreshMutex.withLock {
             val latest = repo.getCodexSettings()
             if (!latest.isConfigured) {
+                CodexDebugLog.w("refreshAndPersist abort: not configured force=$force")
                 throw SessionExpiredException("Codex 登录已失效，请重新登录")
             }
             val alreadyFresh = !CodexOAuth.isAccessTokenExpiringSoon(latest.expiresAtEpochMs)
             val rotatedByOther =
                 latest.accessToken != settings.accessToken ||
                     latest.refreshToken != settings.refreshToken
+            CodexDebugLog.i(
+                "refreshAndPersist enter force=$force alreadyFresh=$alreadyFresh " +
+                    "rotatedByOther=$rotatedByOther " +
+                    "callerAt=${CodexDebugLog.tokenFp(settings.accessToken)} " +
+                    "latestAt=${CodexDebugLog.tokenFp(latest.accessToken)} " +
+                    "latestRt=${CodexDebugLog.tokenFp(latest.refreshToken)} " +
+                    "expiresAt=${latest.expiresAtEpochMs}",
+            )
             if (alreadyFresh && (!force || rotatedByOther)) {
+                CodexDebugLog.i("refreshAndPersist skip refresh")
                 return@withLock latest
             }
-            val bundle = tokenRefresher.refresh(latest.refreshToken)
+            val bundle = try {
+                tokenRefresher.refresh(latest.refreshToken)
+            } catch (e: Exception) {
+                CodexDebugLog.w(
+                    "refreshAndPersist oauth failed force=$force " +
+                        "type=${e::class.simpleName} msg=${e.message}",
+                )
+                throw e
+            }
             // Logout / re-login may change credentials while the network call was in flight.
             val current = repo.getCodexSettings()
             if (!current.isConfigured) {
+                CodexDebugLog.w("refreshAndPersist abort: logged out during oauth")
                 throw SessionExpiredException("Codex 登录已失效，请重新登录")
             }
             if (current.refreshToken != latest.refreshToken ||
                 current.accessToken != latest.accessToken
             ) {
+                CodexDebugLog.w(
+                    "refreshAndPersist discard oauth result; credentials changed " +
+                        "currentAt=${CodexDebugLog.tokenFp(current.accessToken)} " +
+                        "currentRt=${CodexDebugLog.tokenFp(current.refreshToken)}",
+                )
                 return@withLock current
             }
             val next = current.copy(
@@ -109,6 +150,11 @@ class CodexQuotaProvider internal constructor(
                 planType = bundle.planType.ifBlank { current.planType },
             )
             repo.saveCodexSettings(next)
+            CodexDebugLog.i(
+                "refreshAndPersist persisted at=${CodexDebugLog.tokenFp(next.accessToken)} " +
+                    "rt=${CodexDebugLog.tokenFp(next.refreshToken)} " +
+                    "expiresAt=${next.expiresAtEpochMs}",
+            )
             next
         }
     }

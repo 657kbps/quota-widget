@@ -66,6 +66,9 @@ class CodexOAuth(
     }
 
     suspend fun refresh(refreshToken: String): CodexTokenBundle {
+        CodexDebugLog.i(
+            "oauth.refresh start rt=${CodexDebugLog.tokenFp(refreshToken)}",
+        )
         val response = try {
             httpClient.submitForm(
                 url = TOKEN_URL,
@@ -78,20 +81,38 @@ class CodexOAuth(
             )
         } catch (e: ClientRequestException) {
             val status = e.response.status
-            if (status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden) {
-                throw SessionExpiredException("Codex 登录已失效，请重新登录")
-            }
             val errBody = runCatching { e.response.bodyAsText() }.getOrNull().orEmpty()
+            val summary = CodexDebugLog.summarizeOAuthErrorBody(errBody)
+            CodexDebugLog.w(
+                "oauth.refresh http_error status=$status $summary " +
+                    "rt=${CodexDebugLog.tokenFp(refreshToken)}",
+            )
+            if (status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden) {
+                throw SessionExpiredException(
+                    "Codex 登录已失效，请重新登录 (oauth status=$status $summary)",
+                )
+            }
             if (errBody.contains("refresh_token_reused", ignoreCase = true) ||
                 errBody.contains("invalid_grant", ignoreCase = true)
             ) {
-                throw SessionExpiredException("Codex 登录已失效，请重新登录")
+                throw SessionExpiredException(
+                    "Codex 登录已失效，请重新登录 (oauth status=$status $summary)",
+                )
             }
-            throw IllegalStateException("OAuth token refresh failed: $status", e)
+            throw IllegalStateException("OAuth token refresh failed: $status $summary", e)
         }
         val body = response.bodyAsText()
         val token = json.decodeFromString(CodexTokenResponse.serializer(), body)
-        return token.toBundle(fallbackRefreshToken = refreshToken)
+        val bundle = token.toBundle(fallbackRefreshToken = refreshToken)
+        CodexDebugLog.i(
+            "oauth.refresh ok status=${response.status} " +
+                "expires_in=${token.expiresIn} " +
+                "at=${CodexDebugLog.tokenFp(bundle.accessToken)} " +
+                "rt=${CodexDebugLog.tokenFp(bundle.refreshToken)} " +
+                "rt_rotated=${bundle.refreshToken != refreshToken} " +
+                "account=${bundle.accountId.takeLast(6)}",
+        )
+        return bundle
     }
 
     fun close() {

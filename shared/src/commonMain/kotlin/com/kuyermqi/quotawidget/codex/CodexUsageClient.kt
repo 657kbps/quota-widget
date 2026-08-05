@@ -39,10 +39,19 @@ class CodexUsageClient(
             }
         } catch (e: ClientRequestException) {
             val status = e.response.status
+            val errBody = runCatching { e.response.bodyAsText() }.getOrNull().orEmpty()
+            val summary = CodexDebugLog.summarizeOAuthErrorBody(errBody)
+            CodexDebugLog.w(
+                "usage.http_error status=$status $summary " +
+                    "account=${accountId.takeLast(6)} " +
+                    "at=${CodexDebugLog.tokenFp(accessToken)}",
+            )
             if (status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden) {
-                throw SessionExpiredException("Codex 登录已失效，请重新登录")
+                throw SessionExpiredException(
+                    "Codex 登录已失效，请重新登录 (usage status=$status $summary)",
+                )
             }
-            throw IllegalStateException("查询 Codex 额度失败: $status", e)
+            throw IllegalStateException("查询 Codex 额度失败: $status $summary", e)
         }
         val body = response.bodyAsText()
         val dto = json.decodeFromString(CodexUsageResponse.serializer(), body)
