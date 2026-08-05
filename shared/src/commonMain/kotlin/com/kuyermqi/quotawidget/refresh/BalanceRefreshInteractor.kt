@@ -5,6 +5,7 @@ import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.provider.QuotaProvider
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
+import kotlinx.coroutines.CancellationException
 
 class BalanceRefreshInteractor(
     private val settingsRepository: PlatformSettingsRepository,
@@ -63,6 +64,8 @@ class BalanceRefreshInteractor(
             println("QuotaRefresh sessionExpired platform=$platformId msg=${e.message}")
             settingsRepository.saveWidgetNeedsReauth(platformId)
             BalanceRefreshResult.Completed(WidgetDisplayState.NeedsReauth)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             val message = e.message?.takeIf { it.isNotBlank() } ?: "查询额度失败"
             println("QuotaRefresh fetchFailed platform=$platformId msg=$message")

@@ -9,6 +9,7 @@ import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.refresh.BalanceRefreshResult
+import com.kuyermqi.quotawidget.refresh.SingleFlight
 import com.kuyermqi.quotawidget.worker.BalanceRefreshWorker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
@@ -20,6 +21,7 @@ object WidgetRefreshCoordinator {
     private const val MIN_SPINNER_VISIBLE_MS = 450L
 
     private val widgetUpdateMutex = Mutex()
+    private val backgroundRefreshFlight = SingleFlight<BalanceRefreshResult>()
 
     /**
      * ActionCallback entry: enqueue work only. Glance updates happen in the worker
@@ -88,7 +90,12 @@ object WidgetRefreshCoordinator {
         }
     }
 
-    suspend fun runBackgroundRefresh(context: Context): BalanceRefreshResult {
+    suspend fun runBackgroundRefresh(context: Context): BalanceRefreshResult =
+        backgroundRefreshFlight.run {
+            runBackgroundRefreshOnce(context.applicationContext)
+        }
+
+    private suspend fun runBackgroundRefreshOnce(context: Context): BalanceRefreshResult {
         val app = context.applicationContext as QuotaWidgetApp
         Log.i(TAG, "runBackgroundRefresh start")
         return try {

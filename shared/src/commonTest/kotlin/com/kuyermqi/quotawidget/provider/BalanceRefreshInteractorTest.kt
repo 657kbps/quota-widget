@@ -16,9 +16,11 @@ import com.kuyermqi.quotawidget.settings.DeepSeekSettings
 import com.kuyermqi.quotawidget.settings.FakePlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.OpenCodeGoSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -96,6 +98,27 @@ class BalanceRefreshInteractorTest {
         val error = assertIs<WidgetDisplayState.Error>(result.retained)
         assertEquals("boom", error.message)
         assertIs<WidgetDisplayState.Error>(repo.getWidgetState(PlatformIds.DEEPSEEK))
+    }
+
+    @Test
+    fun refresh_cancellationPropagates_withoutChangingState() = runTest {
+        val previous = deepSeekSnapshot("9.99")
+        val repo = FakePlatformSettingsRepository(
+            deepSeek = DeepSeekSettings(apiKey = "sk-test"),
+            widgetStates = mapOf(PlatformIds.DEEPSEEK to WidgetDisplayState.Success(previous)),
+        )
+        val interactor = BalanceRefreshInteractor(
+            repo,
+            listOf(FakeDeepSeekProvider(error = CancellationException("stopped"))),
+        )
+
+        assertFailsWith<CancellationException> {
+            interactor.refresh(PlatformIds.DEEPSEEK)
+        }
+        assertEquals(
+            WidgetDisplayState.Success(previous),
+            repo.getWidgetState(PlatformIds.DEEPSEEK),
+        )
     }
 
     @Test

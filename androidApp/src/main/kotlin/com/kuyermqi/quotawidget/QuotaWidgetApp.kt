@@ -1,7 +1,6 @@
 package com.kuyermqi.quotawidget
 
 import android.app.Application
-import androidx.work.WorkManager
 import com.kuyermqi.quotawidget.provider.CodexQuotaProvider
 import com.kuyermqi.quotawidget.provider.DeepSeekQuotaProvider
 import com.kuyermqi.quotawidget.provider.NewApiQuotaProvider
@@ -11,7 +10,6 @@ import com.kuyermqi.quotawidget.settings.AndroidPlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.update.UpdateCheckInteractor
-import com.kuyermqi.quotawidget.widget.BalanceRefreshWork
 import com.kuyermqi.quotawidget.widget.PeriodicRefreshScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -76,7 +74,6 @@ class QuotaWidgetApp : Application() {
                     }
                 }
         }
-        WorkManager.getInstance(this).enqueue(BalanceRefreshWork.oneTime())
     }
 
     companion object {
