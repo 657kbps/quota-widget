@@ -13,8 +13,8 @@ android {
         applicationId = "com.kuyermqi.quotawidget"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 16
-        versionName = (findProperty("versionName") as String?) ?: "1.8.1"
+        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 17
+        versionName = (findProperty("versionName") as String?) ?: "1.8.2"
     }
     packaging {
         resources {
