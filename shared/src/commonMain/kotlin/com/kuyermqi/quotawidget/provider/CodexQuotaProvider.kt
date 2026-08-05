@@ -54,13 +54,7 @@ class CodexQuotaProvider(
         repo: PlatformSettingsRepository,
         settings: CodexSettings,
     ): CodexSettings {
-        val bundle = try {
-            oauth.refresh(settings.refreshToken)
-        } catch (e: SessionExpiredException) {
-            throw e
-        } catch (e: Exception) {
-            throw SessionExpiredException(e.message ?: "Codex 登录已失效，请重新登录")
-        }
+        val bundle = oauth.refresh(settings.refreshToken)
         val next = settings.copy(
             accessToken = bundle.accessToken,
             refreshToken = bundle.refreshToken,
