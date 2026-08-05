@@ -105,7 +105,9 @@ object WidgetRefreshCoordinator {
                 logResult("configured[$index]", result)
             }
             Log.i(TAG, "runBackgroundRefresh done count=${results.size}")
-            results.lastOrNull()
+            results.firstOrNull { result ->
+                result is BalanceRefreshResult.TransientFailure && result.retryable
+            } ?: results.lastOrNull()
                 ?: BalanceRefreshResult.Completed(WidgetDisplayState.NotConfigured)
         } finally {
             updateWidgetSerialized(context, "background-refresh")

@@ -39,9 +39,14 @@ class BalanceRefreshWorker(
                     android.util.Log.w(
                         TAG,
                         "doWork transient failure userInitiated=$userInitiated " +
-                            "platformId=$platformId retained=${refreshResult.retained::class.simpleName}",
+                            "platformId=$platformId retryable=${refreshResult.retryable} " +
+                            "retained=${refreshResult.retained::class.simpleName}",
                     )
-                    Result.retry()
+                    if (refreshResult.retryable) {
+                        Result.retry()
+                    } else {
+                        Result.success()
+                    }
                 }
             }
         } catch (t: CancellationException) {

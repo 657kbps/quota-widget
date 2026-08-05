@@ -72,8 +72,9 @@ class BalanceRefreshInteractorTest {
 
         val result = interactor.refresh(PlatformIds.DEEPSEEK)
 
-        assertIs<BalanceRefreshResult.TransientFailure>(result)
-        val retained = assertIs<WidgetDisplayState.Success>(result.retained)
+        val failure = assertIs<BalanceRefreshResult.TransientFailure>(result)
+        assertEquals(true, failure.retryable)
+        val retained = assertIs<WidgetDisplayState.Success>(failure.retained)
         assertEquals("￥9.99", retained.snapshot.primaryDisplay)
         assertEquals(
             WidgetDisplayState.Success(previous),
@@ -211,6 +212,7 @@ class BalanceRefreshInteractorTest {
                 .snapshot.platformId == PlatformIds.DEEPSEEK,
         )
     }
+
 }
 
 private fun deepSeekSnapshot(amount: String): QuotaSnapshot {

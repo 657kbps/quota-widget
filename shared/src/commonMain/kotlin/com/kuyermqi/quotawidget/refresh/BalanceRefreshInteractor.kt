@@ -1,5 +1,7 @@
 package com.kuyermqi.quotawidget.refresh
 
+import com.kuyermqi.quotawidget.codex.CodexAuthErrors
+import com.kuyermqi.quotawidget.codex.CodexRegionUnavailableException
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.platform.PlatformIds
@@ -40,7 +42,7 @@ class BalanceRefreshInteractor(
      * On transient failure, keeps an existing [WidgetDisplayState.Success] instead of
      * overwriting it with Error (avoids "获取失败" after lock-screen network blips).
      *
-     * Session expiry ([SessionExpiredException] / 401/403) writes [WidgetDisplayState.NeedsReauth]
+     * Session expiry ([SessionExpiredException]) writes [WidgetDisplayState.NeedsReauth]
      * and does not retain a prior Success.
      */
     suspend fun refresh(platformId: String): BalanceRefreshResult {
@@ -68,15 +70,29 @@ class BalanceRefreshInteractor(
             throw e
         } catch (e: Exception) {
             val message = e.message?.takeIf { it.isNotBlank() } ?: "查询额度失败"
-            println("QuotaRefresh fetchFailed platform=$platformId msg=$message")
+            val retryable = !isNonRetryableTransient(e)
+            println(
+                "QuotaRefresh fetchFailed platform=$platformId " +
+                    "retryable=$retryable msg=$message",
+            )
             e.printStackTrace()
             val previous = settingsRepository.getWidgetState(platformId)
             if (previous is WidgetDisplayState.Success) {
-                BalanceRefreshResult.TransientFailure(previous)
+                BalanceRefreshResult.TransientFailure(previous, retryable = retryable)
             } else {
                 settingsRepository.saveWidgetError(platformId, message)
-                BalanceRefreshResult.TransientFailure(WidgetDisplayState.Error(message))
+                BalanceRefreshResult.TransientFailure(
+                    WidgetDisplayState.Error(message),
+                    retryable = retryable,
+                )
             }
         }
+    }
+
+    private fun isNonRetryableTransient(error: Exception): Boolean {
+        if (error is CodexRegionUnavailableException) return true
+        val message = error.message.orEmpty()
+        return message == CodexAuthErrors.REGION_UNAVAILABLE_MESSAGE ||
+            message.startsWith(CodexAuthErrors.REGION_UNAVAILABLE_MESSAGE)
     }
 }

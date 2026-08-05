@@ -1,14 +1,12 @@
 package com.kuyermqi.quotawidget.codex
 
 import com.kuyermqi.quotawidget.deepseek.createHttpClient
-import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.Parameters
-import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -87,19 +85,7 @@ class CodexOAuth(
                 "oauth.refresh http_error status=$status $summary " +
                     "rt=${CodexDebugLog.tokenFp(refreshToken)}",
             )
-            if (status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden) {
-                throw SessionExpiredException(
-                    "Codex 登录已失效，请重新登录 (oauth status=$status $summary)",
-                )
-            }
-            if (errBody.contains("refresh_token_reused", ignoreCase = true) ||
-                errBody.contains("invalid_grant", ignoreCase = true)
-            ) {
-                throw SessionExpiredException(
-                    "Codex 登录已失效，请重新登录 (oauth status=$status $summary)",
-                )
-            }
-            throw IllegalStateException("OAuth token refresh failed: $status $summary", e)
+            CodexAuthErrors.throwForHttpFailure(status, errBody, source = "oauth", cause = e)
         }
         val body = response.bodyAsText()
         val token = json.decodeFromString(CodexTokenResponse.serializer(), body)

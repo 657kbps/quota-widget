@@ -4,7 +4,10 @@ import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 
 sealed interface BalanceRefreshResult {
     data class Completed(val state: WidgetDisplayState) : BalanceRefreshResult
-    data class TransientFailure(val retained: WidgetDisplayState) : BalanceRefreshResult
+    data class TransientFailure(
+        val retained: WidgetDisplayState,
+        val retryable: Boolean = true,
+    ) : BalanceRefreshResult
 }
 
 val BalanceRefreshResult.displayState: WidgetDisplayState

@@ -4,7 +4,6 @@ import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
-import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.formatUsagePrimaryDisplay
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
@@ -15,7 +14,6 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -46,12 +44,7 @@ class CodexUsageClient(
                     "account=${accountId.takeLast(6)} " +
                     "at=${CodexDebugLog.tokenFp(accessToken)}",
             )
-            if (status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden) {
-                throw SessionExpiredException(
-                    "Codex 登录已失效，请重新登录 (usage status=$status $summary)",
-                )
-            }
-            throw IllegalStateException("查询 Codex 额度失败: $status $summary", e)
+            CodexAuthErrors.throwForHttpFailure(status, errBody, source = "usage", cause = e)
         }
         val body = response.bodyAsText()
         val dto = json.decodeFromString(CodexUsageResponse.serializer(), body)
