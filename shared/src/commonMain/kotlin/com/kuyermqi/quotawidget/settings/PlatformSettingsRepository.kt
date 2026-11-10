@@ -19,12 +19,19 @@ data class OpenCodeGoSettings(
     val workspaceId: String = "",
     val workspaceName: String = "",
     val authCookie: String = "",
+    val apiKey: String = "",
     val widgetWindowKind: UsageWindowKind = UsageWindowKind.ROLLING,
     val usageDisplayMode: UsageDisplayMode = UsageDisplayMode.USED,
     val usageProgressStyle: UsageProgressStyle = UsageProgressStyle.BAR,
 ) {
-    val isConfigured: Boolean
+    val hasCookieSession: Boolean
         get() = workspaceId.isNotBlank() && authCookie.isNotBlank()
+
+    val hasApiKey: Boolean
+        get() = apiKey.isNotBlank()
+
+    val isConfigured: Boolean
+        get() = hasApiKey || hasCookieSession
 }
 
 data class CodexSettings(

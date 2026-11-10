@@ -73,6 +73,9 @@
     <string name="opencode_logout">退出登录</string>
     <string name="opencode_status_logged_out">未登录</string>
     <string name="opencode_login_failed">登录未完成，请重试</string>
+    <string name="opencode_api_key_label">API Key</string>
+    <string name="opencode_api_key_hint">在 OpenCode Console 创建 API Key；填写后将优先使用 API Key</string>
+    <string name="opencode_api_key_active">当前使用 API Key</string>
     <string name="usage_window_rolling">滚动用量</string>
     <string name="usage_window_five_hour">5H 用量</string>
     <string name="usage_window_weekly">每周用量</string>

@@ -47,6 +47,8 @@ class OpenCodeGoHomeState internal constructor(
         internal set
     var draftWorkspaceName by mutableStateOf("")
         internal set
+    var draftApiKey by mutableStateOf("")
+        internal set
     var draftWindowKind by mutableStateOf(UsageWindowKind.ROLLING)
         internal set
     var draftUsageDisplayMode by mutableStateOf(UsageDisplayMode.USED)
@@ -72,8 +74,9 @@ class OpenCodeGoHomeState internal constructor(
         get() = settings.isConfigured
 
     val isDirty: Boolean
-        get() = loaded && settings.isConfigured && (
-            draftWorkspaceId != settings.workspaceId ||
+        get() = loaded && (
+            draftApiKey != settings.apiKey ||
+                draftWorkspaceId != settings.workspaceId ||
                 draftWorkspaceName != settings.workspaceName ||
                 draftWindowKind != settings.widgetWindowKind ||
                 draftUsageDisplayMode != settings.usageDisplayMode ||
@@ -81,6 +84,7 @@ class OpenCodeGoHomeState internal constructor(
             )
 
     fun applyDraft(next: OpenCodeGoSettings = settings) {
+        draftApiKey = next.apiKey
         draftWorkspaceId = next.workspaceId
         draftWorkspaceName = next.workspaceName
         draftWindowKind = next.widgetWindowKind
@@ -211,9 +215,11 @@ fun OpenCodeGoHomeEffects(
             state.isBusy = true
             state.error = null
             try {
-                var next = OpenCodeGoSettings(
+                var next = state.settings.copy(
                     workspaceId = workspaceId,
+                    workspaceName = state.settings.workspaceName,
                     authCookie = authCookie,
+                    apiKey = state.draftApiKey.trim(),
                     widgetWindowKind = state.draftWindowKind,
                     usageDisplayMode = state.draftUsageDisplayMode,
                     usageProgressStyle = state.draftUsageProgressStyle,
@@ -280,6 +286,12 @@ fun ColumnScope.OpenCodeGoHomeContent(
     OpenCodeGoConfigContent(
         isLoggedIn = state.settings.isConfigured &&
             bindings.widgetState !is WidgetDisplayState.NeedsReauth,
+        hasCookieSession = state.settings.hasCookieSession,
+        apiKey = state.draftApiKey,
+        onApiKeyChange = {
+            state.draftApiKey = it
+            state.error = null
+        },
         isBusy = state.isBusy,
         isDirty = state.isDirty,
         errorMessage = state.error,
@@ -335,6 +347,7 @@ fun ColumnScope.OpenCodeGoHomeContent(
                     val next = state.settings.copy(
                         workspaceId = state.draftWorkspaceId,
                         workspaceName = state.draftWorkspaceName,
+                        apiKey = state.draftApiKey.trim(),
                         widgetWindowKind = state.draftWindowKind,
                         usageDisplayMode = state.draftUsageDisplayMode,
                         usageProgressStyle = state.draftUsageProgressStyle,
@@ -403,7 +416,7 @@ private suspend fun loadOpenCodeWorkspaces(
     msgWorkspaceMissing: String,
     msgWorkspacesLoadFailed: String,
 ): OpenCodeGoSettings {
-    if (!settings.isConfigured) {
+    if (!settings.isConfigured || settings.authCookie.isBlank()) {
         state.workspaces = emptyList()
         state.workspacesError = null
         return settings

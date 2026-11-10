@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -27,6 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -40,6 +43,9 @@ import com.kuyermqi.quotawidget.opencode.OpenCodeWorkspace
 @Composable
 fun ColumnScope.OpenCodeGoConfigContent(
     isLoggedIn: Boolean,
+    hasCookieSession: Boolean,
+    apiKey: String,
+    onApiKeyChange: (String) -> Unit,
     isBusy: Boolean,
     isDirty: Boolean,
     errorMessage: String?,
@@ -78,10 +84,31 @@ fun ColumnScope.OpenCodeGoConfigContent(
             color = MaterialTheme.colorScheme.error,
         )
     }
-    if (isLoggedIn) {
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(
+        value = apiKey,
+        onValueChange = onApiKeyChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text(stringResource(R.string.opencode_api_key_label)) },
+        supportingText = { Text(stringResource(R.string.opencode_api_key_hint)) },
+        singleLine = true,
+        visualTransformation = PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        enabled = !isBusy,
+    )
+    if (isLoggedIn && !hasCookieSession && apiKey.isNotBlank()) {
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = stringResource(R.string.opencode_api_key_active),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    if (isLoggedIn && hasCookieSession) {
         if (!errorMessage.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(8.dp))
         }
+        Spacer(modifier = Modifier.height(8.dp))
         WorkspacePicker(
             workspaces = workspaces,
             selectedWorkspaceId = selectedWorkspaceId,
@@ -91,6 +118,8 @@ fun ColumnScope.OpenCodeGoConfigContent(
             enabled = !isBusy,
             onWorkspaceSelected = onWorkspaceSelected,
         )
+    }
+    if (isLoggedIn) {
         Spacer(modifier = Modifier.height(16.dp))
         UsageDisplayPrefsSection(
             windows = windows,
@@ -134,13 +163,14 @@ fun ColumnScope.OpenCodeGoConfigContent(
             ) {
                 Text(stringResource(R.string.opencode_logout))
             }
-            Button(
-                onClick = onSave,
-                enabled = isDirty && !isBusy,
-            ) {
-                Text(stringResource(R.string.action_save))
-            }
-        } else {
+        }
+        Button(
+            onClick = onSave,
+            enabled = isDirty && !isBusy,
+        ) {
+            Text(stringResource(R.string.action_save))
+        }
+        if (!isLoggedIn) {
             Button(
                 onClick = onLogin,
                 enabled = !isBusy,

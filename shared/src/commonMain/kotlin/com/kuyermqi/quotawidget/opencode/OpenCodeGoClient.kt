@@ -2,6 +2,7 @@ package com.kuyermqi.quotawidget.opencode
 
 import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
+import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.formatUsagePrimaryDisplay
 import com.kuyermqi.quotawidget.domain.formatUsageRemainingRolling
@@ -24,7 +25,8 @@ import kotlinx.serialization.json.Json
  *
  * The console moved from `/workspace/{id}` SSR pages to a `/console/{id}` SPA backed by
  * `/console/api` JSON endpoints. Console requests use the `__Host-console_session` cookie;
- * legacy `auth` cookies still go through [OpenCodeLegacyClient].
+ * legacy `auth` cookies still go through [OpenCodeLegacyClient]. API-key requests use
+ * `GET /zen/go/v1/usage` instead of a browser session.
  */
 class OpenCodeGoClient(
     private val httpClient: HttpClient = createHttpClient(),
@@ -93,6 +95,25 @@ class OpenCodeGoClient(
                 e,
             )
         }
+        return snapshotFromWindows(windows)
+    }
+
+    suspend fun fetchQuotaByApiKey(apiKey: String): QuotaSnapshot {
+        val token = apiKey.trim()
+        require(token.isNotEmpty()) { "OpenCode API Key 不能为空" }
+        val body = getApiJson(token)
+        val windows = try {
+            OpenCodeGoApiUsageParser.parse(body, nowEpochMs = currentTimeMillis())
+        } catch (e: Exception) {
+            throw IllegalStateException(
+                "无法解析 OpenCode Go API 额度 (prefix=${body.take(160).replace('\n', ' ')})",
+                e,
+            )
+        }
+        return snapshotFromWindows(windows)
+    }
+
+    private fun snapshotFromWindows(windows: List<QuotaWindow>): QuotaSnapshot {
         if (windows.isEmpty()) {
             throw IllegalStateException("OpenCode Go 未开通或额度不可用")
         }
@@ -149,11 +170,41 @@ class OpenCodeGoClient(
         return body
     }
 
+    private suspend fun getApiJson(apiKey: String): String {
+        val response = try {
+            httpClient.get(USAGE_API_URL) {
+                header(HttpHeaders.Authorization, "Bearer $apiKey")
+                header(HttpHeaders.Accept, "application/json")
+                header(HttpHeaders.UserAgent, BROWSER_UA)
+            }
+        } catch (e: ResponseException) {
+            when (e.response.status) {
+                HttpStatusCode.Unauthorized,
+                HttpStatusCode.Forbidden,
+                -> throw IllegalStateException("OpenCode API Key 无效或已过期", e)
+                HttpStatusCode.NotFound -> throw IllegalStateException(
+                    "OpenCode Go 用量接口不存在",
+                    e,
+                )
+                else -> throw IllegalStateException(
+                    "OpenCode Go 用量请求失败 HTTP ${e.response.status.value}: ${e.message}",
+                    e,
+                )
+            }
+        }
+        val body = response.bodyAsText()
+        if (body.trimStart().startsWith("<")) {
+            throw IllegalStateException("OpenCode Go 用量接口返回了非 JSON 响应")
+        }
+        return body
+    }
+
     companion object {
         const val BASE_URL = "https://opencode.ai"
         const val CONSOLE_BASE_URL = "$BASE_URL/console"
         const val CONSOLE_API_BASE = "$CONSOLE_BASE_URL/api"
         const val LOGIN_URL = "$CONSOLE_BASE_URL/login"
+        const val USAGE_API_URL = "$BASE_URL/zen/go/v1/usage"
 
         private const val HEADER_WORKSPACE_ID = "x-org-id"
         private const val BROWSER_UA =
