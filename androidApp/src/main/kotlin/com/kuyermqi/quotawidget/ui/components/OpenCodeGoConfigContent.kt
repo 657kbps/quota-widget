@@ -177,6 +177,13 @@ fun ColumnScope.OpenCodeGoConfigContent(
             ) {
                 Text(stringResource(R.string.opencode_login))
             }
+        } else if (!hasCookieSession) {
+            TextButton(
+                onClick = onLogin,
+                enabled = !isBusy,
+            ) {
+                Text(stringResource(R.string.opencode_login))
+            }
         }
     }
 }
