@@ -222,4 +222,8 @@ private class LayoutFixingWebViewClient(
         view?.injectFullViewportLayoutFix()
         delegate.onPageFinished(view, url)
     }
+
+    override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
+        delegate.doUpdateVisitedHistory(view, url, isReload)
+    }
 }
