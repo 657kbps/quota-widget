@@ -28,6 +28,7 @@ import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
+import com.kuyermqi.quotawidget.domain.ServiceRegion
 import com.kuyermqi.quotawidget.domain.ThemeColorMode
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.decodeQuotaWindows
@@ -296,6 +297,88 @@ class AndroidPlatformSettingsRepository(
         )
     }
 
+    override fun observeKimiCodeSettings(): Flow<KimiCodeSettings> =
+        dataStore.data.map { prefs -> prefs.toKimiCodeSettings() }
+
+    override suspend fun getKimiCodeSettings(): KimiCodeSettings =
+        dataStore.data.first().toKimiCodeSettings()
+
+    override suspend fun saveKimiCodeSettings(settings: KimiCodeSettings) {
+        dataStore.edit { prefs ->
+            if (!settings.isConfigured) {
+                prefs.remove(Keys.KIMI_CODE_API_KEY_ENC)
+                prefs.clearWidgetPayload(PlatformIds.KIMI_CODE)
+                prefs[widgetStatusKey(PlatformIds.KIMI_CODE)] = Status.NOT_CONFIGURED
+            } else {
+                prefs[Keys.KIMI_CODE_API_KEY_ENC] = encrypt(settings.apiKey, KIMI_CODE_KEY_AD)
+                val status = prefs[widgetStatusKey(PlatformIds.KIMI_CODE)]
+                if (status == null ||
+                    status == Status.NOT_CONFIGURED ||
+                    status == Status.NEEDS_REAUTH
+                ) {
+                    prefs[widgetStatusKey(PlatformIds.KIMI_CODE)] = Status.LOADING
+                }
+            }
+            prefs[Keys.KIMI_CODE_REGION] = settings.region.name
+            prefs[Keys.KIMI_CODE_WIDGET_WINDOW] = settings.widgetWindowKind.name
+            prefs[Keys.KIMI_CODE_USAGE_DISPLAY] = settings.usageDisplayMode.name
+            prefs[Keys.KIMI_CODE_USAGE_PROGRESS_STYLE] = settings.usageProgressStyle.name
+        }
+    }
+
+    override suspend fun clearKimiCodeSettings() {
+        val current = getKimiCodeSettings()
+        saveKimiCodeSettings(
+            KimiCodeSettings(
+                region = current.region,
+                widgetWindowKind = current.widgetWindowKind,
+                usageDisplayMode = current.usageDisplayMode,
+                usageProgressStyle = current.usageProgressStyle,
+            ),
+        )
+    }
+
+    override fun observeZhipuSettings(): Flow<ZhipuSettings> =
+        dataStore.data.map { prefs -> prefs.toZhipuSettings() }
+
+    override suspend fun getZhipuSettings(): ZhipuSettings =
+        dataStore.data.first().toZhipuSettings()
+
+    override suspend fun saveZhipuSettings(settings: ZhipuSettings) {
+        dataStore.edit { prefs ->
+            if (!settings.isConfigured) {
+                prefs.remove(Keys.ZHIPU_API_KEY_ENC)
+                prefs.clearWidgetPayload(PlatformIds.ZHIPU)
+                prefs[widgetStatusKey(PlatformIds.ZHIPU)] = Status.NOT_CONFIGURED
+            } else {
+                prefs[Keys.ZHIPU_API_KEY_ENC] = encrypt(settings.apiKey, ZHIPU_KEY_AD)
+                val status = prefs[widgetStatusKey(PlatformIds.ZHIPU)]
+                if (status == null ||
+                    status == Status.NOT_CONFIGURED ||
+                    status == Status.NEEDS_REAUTH
+                ) {
+                    prefs[widgetStatusKey(PlatformIds.ZHIPU)] = Status.LOADING
+                }
+            }
+            prefs[Keys.ZHIPU_REGION] = settings.region.name
+            prefs[Keys.ZHIPU_WIDGET_WINDOW] = settings.widgetWindowKind.name
+            prefs[Keys.ZHIPU_USAGE_DISPLAY] = settings.usageDisplayMode.name
+            prefs[Keys.ZHIPU_USAGE_PROGRESS_STYLE] = settings.usageProgressStyle.name
+        }
+    }
+
+    override suspend fun clearZhipuSettings() {
+        val current = getZhipuSettings()
+        saveZhipuSettings(
+            ZhipuSettings(
+                region = current.region,
+                widgetWindowKind = current.widgetWindowKind,
+                usageDisplayMode = current.usageDisplayMode,
+                usageProgressStyle = current.usageProgressStyle,
+            ),
+        )
+    }
+
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =
         dataStore.data.map { prefs -> prefs.toWidgetState(platformId) }
 
@@ -400,6 +483,8 @@ class AndroidPlatformSettingsRepository(
                 PlatformIds.CODEX,
                 PlatformIds.NEW_API,
                 PlatformIds.MAGPIE,
+                PlatformIds.KIMI_CODE,
+                PlatformIds.ZHIPU,
             )) {
                 prefs[refreshPhaseKey(platformId)] = RefreshIconPhase.Idle.name
             }
@@ -559,6 +644,36 @@ class AndroidPlatformSettingsRepository(
         )
     }
 
+    private fun Preferences.toKimiCodeSettings(): KimiCodeSettings {
+        val apiKey = this[Keys.KIMI_CODE_API_KEY_ENC]
+            ?.let { runCatching { decrypt(it, KIMI_CODE_KEY_AD) }.getOrDefault("") }
+            .orEmpty()
+        return KimiCodeSettings(
+            apiKey = apiKey,
+            region = ServiceRegion.fromStorage(this[Keys.KIMI_CODE_REGION]),
+            widgetWindowKind = UsageWindowKind.fromStorage(this[Keys.KIMI_CODE_WIDGET_WINDOW]),
+            usageDisplayMode = UsageDisplayMode.fromStorage(this[Keys.KIMI_CODE_USAGE_DISPLAY]),
+            usageProgressStyle = UsageProgressStyle.fromStorage(
+                this[Keys.KIMI_CODE_USAGE_PROGRESS_STYLE],
+            ),
+        )
+    }
+
+    private fun Preferences.toZhipuSettings(): ZhipuSettings {
+        val apiKey = this[Keys.ZHIPU_API_KEY_ENC]
+            ?.let { runCatching { decrypt(it, ZHIPU_KEY_AD) }.getOrDefault("") }
+            .orEmpty()
+        return ZhipuSettings(
+            apiKey = apiKey,
+            region = ServiceRegion.fromStorage(this[Keys.ZHIPU_REGION]),
+            widgetWindowKind = UsageWindowKind.fromStorage(this[Keys.ZHIPU_WIDGET_WINDOW]),
+            usageDisplayMode = UsageDisplayMode.fromStorage(this[Keys.ZHIPU_USAGE_DISPLAY]),
+            usageProgressStyle = UsageProgressStyle.fromStorage(
+                this[Keys.ZHIPU_USAGE_PROGRESS_STYLE],
+            ),
+        )
+    }
+
     private fun Preferences.isConfigured(platformId: String): Boolean =
         when (platformId) {
             PlatformIds.DEEPSEEK -> toDeepSeekSettings().apiKey.isNotBlank()
@@ -566,6 +681,8 @@ class AndroidPlatformSettingsRepository(
             PlatformIds.CODEX -> toCodexSettings().isConfigured
             PlatformIds.NEW_API -> toNewApiSettings().isConfigured
             PlatformIds.MAGPIE -> toMagpieSettings().isConfigured
+            PlatformIds.KIMI_CODE -> toKimiCodeSettings().isConfigured
+            PlatformIds.ZHIPU -> toZhipuSettings().isConfigured
             else -> false
         }
 
@@ -725,6 +842,17 @@ class AndroidPlatformSettingsRepository(
         val MAGPIE_WIDGET_WINDOW = stringPreferencesKey("magpie_widget_window")
         val MAGPIE_USAGE_DISPLAY = stringPreferencesKey("magpie_usage_display")
         val MAGPIE_USAGE_PROGRESS_STYLE = stringPreferencesKey("magpie_usage_progress_style")
+        val KIMI_CODE_API_KEY_ENC = stringPreferencesKey("kimi_code_api_key_enc")
+        val KIMI_CODE_REGION = stringPreferencesKey("kimi_code_region")
+        val KIMI_CODE_WIDGET_WINDOW = stringPreferencesKey("kimi_code_widget_window")
+        val KIMI_CODE_USAGE_DISPLAY = stringPreferencesKey("kimi_code_usage_display")
+        val KIMI_CODE_USAGE_PROGRESS_STYLE =
+            stringPreferencesKey("kimi_code_usage_progress_style")
+        val ZHIPU_API_KEY_ENC = stringPreferencesKey("zhipu_api_key_enc")
+        val ZHIPU_REGION = stringPreferencesKey("zhipu_region")
+        val ZHIPU_WIDGET_WINDOW = stringPreferencesKey("zhipu_widget_window")
+        val ZHIPU_USAGE_DISPLAY = stringPreferencesKey("zhipu_usage_display")
+        val ZHIPU_USAGE_PROGRESS_STYLE = stringPreferencesKey("zhipu_usage_progress_style")
         val ACTIVE_PLATFORM_ID = stringPreferencesKey("active_platform_id")
         val LEGACY_WIDGET_STATUS = stringPreferencesKey("widget_status")
         val LEGACY_WIDGET_ERROR = stringPreferencesKey("widget_error")
@@ -764,6 +892,8 @@ class AndroidPlatformSettingsRepository(
         private val CODEX_ID_AD = "codex_id_token".encodeToByteArray()
         private val NEW_API_KEY_AD = "new_api_key".encodeToByteArray()
         private val MAGPIE_KEY_AD = "magpie_key".encodeToByteArray()
+        private val KIMI_CODE_KEY_AD = "kimi_code_api_key".encodeToByteArray()
+        private val ZHIPU_KEY_AD = "zhipu_api_key".encodeToByteArray()
 
         private fun widgetStatusKey(platformId: String) =
             stringPreferencesKey("widget_${platformId}_status")

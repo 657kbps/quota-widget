@@ -36,6 +36,12 @@ class BalanceRefreshInteractor(
         if (settingsRepository.getMagpieSettings().isConfigured) {
             results += refresh(PlatformIds.MAGPIE)
         }
+        if (settingsRepository.getKimiCodeSettings().isConfigured) {
+            results += refresh(PlatformIds.KIMI_CODE)
+        }
+        if (settingsRepository.getZhipuSettings().isConfigured) {
+            results += refresh(PlatformIds.ZHIPU)
+        }
         return results
     }
 

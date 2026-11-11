@@ -133,10 +133,12 @@ internal fun UsagePercentSuccessBlock(
     showProgress: Boolean,
     compact: Boolean = false,
 ) {
-    val effectiveWindowKind = if (snapshot.platformId == PlatformIds.CODEX) {
-        resolveCodexUsageSummaryWindowKind(snapshot.windows, windowKind) ?: windowKind
-    } else {
-        windowKind
+    val effectiveWindowKind = when (snapshot.platformId) {
+        PlatformIds.CODEX,
+        PlatformIds.KIMI_CODE,
+        PlatformIds.ZHIPU,
+        -> resolveCodexUsageSummaryWindowKind(snapshot.windows, windowKind) ?: windowKind
+        else -> windowKind
     }
     val used = snapshot.windows
         .find { it.kind == effectiveWindowKind.toQuotaWindowKind() }

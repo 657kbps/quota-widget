@@ -144,6 +144,10 @@ internal suspend fun maybeRefreshIfConfigured(
             app.settingsRepository.getNewApiSettings().isConfigured
         PlatformIds.MAGPIE ->
             app.settingsRepository.getMagpieSettings().isConfigured
+        PlatformIds.KIMI_CODE ->
+            app.settingsRepository.getKimiCodeSettings().isConfigured
+        PlatformIds.ZHIPU ->
+            app.settingsRepository.getZhipuSettings().isConfigured
         else -> false
     }
     if (!configured) return

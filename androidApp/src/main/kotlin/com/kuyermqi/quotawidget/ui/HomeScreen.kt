@@ -48,17 +48,23 @@ import com.kuyermqi.quotawidget.ui.home.CodexHomeContent
 import com.kuyermqi.quotawidget.ui.home.CodexHomeEffects
 import com.kuyermqi.quotawidget.ui.home.DeepSeekHomeContent
 import com.kuyermqi.quotawidget.ui.home.DeepSeekHomeEffects
+import com.kuyermqi.quotawidget.ui.home.KimiCodeHomeContent
+import com.kuyermqi.quotawidget.ui.home.KimiCodeHomeEffects
 import com.kuyermqi.quotawidget.ui.home.MagpieHomeContent
 import com.kuyermqi.quotawidget.ui.home.MagpieHomeEffects
 import com.kuyermqi.quotawidget.ui.home.NewApiHomeContent
 import com.kuyermqi.quotawidget.ui.home.NewApiHomeEffects
 import com.kuyermqi.quotawidget.ui.home.OpenCodeGoHomeContent
 import com.kuyermqi.quotawidget.ui.home.OpenCodeGoHomeEffects
+import com.kuyermqi.quotawidget.ui.home.ZhipuHomeContent
+import com.kuyermqi.quotawidget.ui.home.ZhipuHomeEffects
 import com.kuyermqi.quotawidget.ui.home.rememberCodexHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberDeepSeekHomeState
+import com.kuyermqi.quotawidget.ui.home.rememberKimiCodeHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberMagpieHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberNewApiHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberOpenCodeGoHomeState
+import com.kuyermqi.quotawidget.ui.home.rememberZhipuHomeState
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState
 import kotlinx.coroutines.launch
@@ -105,12 +111,16 @@ fun HomeScreen(
     val codex = rememberCodexHomeState(settingsRepository)
     val newApi = rememberNewApiHomeState(settingsRepository)
     val magpie = rememberMagpieHomeState(settingsRepository)
+    val kimiCode = rememberKimiCodeHomeState(settingsRepository)
+    val zhipu = rememberZhipuHomeState(settingsRepository)
 
     val deepSeekWidgetState = DeepSeekHomeEffects(deepSeek)
     val openCodeBindings = OpenCodeGoHomeEffects(openCode, onRefreshPlatform)
     val codexBindings = CodexHomeEffects(codex, onRefreshPlatform)
     val newApiWidgetState = NewApiHomeEffects(newApi)
     val magpieWidgetState = MagpieHomeEffects(magpie)
+    val kimiCodeWidgetState = KimiCodeHomeEffects(kimiCode)
+    val zhipuWidgetState = ZhipuHomeEffects(zhipu)
 
     val hasVisibleTips = tipLoaded && (
         showBatteryOptimizationTip || showOemBackgroundTip || showPlatformTip
@@ -171,13 +181,26 @@ fun HomeScreen(
             loadingMsg = msgLoadingBalance,
             reauthMsg = msgNeedsReauth,
         )
+        PlatformIds.KIMI_CODE -> kimiCode.summaryLabel(
+            resources = resources,
+            widgetState = kimiCodeWidgetState,
+            loadingMsg = msgLoadingBalance,
+            reauthMsg = msgNeedsReauth,
+        )
+        PlatformIds.ZHIPU -> zhipu.summaryLabel(
+            resources = resources,
+            widgetState = zhipuWidgetState,
+            loadingMsg = msgLoadingBalance,
+            reauthMsg = msgNeedsReauth,
+        )
         else -> null
     }
 
     suspend fun refreshAll(showPullIndicator: Boolean = false) {
         val anyConfigured =
             deepSeek.isConfigured || openCode.isConfigured ||
-                codex.isConfigured || newApi.isConfigured || magpie.isConfigured
+                codex.isConfigured || newApi.isConfigured ||
+                magpie.isConfigured || kimiCode.isConfigured || zhipu.isConfigured
         if (!anyConfigured) return
         if (showPullIndicator) isRefreshing = true
         try {
@@ -200,8 +223,11 @@ fun HomeScreen(
         codex.applyLoaded(settingsRepository.getCodexSettings())
         newApi.applyLoaded(settingsRepository.getNewApiSettings())
         magpie.applyLoaded(settingsRepository.getMagpieSettings())
+        kimiCode.applyLoaded(settingsRepository.getKimiCodeSettings())
+        zhipu.applyLoaded(settingsRepository.getZhipuSettings())
         if (deepSeek.isConfigured || openCode.isConfigured ||
-            codex.isConfigured || newApi.isConfigured || magpie.isConfigured
+            codex.isConfigured || newApi.isConfigured ||
+            magpie.isConfigured || kimiCode.isConfigured || zhipu.isConfigured
         ) {
             refreshAll(showPullIndicator = false)
         }
@@ -306,7 +332,7 @@ fun HomeScreen(
 
                 items(PlatformRegistry.platforms, key = { it.id }) { platform ->
                     PlatformConfigItem(
-                        title = platform.displayName,
+                        title = platform.homeListName,
                         expanded = expandedPlatformId == platform.id,
                         onToggle = {
                             expandedPlatformId =
@@ -342,6 +368,14 @@ fun HomeScreen(
                             )
                             PlatformIds.MAGPIE -> MagpieHomeContent(
                                 state = magpie,
+                                onRefreshPlatform = onRefreshPlatform,
+                            )
+                            PlatformIds.KIMI_CODE -> KimiCodeHomeContent(
+                                state = kimiCode,
+                                onRefreshPlatform = onRefreshPlatform,
+                            )
+                            PlatformIds.ZHIPU -> ZhipuHomeContent(
+                                state = zhipu,
                                 onRefreshPlatform = onRefreshPlatform,
                             )
                         }

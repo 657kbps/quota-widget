@@ -7,6 +7,7 @@ import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
+import com.kuyermqi.quotawidget.domain.ServiceRegion
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.magpie.MagpieProvider
 import kotlinx.coroutines.flow.Flow
@@ -107,6 +108,28 @@ data class MagpieSettings(
         get() = baseUrl.isNotBlank() && apiKey.isNotBlank()
 }
 
+data class KimiCodeSettings(
+    val apiKey: String = "",
+    val region: ServiceRegion = ServiceRegion.CN,
+    val widgetWindowKind: UsageWindowKind = UsageWindowKind.ROLLING,
+    val usageDisplayMode: UsageDisplayMode = UsageDisplayMode.USED,
+    val usageProgressStyle: UsageProgressStyle = UsageProgressStyle.BAR,
+) {
+    val isConfigured: Boolean
+        get() = apiKey.isNotBlank()
+}
+
+data class ZhipuSettings(
+    val apiKey: String = "",
+    val region: ServiceRegion = ServiceRegion.CN,
+    val widgetWindowKind: UsageWindowKind = UsageWindowKind.ROLLING,
+    val usageDisplayMode: UsageDisplayMode = UsageDisplayMode.USED,
+    val usageProgressStyle: UsageProgressStyle = UsageProgressStyle.BAR,
+) {
+    val isConfigured: Boolean
+        get() = apiKey.isNotBlank()
+}
+
 interface PlatformSettingsRepository {
     fun observeDeepSeekSettings(): Flow<DeepSeekSettings>
     suspend fun getDeepSeekSettings(): DeepSeekSettings
@@ -131,6 +154,16 @@ interface PlatformSettingsRepository {
     suspend fun getMagpieSettings(): MagpieSettings
     suspend fun saveMagpieSettings(settings: MagpieSettings)
     suspend fun clearMagpieSettings()
+
+    fun observeKimiCodeSettings(): Flow<KimiCodeSettings>
+    suspend fun getKimiCodeSettings(): KimiCodeSettings
+    suspend fun saveKimiCodeSettings(settings: KimiCodeSettings)
+    suspend fun clearKimiCodeSettings()
+
+    fun observeZhipuSettings(): Flow<ZhipuSettings>
+    suspend fun getZhipuSettings(): ZhipuSettings
+    suspend fun saveZhipuSettings(settings: ZhipuSettings)
+    suspend fun clearZhipuSettings()
 
     fun observeWidgetState(platformId: String): Flow<WidgetDisplayState>
     suspend fun getWidgetState(platformId: String): WidgetDisplayState

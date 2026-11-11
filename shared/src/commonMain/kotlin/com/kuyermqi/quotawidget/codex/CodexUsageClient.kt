@@ -4,6 +4,7 @@ import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
+import com.kuyermqi.quotawidget.domain.classifyUsageWindow
 import com.kuyermqi.quotawidget.domain.formatUsagePrimaryDisplay
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
@@ -113,11 +114,5 @@ fun CodexUsageResponse.toWindows(): List<QuotaWindow> {
  * Classify by duration, not primary/secondary name.
  * ≤6h → 5h; ~7d → weekly; ~30d → monthly.
  */
-fun classifyWindow(limitWindowSeconds: Long?): QuotaWindowKind? {
-    if (limitWindowSeconds == null || limitWindowSeconds <= 0L) return null
-    return when {
-        limitWindowSeconds <= 6L * 3600L -> QuotaWindowKind.FIVE_HOUR
-        limitWindowSeconds <= 8L * 24L * 3600L -> QuotaWindowKind.WEEKLY
-        else -> QuotaWindowKind.MONTHLY
-    }
-}
+fun classifyWindow(limitWindowSeconds: Long?): QuotaWindowKind? =
+    classifyUsageWindow(limitWindowSeconds)

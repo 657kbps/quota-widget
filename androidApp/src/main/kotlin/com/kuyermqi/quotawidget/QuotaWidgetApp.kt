@@ -3,9 +3,11 @@ package com.kuyermqi.quotawidget
 import android.app.Application
 import com.kuyermqi.quotawidget.provider.CodexQuotaProvider
 import com.kuyermqi.quotawidget.provider.DeepSeekQuotaProvider
+import com.kuyermqi.quotawidget.provider.KimiCodeQuotaProvider
 import com.kuyermqi.quotawidget.provider.MagpieQuotaProvider
 import com.kuyermqi.quotawidget.provider.NewApiQuotaProvider
 import com.kuyermqi.quotawidget.provider.OpenCodeGoQuotaProvider
+import com.kuyermqi.quotawidget.provider.ZhipuQuotaProvider
 import com.kuyermqi.quotawidget.refresh.BalanceRefreshInteractor
 import com.kuyermqi.quotawidget.settings.AndroidPlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
@@ -54,6 +56,8 @@ class QuotaWidgetApp : Application() {
                 CodexQuotaProvider(),
                 NewApiQuotaProvider(),
                 MagpieQuotaProvider(),
+                KimiCodeQuotaProvider(),
+                ZhipuQuotaProvider(),
             ),
         )
         updateCheckInteractor = UpdateCheckInteractor(
