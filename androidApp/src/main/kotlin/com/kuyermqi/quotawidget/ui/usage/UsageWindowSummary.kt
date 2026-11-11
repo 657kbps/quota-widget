@@ -28,10 +28,10 @@ fun formatUsageWindowSummary(
 }
 
 /**
- * Codex home-list summary: if [windowKind] has no data, fall back to the smallest
- * available window (e.g. free plan monthly-only).
+ * Home-list summary that falls back to the smallest available window when
+ * [windowKind] has no data (e.g. a plan that only reports weekly).
  */
-fun formatCodexUsageWindowSummary(
+fun formatUsageWindowSummaryWithFallback(
     resources: Resources,
     windows: List<QuotaWindow>,
     windowKind: UsageWindowKind,
@@ -47,6 +47,21 @@ fun formatCodexUsageWindowSummary(
         percent,
     )
 }
+
+/** Codex-specific name kept for the home list; behavior is [formatUsageWindowSummaryWithFallback]. */
+fun formatCodexUsageWindowSummary(
+    resources: Resources,
+    windows: List<QuotaWindow>,
+    windowKind: UsageWindowKind,
+    usageDisplayMode: UsageDisplayMode,
+    fallback: String,
+): String = formatUsageWindowSummaryWithFallback(
+    resources = resources,
+    windows = windows,
+    windowKind = windowKind,
+    usageDisplayMode = usageDisplayMode,
+    fallback = fallback,
+)
 
 private fun usageSummaryStringRes(
     kind: UsageWindowKind,

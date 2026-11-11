@@ -15,6 +15,8 @@ object PlatformIds {
     const val CODEX = "codex"
     const val NEW_API = "new_api"
     const val MAGPIE = "magpie"
+    const val KIMI_CODE = "kimi_code"
+    const val ZHIPU = "zhipu"
 }
 
 object PlatformRegistry {
@@ -38,6 +40,14 @@ object PlatformRegistry {
         object : QuotaPlatform {
             override val id = PlatformIds.MAGPIE
             override val displayName = "Magpie"
+        },
+        object : QuotaPlatform {
+            override val id = PlatformIds.KIMI_CODE
+            override val displayName = "Kimi Code"
+        },
+        object : QuotaPlatform {
+            override val id = PlatformIds.ZHIPU
+            override val displayName = "智谱"
         },
     )
 

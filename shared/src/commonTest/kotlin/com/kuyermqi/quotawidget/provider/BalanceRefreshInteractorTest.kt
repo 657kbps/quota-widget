@@ -15,7 +15,9 @@ import com.kuyermqi.quotawidget.refresh.BalanceRefreshInteractor
 import com.kuyermqi.quotawidget.refresh.BalanceRefreshResult
 import com.kuyermqi.quotawidget.settings.DeepSeekSettings
 import com.kuyermqi.quotawidget.settings.FakePlatformSettingsRepository
+import com.kuyermqi.quotawidget.settings.KimiCodeSettings
 import com.kuyermqi.quotawidget.settings.OpenCodeGoSettings
+import com.kuyermqi.quotawidget.settings.ZhipuSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
@@ -237,6 +239,60 @@ class BalanceRefreshInteractorTest {
         )
     }
 
+    @Test
+    fun refreshAllConfigured_includesKimiAndZhipu() = runTest {
+        val repo = FakePlatformSettingsRepository(
+            kimiCode = KimiCodeSettings(apiKey = "sk-kimi-test"),
+            zhipu = ZhipuSettings(apiKey = "zhipu-test"),
+        )
+        val interactor = BalanceRefreshInteractor(
+            repo,
+            listOf(
+                FakeUsageProvider(
+                    platformId = PlatformIds.KIMI_CODE,
+                    configured = { it.getKimiCodeSettings().isConfigured },
+                    snapshot = usageSnapshot(PlatformIds.KIMI_CODE, "Kimi Code", 20.0),
+                ),
+                FakeUsageProvider(
+                    platformId = PlatformIds.ZHIPU,
+                    configured = { it.getZhipuSettings().isConfigured },
+                    snapshot = usageSnapshot(PlatformIds.ZHIPU, "智谱", 42.0),
+                ),
+            ),
+        )
+
+        val results = interactor.refreshAllConfigured()
+
+        assertEquals(2, results.size)
+        assertIs<WidgetDisplayState.Success>(repo.getWidgetState(PlatformIds.KIMI_CODE))
+        assertIs<WidgetDisplayState.Success>(repo.getWidgetState(PlatformIds.ZHIPU))
+    }
+}
+
+private fun usageSnapshot(
+    platformId: String,
+    platformName: String,
+    percent: Double,
+): QuotaSnapshot = QuotaSnapshot(
+    platformId = platformId,
+    platformName = platformName,
+    windows = listOf(QuotaWindow(kind = QuotaWindowKind.FIVE_HOUR, usedPercent = percent)),
+    primaryDisplay = "5h $percent%",
+    updatedAtEpochMs = 1L,
+)
+
+private class FakeUsageProvider(
+    platformId: String,
+    private val configured: suspend (PlatformSettingsRepository) -> Boolean,
+    private val snapshot: QuotaSnapshot,
+) : QuotaProvider {
+    override val platform: QuotaPlatform =
+        PlatformRegistry.find(platformId)!!
+
+    override suspend fun isConfigured(repo: PlatformSettingsRepository): Boolean =
+        configured(repo)
+
+    override suspend fun fetch(repo: PlatformSettingsRepository): QuotaSnapshot = snapshot
 }
 
 private fun deepSeekSnapshot(amount: String): QuotaSnapshot {

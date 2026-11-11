@@ -15,6 +15,8 @@ class FakePlatformSettingsRepository(
     codex: CodexSettings = CodexSettings(),
     newApi: NewApiSettings = NewApiSettings(),
     magpie: MagpieSettings = MagpieSettings(),
+    kimiCode: KimiCodeSettings = KimiCodeSettings(),
+    zhipu: ZhipuSettings = ZhipuSettings(),
     widgetStates: Map<String, WidgetDisplayState> = emptyMap(),
 ) : PlatformSettingsRepository {
     private val deepSeekFlow = MutableStateFlow(deepSeek)
@@ -22,6 +24,8 @@ class FakePlatformSettingsRepository(
     private val codexFlow = MutableStateFlow(codex)
     private val newApiFlow = MutableStateFlow(newApi)
     private val magpieFlow = MutableStateFlow(magpie)
+    private val kimiCodeFlow = MutableStateFlow(kimiCode)
+    private val zhipuFlow = MutableStateFlow(zhipu)
     private val widgetFlows = mutableMapOf(
         PlatformIds.DEEPSEEK to MutableStateFlow(
             widgetStates[PlatformIds.DEEPSEEK] ?: WidgetDisplayState.NotConfigured,
@@ -37,6 +41,12 @@ class FakePlatformSettingsRepository(
         ),
         PlatformIds.MAGPIE to MutableStateFlow(
             widgetStates[PlatformIds.MAGPIE] ?: WidgetDisplayState.NotConfigured,
+        ),
+        PlatformIds.KIMI_CODE to MutableStateFlow(
+            widgetStates[PlatformIds.KIMI_CODE] ?: WidgetDisplayState.NotConfigured,
+        ),
+        PlatformIds.ZHIPU to MutableStateFlow(
+            widgetStates[PlatformIds.ZHIPU] ?: WidgetDisplayState.NotConfigured,
         ),
     )
     private val refreshPhases = mutableMapOf<String, RefreshIconPhase>()
@@ -130,6 +140,46 @@ class FakePlatformSettingsRepository(
             usageProgressStyle = current.usageProgressStyle,
         )
         widgetFlow(PlatformIds.MAGPIE).value = WidgetDisplayState.NotConfigured
+    }
+
+    override fun observeKimiCodeSettings(): Flow<KimiCodeSettings> = kimiCodeFlow.asStateFlow()
+    override suspend fun getKimiCodeSettings(): KimiCodeSettings = kimiCodeFlow.value
+    override suspend fun saveKimiCodeSettings(settings: KimiCodeSettings) {
+        kimiCodeFlow.value = settings
+        if (!settings.isConfigured) {
+            widgetFlow(PlatformIds.KIMI_CODE).value = WidgetDisplayState.NotConfigured
+        }
+    }
+
+    override suspend fun clearKimiCodeSettings() {
+        val current = kimiCodeFlow.value
+        kimiCodeFlow.value = KimiCodeSettings(
+            region = current.region,
+            widgetWindowKind = current.widgetWindowKind,
+            usageDisplayMode = current.usageDisplayMode,
+            usageProgressStyle = current.usageProgressStyle,
+        )
+        widgetFlow(PlatformIds.KIMI_CODE).value = WidgetDisplayState.NotConfigured
+    }
+
+    override fun observeZhipuSettings(): Flow<ZhipuSettings> = zhipuFlow.asStateFlow()
+    override suspend fun getZhipuSettings(): ZhipuSettings = zhipuFlow.value
+    override suspend fun saveZhipuSettings(settings: ZhipuSettings) {
+        zhipuFlow.value = settings
+        if (!settings.isConfigured) {
+            widgetFlow(PlatformIds.ZHIPU).value = WidgetDisplayState.NotConfigured
+        }
+    }
+
+    override suspend fun clearZhipuSettings() {
+        val current = zhipuFlow.value
+        zhipuFlow.value = ZhipuSettings(
+            region = current.region,
+            widgetWindowKind = current.widgetWindowKind,
+            usageDisplayMode = current.usageDisplayMode,
+            usageProgressStyle = current.usageProgressStyle,
+        )
+        widgetFlow(PlatformIds.ZHIPU).value = WidgetDisplayState.NotConfigured
     }
 
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =

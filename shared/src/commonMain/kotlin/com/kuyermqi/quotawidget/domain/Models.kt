@@ -75,6 +75,21 @@ enum class QuotaWindowKind {
     TOKEN,
 }
 
+/**
+ * Domestic vs overseas service site for platforms that run separate deployments
+ * with non-interchangeable API keys (Kimi Code, Zhipu GLM Coding Plan).
+ */
+enum class ServiceRegion {
+    CN,
+    GLOBAL,
+    ;
+
+    companion object {
+        fun fromStorage(value: String?): ServiceRegion =
+            entries.find { it.name == value } ?: CN
+    }
+}
+
 /** Which usage window a percent widget displays (OpenCode Go, Codex, NewAPI, …). */
 enum class UsageWindowKind {
     ROLLING,
@@ -153,10 +168,10 @@ fun clampCodexWidgetWindowKind(
 }
 
 /**
- * Codex overview rows: kinds present in [windows] (presence only, not usedPercent).
+ * Overview rows: usage window kinds present in [windows] (presence only, not usedPercent).
  * Empty when none of the usage windows appear.
  */
-fun presentCodexOverviewWindowKinds(windows: List<QuotaWindow>): List<QuotaWindowKind> =
+fun presentUsageOverviewWindowKinds(windows: List<QuotaWindow>): List<QuotaWindowKind> =
     buildList {
         if (windows.any { it.kind == QuotaWindowKind.FIVE_HOUR }) {
             add(QuotaWindowKind.FIVE_HOUR)
@@ -168,6 +183,24 @@ fun presentCodexOverviewWindowKinds(windows: List<QuotaWindow>): List<QuotaWindo
             add(QuotaWindowKind.MONTHLY)
         }
     }
+
+/** Codex covered-plan rows; kept as the Codex-specific name of [presentUsageOverviewWindowKinds]. */
+fun presentCodexOverviewWindowKinds(windows: List<QuotaWindow>): List<QuotaWindowKind> =
+    presentUsageOverviewWindowKinds(windows)
+
+/**
+ * Classify a quota window by its length, not by provider field names.
+ * ≤6h → 5h; ~7d → weekly; longer → monthly.
+ */
+fun classifyUsageWindow(limitWindowSeconds: Long?): QuotaWindowKind? {
+    if (limitWindowSeconds == null || limitWindowSeconds <= 0L) return null
+    return when {
+        limitWindowSeconds <= 6L * 3600L -> QuotaWindowKind.FIVE_HOUR
+        limitWindowSeconds <= 8L * 24L * 3600L -> QuotaWindowKind.WEEKLY
+        else -> QuotaWindowKind.MONTHLY
+    }
+}
+
 /** Whether usage surfaces show used percent or remaining percent. */
 enum class UsageDisplayMode {
     USED,
