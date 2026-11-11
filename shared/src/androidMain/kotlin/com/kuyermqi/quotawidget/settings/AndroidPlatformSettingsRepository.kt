@@ -78,12 +78,18 @@ class AndroidPlatformSettingsRepository(
         dataStore.data.first().toOpenCodeGoSettings()
 
     override suspend fun saveOpenCodeGoSettings(settings: OpenCodeGoSettings) {
+        val previous = getOpenCodeGoSettings()
+        val credentialsChanged = previous.effectiveAuthMethod != settings.effectiveAuthMethod ||
+            previous.workspaceId != settings.workspaceId ||
+            previous.authCookie != settings.authCookie ||
+            previous.apiKey != settings.apiKey
         dataStore.edit { prefs ->
             if (!settings.isConfigured) {
                 prefs.remove(Keys.OPENCODE_WORKSPACE_ID)
                 prefs.remove(Keys.OPENCODE_WORKSPACE_NAME)
                 prefs.remove(Keys.OPENCODE_AUTH_COOKIE_ENC)
                 prefs.remove(Keys.OPENCODE_API_KEY_ENC)
+                prefs.remove(Keys.OPENCODE_AUTH_METHOD)
                 prefs.clearWidgetPayload(PlatformIds.OPENCODE_GO)
                 prefs[widgetStatusKey(PlatformIds.OPENCODE_GO)] = Status.NOT_CONFIGURED
             } else {
@@ -107,8 +113,10 @@ class AndroidPlatformSettingsRepository(
                 } else {
                     prefs[Keys.OPENCODE_API_KEY_ENC] = encrypt(settings.apiKey, OPENCODE_API_KEY_AD)
                 }
+                prefs[Keys.OPENCODE_AUTH_METHOD] = settings.effectiveAuthMethod.name
                 val status = prefs[widgetStatusKey(PlatformIds.OPENCODE_GO)]
-                if (status == null ||
+                if (credentialsChanged ||
+                    status == null ||
                     status == Status.NOT_CONFIGURED ||
                     status == Status.NEEDS_REAUTH
                 ) {
@@ -424,11 +432,15 @@ class AndroidPlatformSettingsRepository(
         val apiKey = encryptedApiKey
             ?.let { runCatching { decrypt(it, OPENCODE_API_KEY_AD) }.getOrDefault("") }
             .orEmpty()
+        val authMethod = this[Keys.OPENCODE_AUTH_METHOD]?.let { stored ->
+            runCatching { OpenCodeAuthMethod.valueOf(stored) }.getOrNull()
+        }
         return OpenCodeGoSettings(
             workspaceId = this[Keys.OPENCODE_WORKSPACE_ID].orEmpty(),
             workspaceName = this[Keys.OPENCODE_WORKSPACE_NAME].orEmpty(),
             authCookie = authCookie,
             apiKey = apiKey,
+            authMethod = authMethod,
             widgetWindowKind = UsageWindowKind.fromStorage(this[Keys.OPENCODE_WIDGET_WINDOW]),
             usageDisplayMode = UsageDisplayMode.fromStorage(this[Keys.OPENCODE_USAGE_DISPLAY]),
             usageProgressStyle = UsageProgressStyle.fromStorage(
@@ -615,6 +627,7 @@ class AndroidPlatformSettingsRepository(
         val OPENCODE_WORKSPACE_NAME = stringPreferencesKey("opencode_workspace_name")
         val OPENCODE_AUTH_COOKIE_ENC = stringPreferencesKey("opencode_auth_cookie_enc")
         val OPENCODE_API_KEY_ENC = stringPreferencesKey("opencode_api_key_enc")
+        val OPENCODE_AUTH_METHOD = stringPreferencesKey("opencode_auth_method")
         val OPENCODE_WIDGET_WINDOW = stringPreferencesKey("opencode_go_widget_window")
         val OPENCODE_USAGE_DISPLAY = stringPreferencesKey("opencode_go_usage_display")
         val OPENCODE_USAGE_PROGRESS_STYLE =

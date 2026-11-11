@@ -178,10 +178,30 @@ class OpenCodeGoClient(
                 header(HttpHeaders.UserAgent, BROWSER_UA)
             }
         } catch (e: ResponseException) {
+            val upstreamBody = try {
+                e.response.bodyAsText()
+            } catch (_: Exception) {
+                ""
+            }
+            val subscriptionRequired = upstreamBody.contains("subscription", ignoreCase = true) ||
+                upstreamBody.contains("EntitlementError", ignoreCase = true)
             when (e.response.status) {
-                HttpStatusCode.Unauthorized,
-                HttpStatusCode.Forbidden,
-                -> throw IllegalStateException("OpenCode API Key 无效或已过期", e)
+                HttpStatusCode.Unauthorized -> throw IllegalStateException(
+                    "OpenCode API Key 无效或已过期",
+                    e,
+                )
+                HttpStatusCode.Forbidden -> throw IllegalStateException(
+                    if (subscriptionRequired) {
+                        "OpenCode Go 订阅未开通或已过期"
+                    } else {
+                        "OpenCode 拒绝访问 (HTTP 403)"
+                    },
+                    e,
+                )
+                HttpStatusCode.TooManyRequests -> throw IllegalStateException(
+                    "OpenCode 请求过于频繁，请稍后重试",
+                    e,
+                )
                 HttpStatusCode.NotFound -> throw IllegalStateException(
                     "OpenCode Go 用量接口不存在",
                     e,
