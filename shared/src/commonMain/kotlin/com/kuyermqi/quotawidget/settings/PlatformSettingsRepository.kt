@@ -19,12 +19,35 @@ data class OpenCodeGoSettings(
     val workspaceId: String = "",
     val workspaceName: String = "",
     val authCookie: String = "",
+    val apiKey: String = "",
+    val authMethod: OpenCodeAuthMethod? = null,
     val widgetWindowKind: UsageWindowKind = UsageWindowKind.ROLLING,
     val usageDisplayMode: UsageDisplayMode = UsageDisplayMode.USED,
     val usageProgressStyle: UsageProgressStyle = UsageProgressStyle.BAR,
 ) {
-    val isConfigured: Boolean
+    val hasCookieSession: Boolean
         get() = workspaceId.isNotBlank() && authCookie.isNotBlank()
+
+    val hasApiKey: Boolean
+        get() = apiKey.isNotBlank()
+
+    val effectiveAuthMethod: OpenCodeAuthMethod
+        get() = authMethod ?: if (hasApiKey) {
+            OpenCodeAuthMethod.API_KEY
+        } else {
+            OpenCodeAuthMethod.COOKIE
+        }
+
+    val isConfigured: Boolean
+        get() = when (effectiveAuthMethod) {
+            OpenCodeAuthMethod.COOKIE -> hasCookieSession
+            OpenCodeAuthMethod.API_KEY -> hasApiKey
+        }
+}
+
+enum class OpenCodeAuthMethod {
+    COOKIE,
+    API_KEY,
 }
 
 data class CodexSettings(

@@ -28,8 +28,10 @@ import com.kuyermqi.quotawidget.domain.opencode.OpenCodeLoginWebViewFlow
 import com.kuyermqi.quotawidget.opencode.OpenCodeGoClient
 import com.kuyermqi.quotawidget.opencode.OpenCodeWorkspace
 import com.kuyermqi.quotawidget.platform.PlatformIds
+import com.kuyermqi.quotawidget.settings.OpenCodeAuthMethod
 import com.kuyermqi.quotawidget.settings.OpenCodeGoSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
+import com.kuyermqi.quotawidget.ui.components.OpenCodeAuthPanel
 import com.kuyermqi.quotawidget.ui.components.OpenCodeGoConfigContent
 import com.kuyermqi.quotawidget.ui.usage.formatUsageWindowSummary
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState
@@ -46,6 +48,8 @@ class OpenCodeGoHomeState internal constructor(
     var draftWorkspaceId by mutableStateOf("")
         internal set
     var draftWorkspaceName by mutableStateOf("")
+        internal set
+    var draftApiKey by mutableStateOf("")
         internal set
     var draftWindowKind by mutableStateOf(UsageWindowKind.ROLLING)
         internal set
@@ -65,6 +69,8 @@ class OpenCodeGoHomeState internal constructor(
         internal set
     var workspacesError by mutableStateOf<String?>(null)
         internal set
+    var authPanel by mutableStateOf(OpenCodeAuthPanel.CHOOSE)
+        internal set
     var loaded by mutableStateOf(false)
         internal set
 
@@ -72,8 +78,9 @@ class OpenCodeGoHomeState internal constructor(
         get() = settings.isConfigured
 
     val isDirty: Boolean
-        get() = loaded && settings.isConfigured && (
-            draftWorkspaceId != settings.workspaceId ||
+        get() = loaded && (
+            draftApiKey != settings.apiKey ||
+                draftWorkspaceId != settings.workspaceId ||
                 draftWorkspaceName != settings.workspaceName ||
                 draftWindowKind != settings.widgetWindowKind ||
                 draftUsageDisplayMode != settings.usageDisplayMode ||
@@ -81,6 +88,7 @@ class OpenCodeGoHomeState internal constructor(
             )
 
     fun applyDraft(next: OpenCodeGoSettings = settings) {
+        draftApiKey = next.apiKey
         draftWorkspaceId = next.workspaceId
         draftWorkspaceName = next.workspaceName
         draftWindowKind = next.widgetWindowKind
@@ -91,6 +99,11 @@ class OpenCodeGoHomeState internal constructor(
     fun applyLoaded(next: OpenCodeGoSettings) {
         settings = next
         applyDraft(next)
+        authPanel = if (next.isConfigured) {
+            OpenCodeAuthPanel.SUMMARY
+        } else {
+            OpenCodeAuthPanel.CHOOSE
+        }
         loaded = true
     }
 
@@ -211,13 +224,17 @@ fun OpenCodeGoHomeEffects(
             state.isBusy = true
             state.error = null
             try {
-                var next = OpenCodeGoSettings(
+                var next = state.settings.copy(
                     workspaceId = workspaceId,
+                    workspaceName = state.settings.workspaceName,
                     authCookie = authCookie,
+                    apiKey = state.settings.apiKey,
+                    authMethod = OpenCodeAuthMethod.COOKIE,
                     widgetWindowKind = state.draftWindowKind,
                     usageDisplayMode = state.draftUsageDisplayMode,
                     usageProgressStyle = state.draftUsageProgressStyle,
                 )
+                state.repository().saveWidgetLoading(PlatformIds.OPENCODE_GO)
                 state.repository().saveOpenCodeGoSettings(next)
                 state.settings = next
                 state.applyDraft(next)
@@ -233,9 +250,11 @@ fun OpenCodeGoHomeEffects(
                 when (val refresh = onRefreshPlatform(PlatformIds.OPENCODE_GO)) {
                     is WidgetDisplayState.Success -> {
                         state.error = null
+                        state.authPanel = OpenCodeAuthPanel.SUMMARY
                     }
                     is WidgetDisplayState.Error -> {
                         state.error = refresh.message
+                        state.authPanel = OpenCodeAuthPanel.COOKIE
                     }
                     WidgetDisplayState.NeedsReauth -> {
                         clearOpenCodeSession(
@@ -248,6 +267,7 @@ fun OpenCodeGoHomeEffects(
                     }
                     else -> {
                         state.error = null
+                        state.authPanel = OpenCodeAuthPanel.SUMMARY
                     }
                 }
                 WidgetGlanceState.syncAndUpdate(context, "opencode_login")
@@ -276,10 +296,22 @@ fun ColumnScope.OpenCodeGoHomeContent(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val msgNeedsReauth = stringResource(R.string.widget_needs_reauth)
+    val msgWorkspaceMissing = stringResource(R.string.opencode_workspace_missing)
+    val msgWorkspacesLoadFailed = stringResource(R.string.opencode_workspaces_load_failed)
 
     OpenCodeGoConfigContent(
-        isLoggedIn = state.settings.isConfigured &&
-            bindings.widgetState !is WidgetDisplayState.NeedsReauth,
+        authPanel = state.authPanel,
+        activeAuthMethod = state.settings.effectiveAuthMethod,
+        isConfigured = state.settings.isConfigured,
+        needsReauth = bindings.widgetState is WidgetDisplayState.NeedsReauth &&
+            state.settings.effectiveAuthMethod == OpenCodeAuthMethod.COOKIE,
+        hasCookieSession = state.settings.hasCookieSession,
+        hasApiKey = state.settings.hasApiKey,
+        apiKey = state.draftApiKey,
+        onApiKeyChange = {
+            state.draftApiKey = it
+            state.error = null
+        },
         isBusy = state.isBusy,
         isDirty = state.isDirty,
         errorMessage = state.error,
@@ -309,7 +341,17 @@ fun ColumnScope.OpenCodeGoHomeContent(
             state.draftWorkspaceName = workspace.name
             state.error = null
         },
+        onAuthPanelChange = { panel ->
+            if (state.authPanel == OpenCodeAuthPanel.API_KEY &&
+                panel != OpenCodeAuthPanel.API_KEY
+            ) {
+                state.draftApiKey = state.settings.apiKey
+            }
+            state.authPanel = panel
+            state.error = null
+        },
         onLogin = bindings.onLogin,
+        onReauth = bindings.onLogin,
         onLogout = {
             scope.launch {
                 state.isBusy = true
@@ -327,24 +369,52 @@ fun ColumnScope.OpenCodeGoHomeContent(
                 }
             }
         },
-        onSave = {
+        onSave = { authMethod ->
             scope.launch {
                 state.isBusy = true
                 state.error = null
+                val editingPanel = state.authPanel
                 try {
                     val next = state.settings.copy(
                         workspaceId = state.draftWorkspaceId,
                         workspaceName = state.draftWorkspaceName,
+                        apiKey = if (authMethod == OpenCodeAuthMethod.API_KEY) {
+                            state.draftApiKey.trim()
+                        } else {
+                            state.settings.apiKey
+                        },
+                        authMethod = authMethod ?: state.settings.effectiveAuthMethod,
                         widgetWindowKind = state.draftWindowKind,
                         usageDisplayMode = state.draftUsageDisplayMode,
                         usageProgressStyle = state.draftUsageProgressStyle,
                     )
+                    val credentialsChanged =
+                        next.effectiveAuthMethod != state.settings.effectiveAuthMethod ||
+                            next.apiKey != state.settings.apiKey ||
+                            next.authCookie != state.settings.authCookie ||
+                            next.workspaceId != state.settings.workspaceId
+                    if (credentialsChanged && next.isConfigured) {
+                        state.repository().saveWidgetLoading(PlatformIds.OPENCODE_GO)
+                    }
                     state.repository().saveOpenCodeGoSettings(next)
                     state.settings = next
                     state.applyDraft(next)
+                    if (next.effectiveAuthMethod == OpenCodeAuthMethod.COOKIE &&
+                        next.authCookie.isNotBlank()
+                    ) {
+                        loadOpenCodeWorkspaces(
+                            state = state,
+                            client = state.client,
+                            settings = next,
+                            persistMissingSelection = false,
+                            msgWorkspaceMissing = msgWorkspaceMissing,
+                            msgWorkspacesLoadFailed = msgWorkspacesLoadFailed,
+                        )
+                    }
                     when (val result = onRefreshPlatform(PlatformIds.OPENCODE_GO)) {
                         is WidgetDisplayState.Error -> {
                             state.error = result.message
+                            state.authPanel = editingPanel
                         }
                         WidgetDisplayState.NeedsReauth -> {
                             clearOpenCodeSession(
@@ -358,6 +428,9 @@ fun ColumnScope.OpenCodeGoHomeContent(
                         else -> {
                             state.error = null
                             state.workspacesError = null
+                            if (next.isConfigured) {
+                                state.authPanel = OpenCodeAuthPanel.SUMMARY
+                            }
                         }
                     }
                     WidgetGlanceState.syncAndUpdate(context, "opencode_save")
@@ -384,6 +457,7 @@ private suspend fun clearOpenCodeSession(
     state.applyDraft()
     state.workspaces = emptyList()
     state.workspacesError = null
+    state.authPanel = OpenCodeAuthPanel.CHOOSE
     CookieManager.getInstance().removeAllCookies(null)
     CookieManager.getInstance().flush()
     state.lastDisplay = null
@@ -403,7 +477,10 @@ private suspend fun loadOpenCodeWorkspaces(
     msgWorkspaceMissing: String,
     msgWorkspacesLoadFailed: String,
 ): OpenCodeGoSettings {
-    if (!settings.isConfigured) {
+    if (!settings.isConfigured ||
+        settings.effectiveAuthMethod != OpenCodeAuthMethod.COOKIE ||
+        settings.authCookie.isBlank()
+    ) {
         state.workspaces = emptyList()
         state.workspacesError = null
         return settings
@@ -418,6 +495,18 @@ private suspend fun loadOpenCodeWorkspaces(
         if (list.isEmpty()) return settings
         val matched = list.find { it.id == settings.workspaceId }
         if (matched != null) {
+            if (settings.workspaceName != matched.name) {
+                val next = settings.copy(workspaceName = matched.name)
+                state.repository().saveOpenCodeGoSettings(next)
+                state.settings = next
+                if (state.draftWorkspaceId == matched.id &&
+                    (state.draftWorkspaceName.isBlank() ||
+                        state.draftWorkspaceName == settings.workspaceName)
+                ) {
+                    state.draftWorkspaceName = matched.name
+                }
+                return next
+            }
             return settings
         }
         val first = list.first()

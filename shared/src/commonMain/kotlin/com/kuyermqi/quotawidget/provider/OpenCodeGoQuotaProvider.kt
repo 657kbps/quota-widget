@@ -5,6 +5,7 @@ import com.kuyermqi.quotawidget.opencode.OpenCodeGoClient
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.platform.QuotaPlatform
+import com.kuyermqi.quotawidget.settings.OpenCodeAuthMethod
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 
 class OpenCodeGoQuotaProvider(
@@ -19,10 +20,13 @@ class OpenCodeGoQuotaProvider(
 
     override suspend fun fetch(repo: PlatformSettingsRepository): QuotaSnapshot {
         val settings = repo.getOpenCodeGoSettings()
-        require(settings.isConfigured) { "OpenCode Go 未登录" }
-        return client.fetchQuota(
-            workspaceId = settings.workspaceId,
-            authCookie = settings.authCookie,
-        )
+        require(settings.isConfigured) { "OpenCode Go 未配置" }
+        return when (settings.effectiveAuthMethod) {
+            OpenCodeAuthMethod.API_KEY -> client.fetchQuotaByApiKey(settings.apiKey)
+            OpenCodeAuthMethod.COOKIE -> client.fetchQuota(
+                workspaceId = settings.workspaceId,
+                authCookie = settings.authCookie,
+            )
+        }
     }
 }
