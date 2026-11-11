@@ -47,7 +47,7 @@ object PlatformRegistry {
         },
         object : QuotaPlatform {
             override val id = PlatformIds.ZHIPU
-            override val displayName = "智谱"
+            override val displayName = "Zhipu GLM"
         },
     )
 

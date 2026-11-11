@@ -61,27 +61,27 @@ class ZhipuUsageClient(
             when (e.response.status) {
                 HttpStatusCode.Unauthorized,
                 HttpStatusCode.Forbidden,
-                -> throw SessionExpiredException("智谱 API Key 无效或已失效，请检查配置")
+                -> throw SessionExpiredException("Zhipu GLM API Key 无效或已失效，请检查配置")
                 HttpStatusCode.TooManyRequests ->
-                    throw IllegalStateException("智谱请求过于频繁，请稍后重试", e)
+                    throw IllegalStateException("Zhipu GLM 请求过于频繁，请稍后重试", e)
                 else ->
-                    throw IllegalStateException("查询智谱用量失败: ${e.response.status}", e)
+                    throw IllegalStateException("查询 Zhipu GLM 用量失败: ${e.response.status}", e)
             }
         }
         val body = response.bodyAsText()
         if (body.isBlank()) {
-            throw IllegalStateException("智谱返回为空")
+            throw IllegalStateException("Zhipu GLM 返回为空")
         }
         val envelope = try {
             json.decodeFromString(ZhipuUsageEnvelope.serializer(), body)
         } catch (e: SerializationException) {
-            throw IllegalStateException("智谱返回无法解析", e)
+            throw IllegalStateException("Zhipu GLM 返回无法解析", e)
         }
         envelope.failureOrNull()?.let { throw it }
-        val data = envelope.data ?: throw IllegalStateException("智谱返回数据为空")
+        val data = envelope.data ?: throw IllegalStateException("Zhipu GLM 返回数据为空")
         val windows = toWindows(data.limits, nowEpochMs)
         if (windows.isEmpty()) {
-            throw QuotaUnavailableException("智谱已认证，但未返回可展示的用量窗口（请确认已开通 Coding Plan）")
+            throw QuotaUnavailableException("Zhipu GLM 已认证，但未返回可展示的用量窗口（请确认已开通 Coding Plan）")
         }
         return QuotaSnapshot(
             platformId = PlatformIds.ZHIPU,
@@ -172,10 +172,10 @@ internal fun ZhipuUsageEnvelope.failureOrNull(): Exception? {
     val failed = success == false || (code != null && code != 200)
     if (!failed) return null
     if (code == 401 || code == 1_000 || code == 1_001) {
-        return SessionExpiredException("智谱 API Key 无效或已失效，请检查配置")
+        return SessionExpiredException("Zhipu GLM API Key 无效或已失效，请检查配置")
     }
     return IllegalStateException(
-        msg?.takeIf { it.isNotBlank() } ?: "查询智谱用量失败",
+        msg?.takeIf { it.isNotBlank() } ?: "查询 Zhipu GLM 用量失败",
     )
 }
 
