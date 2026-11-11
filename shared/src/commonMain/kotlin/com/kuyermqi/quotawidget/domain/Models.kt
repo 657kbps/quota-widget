@@ -77,7 +77,7 @@ enum class QuotaWindowKind {
 
 /**
  * Domestic vs overseas service site for platforms that run separate deployments
- * with non-interchangeable API keys (Kimi Code, Zhipu GLM Coding Plan).
+ * with non-interchangeable API keys (Kimi Code, Zhipu Coding Plan).
  */
 enum class ServiceRegion {
     CN,

@@ -332,7 +332,7 @@ fun HomeScreen(
 
                 items(PlatformRegistry.platforms, key = { it.id }) { platform ->
                     PlatformConfigItem(
-                        title = platform.displayName,
+                        title = platform.homeListName,
                         expanded = expandedPlatformId == platform.id,
                         onToggle = {
                             expandedPlatformId =

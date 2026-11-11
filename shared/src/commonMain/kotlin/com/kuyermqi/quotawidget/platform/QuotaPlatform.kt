@@ -7,6 +7,9 @@ package com.kuyermqi.quotawidget.platform
 interface QuotaPlatform {
     val id: String
     val displayName: String
+
+    /** Label shown in the home platform list; defaults to [displayName]. */
+    val homeListName: String get() = displayName
 }
 
 object PlatformIds {
@@ -47,7 +50,8 @@ object PlatformRegistry {
         },
         object : QuotaPlatform {
             override val id = PlatformIds.ZHIPU
-            override val displayName = "Zhipu GLM"
+            override val displayName = "Zhipu"
+            override val homeListName = "Zhipu GLM"
         },
     )
 

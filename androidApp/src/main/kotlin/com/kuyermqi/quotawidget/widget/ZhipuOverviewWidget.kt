@@ -20,7 +20,7 @@ import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeCompact
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewWidgetContent
 
 /**
- * Zhipu GLM Coding Plan overview: 5h and weekly windows.
+ * Zhipu Coding Plan overview: 5h and weekly windows.
  */
 class ZhipuOverviewWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition

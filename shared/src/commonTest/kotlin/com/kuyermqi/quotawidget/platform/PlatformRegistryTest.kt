@@ -20,6 +20,7 @@ class PlatformRegistryTest {
         assertEquals("NewAPI", PlatformRegistry.displayName(PlatformIds.NEW_API))
         assertEquals("Magpie", PlatformRegistry.displayName(PlatformIds.MAGPIE))
         assertEquals("Kimi Code", PlatformRegistry.displayName(PlatformIds.KIMI_CODE))
-        assertEquals("Zhipu GLM", PlatformRegistry.displayName(PlatformIds.ZHIPU))
+        assertEquals("Zhipu", PlatformRegistry.displayName(PlatformIds.ZHIPU))
+        assertEquals("Zhipu GLM", PlatformRegistry.find(PlatformIds.ZHIPU)?.homeListName)
     }
 }

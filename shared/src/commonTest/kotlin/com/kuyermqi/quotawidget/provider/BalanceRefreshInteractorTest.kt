@@ -256,7 +256,7 @@ class BalanceRefreshInteractorTest {
                 FakeUsageProvider(
                     platformId = PlatformIds.ZHIPU,
                     configured = { it.getZhipuSettings().isConfigured },
-                    snapshot = usageSnapshot(PlatformIds.ZHIPU, "Zhipu GLM", 42.0),
+                    snapshot = usageSnapshot(PlatformIds.ZHIPU, "Zhipu", 42.0),
                 ),
             ),
         )

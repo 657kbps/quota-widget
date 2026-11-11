@@ -26,7 +26,7 @@
 
 ## 功能亮点
 
-- **多平台监控**：DeepSeek 账户余额、OpenCode Go 用量、Codex 订阅用量（每周 / 每月）、NewAPI 令牌余额与用量、Magpie 网关订阅额度、Kimi Code 与 Zhipu GLM Coding Plan 订阅配额
+- **多平台监控**：DeepSeek 账户余额、OpenCode Go 用量、Codex 订阅用量（每周 / 每月）、NewAPI 令牌余额与用量、Magpie 网关订阅额度、Kimi Code 与 Zhipu Coding Plan 订阅配额
 - **多种小组件尺寸**：标准、紧凑、用量总览，适配不同桌面布局
 - **后台自动刷新**：WorkManager 按设定间隔更新，支持手动点按刷新
 - **安全存储**：API Key / OAuth Token 经 Tink 加密后写入 DataStore
@@ -45,7 +45,7 @@
 | **NewAPI** | 令牌余额（USD）与用量/余量百分比（可配置 Base URL + API Key） | 余额标准 · 余额紧凑 · 用量 |
 | **Magpie** | 自部署网关各供应商的订阅额度（同供应商的多个账号合并展示；5 小时 / 每周 / 每月；可选择展示哪个供应商，默认取网关返回的第一个；可配置网关地址 + 网关密钥） | 标准 · 紧凑 |
 | **Kimi Code** | 5H / 每周 / 每月用量或余量（视套餐返回；可配置国内 / 海外站点） | 标准 · 紧凑 · 总览 |
-| **Zhipu GLM Coding Plan** | 5H / 每周用量或余量（可配置国内 / 海外站点） | 标准 · 紧凑 · 总览 |
+| **Zhipu Coding Plan** | 5H / 每周用量或余量（可配置国内 / 海外站点） | 标准 · 紧凑 · 总览 |
 
 ## 下载
 

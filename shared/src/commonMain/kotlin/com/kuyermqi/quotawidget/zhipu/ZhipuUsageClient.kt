@@ -25,7 +25,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
 /**
- * Zhipu GLM Coding Plan quota.
+ * Zhipu Coding Plan quota.
  *
  * `GET /api/monitor/usage/quota/limit` on [open.bigmodel.cn] (CN) or [api.z.ai]
  * (global). This is the endpoint used by Zhipu's official `glm-plan-usage`
@@ -61,27 +61,27 @@ class ZhipuUsageClient(
             when (e.response.status) {
                 HttpStatusCode.Unauthorized,
                 HttpStatusCode.Forbidden,
-                -> throw SessionExpiredException("Zhipu GLM API Key 无效或已失效，请检查配置")
+                -> throw SessionExpiredException("Zhipu API Key 无效或已失效，请检查配置")
                 HttpStatusCode.TooManyRequests ->
-                    throw IllegalStateException("Zhipu GLM 请求过于频繁，请稍后重试", e)
+                    throw IllegalStateException("Zhipu 请求过于频繁，请稍后重试", e)
                 else ->
-                    throw IllegalStateException("查询 Zhipu GLM 用量失败: ${e.response.status}", e)
+                    throw IllegalStateException("查询 Zhipu 用量失败: ${e.response.status}", e)
             }
         }
         val body = response.bodyAsText()
         if (body.isBlank()) {
-            throw IllegalStateException("Zhipu GLM 返回为空")
+            throw IllegalStateException("Zhipu 返回为空")
         }
         val envelope = try {
             json.decodeFromString(ZhipuUsageEnvelope.serializer(), body)
         } catch (e: SerializationException) {
-            throw IllegalStateException("Zhipu GLM 返回无法解析", e)
+            throw IllegalStateException("Zhipu 返回无法解析", e)
         }
         envelope.failureOrNull()?.let { throw it }
-        val data = envelope.data ?: throw IllegalStateException("Zhipu GLM 返回数据为空")
+        val data = envelope.data ?: throw IllegalStateException("Zhipu 返回数据为空")
         val windows = toWindows(data.limits, nowEpochMs)
         if (windows.isEmpty()) {
-            throw QuotaUnavailableException("Zhipu GLM 已认证，但未返回可展示的用量窗口（请确认已开通 Coding Plan）")
+            throw QuotaUnavailableException("Zhipu 已认证，但未返回可展示的用量窗口（请确认已开通 Coding Plan）")
         }
         return QuotaSnapshot(
             platformId = PlatformIds.ZHIPU,
@@ -172,10 +172,10 @@ internal fun ZhipuUsageEnvelope.failureOrNull(): Exception? {
     val failed = success == false || (code != null && code != 200)
     if (!failed) return null
     if (code == 401 || code == 1_000 || code == 1_001) {
-        return SessionExpiredException("Zhipu GLM API Key 无效或已失效，请检查配置")
+        return SessionExpiredException("Zhipu API Key 无效或已失效，请检查配置")
     }
     return IllegalStateException(
-        msg?.takeIf { it.isNotBlank() } ?: "查询 Zhipu GLM 用量失败",
+        msg?.takeIf { it.isNotBlank() } ?: "查询 Zhipu 用量失败",
     )
 }
 

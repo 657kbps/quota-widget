@@ -32,7 +32,7 @@ import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
 import com.kuyermqi.quotawidget.domain.presentUsageOverviewWindowKinds
 
 /**
- * API-key based usage platform editor (Kimi Code, Zhipu GLM Coding Plan):
+ * API-key based usage platform editor (Kimi Code, Zhipu Coding Plan):
  * key, domestic/overseas site, widget window and display prefs.
  */
 @Composable

@@ -19,7 +19,7 @@ class ZhipuQuotaProvider(
 
     override suspend fun fetch(repo: PlatformSettingsRepository): QuotaSnapshot {
         val settings = repo.getZhipuSettings()
-        require(settings.isConfigured) { "Zhipu GLM API Key 未配置" }
+        require(settings.isConfigured) { "Zhipu API Key 未配置" }
         return client.fetchUsage(
             apiKey = settings.apiKey,
             region = settings.region,
