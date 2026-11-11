@@ -48,12 +48,15 @@ import com.kuyermqi.quotawidget.ui.home.CodexHomeContent
 import com.kuyermqi.quotawidget.ui.home.CodexHomeEffects
 import com.kuyermqi.quotawidget.ui.home.DeepSeekHomeContent
 import com.kuyermqi.quotawidget.ui.home.DeepSeekHomeEffects
+import com.kuyermqi.quotawidget.ui.home.MagpieHomeContent
+import com.kuyermqi.quotawidget.ui.home.MagpieHomeEffects
 import com.kuyermqi.quotawidget.ui.home.NewApiHomeContent
 import com.kuyermqi.quotawidget.ui.home.NewApiHomeEffects
 import com.kuyermqi.quotawidget.ui.home.OpenCodeGoHomeContent
 import com.kuyermqi.quotawidget.ui.home.OpenCodeGoHomeEffects
 import com.kuyermqi.quotawidget.ui.home.rememberCodexHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberDeepSeekHomeState
+import com.kuyermqi.quotawidget.ui.home.rememberMagpieHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberNewApiHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberOpenCodeGoHomeState
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
@@ -101,11 +104,13 @@ fun HomeScreen(
     val openCode = rememberOpenCodeGoHomeState(settingsRepository)
     val codex = rememberCodexHomeState(settingsRepository)
     val newApi = rememberNewApiHomeState(settingsRepository)
+    val magpie = rememberMagpieHomeState(settingsRepository)
 
     val deepSeekWidgetState = DeepSeekHomeEffects(deepSeek)
     val openCodeBindings = OpenCodeGoHomeEffects(openCode, onRefreshPlatform)
     val codexBindings = CodexHomeEffects(codex, onRefreshPlatform)
     val newApiWidgetState = NewApiHomeEffects(newApi)
+    val magpieWidgetState = MagpieHomeEffects(magpie)
 
     val hasVisibleTips = tipLoaded && (
         showBatteryOptimizationTip || showOemBackgroundTip || showPlatformTip
@@ -160,13 +165,19 @@ fun HomeScreen(
             loadingMsg = msgLoadingBalance,
             reauthMsg = msgNeedsReauth,
         )
+        PlatformIds.MAGPIE -> magpie.summaryLabel(
+            resources = resources,
+            widgetState = magpieWidgetState,
+            loadingMsg = msgLoadingBalance,
+            reauthMsg = msgNeedsReauth,
+        )
         else -> null
     }
 
     suspend fun refreshAll(showPullIndicator: Boolean = false) {
         val anyConfigured =
             deepSeek.isConfigured || openCode.isConfigured ||
-                codex.isConfigured || newApi.isConfigured
+                codex.isConfigured || newApi.isConfigured || magpie.isConfigured
         if (!anyConfigured) return
         if (showPullIndicator) isRefreshing = true
         try {
@@ -188,8 +199,9 @@ fun HomeScreen(
         openCode.applyLoaded(settingsRepository.getOpenCodeGoSettings())
         codex.applyLoaded(settingsRepository.getCodexSettings())
         newApi.applyLoaded(settingsRepository.getNewApiSettings())
+        magpie.applyLoaded(settingsRepository.getMagpieSettings())
         if (deepSeek.isConfigured || openCode.isConfigured ||
-            codex.isConfigured || newApi.isConfigured
+            codex.isConfigured || newApi.isConfigured || magpie.isConfigured
         ) {
             refreshAll(showPullIndicator = false)
         }
@@ -326,6 +338,10 @@ fun HomeScreen(
                             )
                             PlatformIds.NEW_API -> NewApiHomeContent(
                                 state = newApi,
+                                onRefreshPlatform = onRefreshPlatform,
+                            )
+                            PlatformIds.MAGPIE -> MagpieHomeContent(
+                                state = magpie,
                                 onRefreshPlatform = onRefreshPlatform,
                             )
                         }

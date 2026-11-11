@@ -26,7 +26,7 @@
 
 ## Features
 
-- **Multi-platform monitoring**: DeepSeek balance, OpenCode Go usage, Codex subscription usage (weekly / monthly), and NewAPI token balance / usage
+- **Multi-platform monitoring**: DeepSeek balance, OpenCode Go usage, Codex subscription usage (weekly / monthly), NewAPI token balance / usage, and Magpie gateway allowances
 - **Multiple widget sizes**: Standard, compact, and usage overview layouts
 - **Background refresh**: WorkManager periodic updates plus tap-to-refresh
 - **Secure storage**: API keys / OAuth tokens encrypted with Tink before DataStore persistence
@@ -42,6 +42,7 @@
 | **OpenCode Go** | Rolling / weekly / monthly usage or remaining (configurable) | Standard · Compact · Overview |
 | **Codex** | Weekly / monthly usage or remaining (in-app OAuth login) | Standard · Compact · Overview |
 | **NewAPI** | Token balance (USD) and usage/remaining percent (configurable Base URL + API Key) | Balance standard · Balance compact · Usage |
+| **Magpie** | Subscription allowances per provider of a self-hosted gateway (accounts of the same provider merged; 5h / week / month; pick the provider, defaults to the first one the gateway returns; configurable gateway URL + gateway key) | Standard · Compact |
 
 ## Download
 

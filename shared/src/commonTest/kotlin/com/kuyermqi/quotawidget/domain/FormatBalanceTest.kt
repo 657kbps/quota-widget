@@ -32,7 +32,20 @@ class FormatBalanceTest {
                 QuotaWindow(kind = QuotaWindowKind.MONTHLY, usedPercent = 12.0),
             ),
         )
-        assertEquals("5h 19.5 % · 周 30 % · 月 12 %", display)
+        assertEquals("滚动 19.5 % · 每周 30 % · 每月 12 %", display)
+    }
+
+    @Test
+    fun formatUsagePrimaryDisplay_followsRemainingMode() {
+        val windows = listOf(
+            QuotaWindow(kind = QuotaWindowKind.FIVE_HOUR, usedPercent = 19.5),
+            QuotaWindow(kind = QuotaWindowKind.WEEKLY, usedPercent = 30.0),
+        )
+
+        assertEquals(
+            "滚动 80.5 % · 每周 70 %",
+            formatUsagePrimaryDisplay(windows, UsageDisplayMode.REMAINING),
+        )
     }
 
     @Test

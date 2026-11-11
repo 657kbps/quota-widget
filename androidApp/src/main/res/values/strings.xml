@@ -23,11 +23,16 @@
     <string name="widget_new_api_balance_compact_description">单行显示 NewAPI 令牌已用或剩余金额</string>
     <string name="widget_new_api_usage_label">NewAPI 使用情况</string>
     <string name="widget_new_api_usage_description">以百分比进度显示 NewAPI 令牌配额（无限额度时显示已用金额）</string>
+    <string name="widget_magpie_label">Magpie 使用情况</string>
+    <string name="widget_magpie_description">显示 Magpie 网关选定供应商的订阅额度百分比，供应商与时间窗口可在应用中选择</string>
+    <string name="widget_magpie_compact_label">Magpie 使用情况</string>
+    <string name="widget_magpie_compact_description">单行显示 Magpie 网关选定供应商的额度百分比</string>
     <string name="widget_loading">加载中…</string>
     <string name="platform_name_deepseek">DeepSeek</string>
     <string name="platform_name_opencode_go">OpenCode Go</string>
     <string name="platform_name_codex">Codex</string>
     <string name="platform_name_new_api">NewAPI</string>
+    <string name="platform_name_magpie">Magpie</string>
     <string name="widget_preview_sample_balance">$12.50</string>
     <string name="widget_preview_sample_percent">42%</string>
     <string name="widget_preview_sample_percent_rolling">19%</string>
@@ -141,6 +146,14 @@
     <string name="new_api_overspent_hint">可用额度为负（已超支）</string>
     <string name="new_api_usage_display_hint">无限额度 Key：余量显示为 ∞，用量显示已用金额。有限额度 Key：金额小组件显示金额，使用情况小组件显示百分比进度条。</string>
     <string name="new_api_save">保存</string>
+    <string name="magpie_base_url_label">网关地址</string>
+    <string name="magpie_base_url_hint">http://127.0.0.1:3425</string>
+    <string name="magpie_api_key_label">网关 API Key</string>
+    <string name="magpie_api_key_hint">在 magpie 中开启「Share on local network」，使用 Gateway → Gateway keys 生成的密钥</string>
+    <string name="magpie_key_rejected">网关 API Key 无效，或该密钥无权查看额度</string>
+    <string name="magpie_provider_label">小组件展示的供应商</string>
+    <string name="magpie_provider_accounts">%1$s · %2$d 个账号</string>
+    <string name="magpie_summary_with_provider">%1$s %2$s</string>
     <string name="widget_fetch_failed">获取失败</string>
     <string name="home_title">配额监控</string>
 </resources>

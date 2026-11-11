@@ -2,6 +2,7 @@ package com.kuyermqi.quotawidget.refresh
 
 import com.kuyermqi.quotawidget.codex.CodexAuthErrors
 import com.kuyermqi.quotawidget.codex.CodexRegionUnavailableException
+import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.platform.PlatformIds
@@ -31,6 +32,9 @@ class BalanceRefreshInteractor(
         }
         if (settingsRepository.getNewApiSettings().isConfigured) {
             results += refresh(PlatformIds.NEW_API)
+        }
+        if (settingsRepository.getMagpieSettings().isConfigured) {
+            results += refresh(PlatformIds.MAGPIE)
         }
         return results
     }
@@ -68,6 +72,14 @@ class BalanceRefreshInteractor(
             BalanceRefreshResult.Completed(WidgetDisplayState.NeedsReauth)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: QuotaUnavailableException) {
+            // Expected data condition (no connected account / no usage window):
+            // always surface it instead of silently keeping a stale Success, and
+            // don't ask WorkManager to retry something only the user can fix.
+            val message = e.message?.takeIf { it.isNotBlank() } ?: "查询额度失败"
+            println("QuotaRefresh unavailable platform=$platformId msg=$message")
+            settingsRepository.saveWidgetError(platformId, message)
+            BalanceRefreshResult.Completed(WidgetDisplayState.Error(message))
         } catch (e: Exception) {
             val message = e.message?.takeIf { it.isNotBlank() } ?: "查询额度失败"
             val retryable = !isNonRetryableTransient(e)

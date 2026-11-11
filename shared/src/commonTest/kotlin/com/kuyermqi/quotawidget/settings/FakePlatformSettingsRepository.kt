@@ -14,12 +14,14 @@ class FakePlatformSettingsRepository(
     openCode: OpenCodeGoSettings = OpenCodeGoSettings(),
     codex: CodexSettings = CodexSettings(),
     newApi: NewApiSettings = NewApiSettings(),
+    magpie: MagpieSettings = MagpieSettings(),
     widgetStates: Map<String, WidgetDisplayState> = emptyMap(),
 ) : PlatformSettingsRepository {
     private val deepSeekFlow = MutableStateFlow(deepSeek)
     private val openCodeFlow = MutableStateFlow(openCode)
     private val codexFlow = MutableStateFlow(codex)
     private val newApiFlow = MutableStateFlow(newApi)
+    private val magpieFlow = MutableStateFlow(magpie)
     private val widgetFlows = mutableMapOf(
         PlatformIds.DEEPSEEK to MutableStateFlow(
             widgetStates[PlatformIds.DEEPSEEK] ?: WidgetDisplayState.NotConfigured,
@@ -32,6 +34,9 @@ class FakePlatformSettingsRepository(
         ),
         PlatformIds.NEW_API to MutableStateFlow(
             widgetStates[PlatformIds.NEW_API] ?: WidgetDisplayState.NotConfigured,
+        ),
+        PlatformIds.MAGPIE to MutableStateFlow(
+            widgetStates[PlatformIds.MAGPIE] ?: WidgetDisplayState.NotConfigured,
         ),
     )
     private val refreshPhases = mutableMapOf<String, RefreshIconPhase>()
@@ -106,6 +111,25 @@ class FakePlatformSettingsRepository(
             usageProgressStyle = current.usageProgressStyle,
         )
         widgetFlow(PlatformIds.NEW_API).value = WidgetDisplayState.NotConfigured
+    }
+
+    override fun observeMagpieSettings(): Flow<MagpieSettings> = magpieFlow.asStateFlow()
+    override suspend fun getMagpieSettings(): MagpieSettings = magpieFlow.value
+    override suspend fun saveMagpieSettings(settings: MagpieSettings) {
+        magpieFlow.value = settings
+        if (!settings.isConfigured) {
+            widgetFlow(PlatformIds.MAGPIE).value = WidgetDisplayState.NotConfigured
+        }
+    }
+
+    override suspend fun clearMagpieSettings() {
+        val current = magpieFlow.value
+        magpieFlow.value = MagpieSettings(
+            widgetWindowKind = current.widgetWindowKind,
+            usageDisplayMode = current.usageDisplayMode,
+            usageProgressStyle = current.usageProgressStyle,
+        )
+        widgetFlow(PlatformIds.MAGPIE).value = WidgetDisplayState.NotConfigured
     }
 
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =

@@ -253,6 +253,16 @@ class SessionExpiredException(
     message: String = "Session expired",
 ) : Exception(message)
 
+/**
+ * The platform answered, but returned nothing the widget can display (no
+ * connected account, no usage window). This is an expected data condition
+ * rather than a bug, so the refresh pipeline turns it into
+ * [WidgetDisplayState.Error] with the message shown to the user.
+ */
+class QuotaUnavailableException(
+    message: String,
+) : Exception(message)
+
 fun formatBalance(currency: CurrencyPreference, amount: String): String {
     val value = amount.trim().toDoubleOrNull() ?: 0.0
     val abs = kotlin.math.abs(value)
@@ -304,16 +314,24 @@ fun formatUsagePercent(percent: Double): String {
     }
 }
 
-fun formatUsagePrimaryDisplay(windows: List<QuotaWindow>): String {
+/**
+ * Compact summary of every window, named like the widget's own window labels
+ * (滚动 / 每周 / 每月) and honouring [mode] so it never disagrees with what the
+ * widget shows.
+ */
+fun formatUsagePrimaryDisplay(
+    windows: List<QuotaWindow>,
+    mode: UsageDisplayMode = UsageDisplayMode.USED,
+): String {
     val parts = buildList {
         windows.find { it.kind == QuotaWindowKind.FIVE_HOUR }?.usedPercent?.let {
-            add("5h ${formatUsagePercent(it)}")
+            add("滚动 ${formatUsagePercent(displayUsagePercent(it, mode))}")
         }
         windows.find { it.kind == QuotaWindowKind.WEEKLY }?.usedPercent?.let {
-            add("周 ${formatUsagePercent(it)}")
+            add("每周 ${formatUsagePercent(displayUsagePercent(it, mode))}")
         }
         windows.find { it.kind == QuotaWindowKind.MONTHLY }?.usedPercent?.let {
-            add("月 ${formatUsagePercent(it)}")
+            add("每月 ${formatUsagePercent(displayUsagePercent(it, mode))}")
         }
     }
     return parts.joinToString(" · ")

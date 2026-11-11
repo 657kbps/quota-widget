@@ -8,6 +8,7 @@ import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.magpie.MagpieProvider
 import kotlinx.coroutines.flow.Flow
 
 data class DeepSeekSettings(
@@ -83,6 +84,29 @@ data class NewApiSettings(
 /** NewAPI common default: 500_000 quota = 1 USD. */
 const val DEFAULT_NEW_API_QUOTA_PER_USD = 500_000L
 
+/**
+ * Self-hosted magpie gateway (https://usemagpie.ai).
+ *
+ * [apiKey] is a gateway key, which `GET /v1/magpie/quotas` accepts when the
+ * gateway shares on the local network. [providers] is the gateway's provider
+ * list (accounts merged per provider) from the last refresh;
+ * [selectedProviderId] is the one the widget shows (blank = the first provider
+ * the gateway returns). [widgetWindowKind] picks which of that provider's usage
+ * windows (5h / week / month) a percent widget shows.
+ */
+data class MagpieSettings(
+    val baseUrl: String = "",
+    val apiKey: String = "",
+    val selectedProviderId: String = "",
+    val providers: List<MagpieProvider> = emptyList(),
+    val widgetWindowKind: UsageWindowKind = UsageWindowKind.ROLLING,
+    val usageDisplayMode: UsageDisplayMode = UsageDisplayMode.USED,
+    val usageProgressStyle: UsageProgressStyle = UsageProgressStyle.BAR,
+) {
+    val isConfigured: Boolean
+        get() = baseUrl.isNotBlank() && apiKey.isNotBlank()
+}
+
 interface PlatformSettingsRepository {
     fun observeDeepSeekSettings(): Flow<DeepSeekSettings>
     suspend fun getDeepSeekSettings(): DeepSeekSettings
@@ -102,6 +126,11 @@ interface PlatformSettingsRepository {
     suspend fun getNewApiSettings(): NewApiSettings
     suspend fun saveNewApiSettings(settings: NewApiSettings)
     suspend fun clearNewApiSettings()
+
+    fun observeMagpieSettings(): Flow<MagpieSettings>
+    suspend fun getMagpieSettings(): MagpieSettings
+    suspend fun saveMagpieSettings(settings: MagpieSettings)
+    suspend fun clearMagpieSettings()
 
     fun observeWidgetState(platformId: String): Flow<WidgetDisplayState>
     suspend fun getWidgetState(platformId: String): WidgetDisplayState
