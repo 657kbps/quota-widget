@@ -2,6 +2,7 @@ package com.kuyermqi.quotawidget.provider
 
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
+import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
@@ -56,6 +57,29 @@ class BalanceRefreshInteractorTest {
         val success = assertIs<WidgetDisplayState.Success>(result.state)
         assertEquals("￥12.50", success.snapshot.primaryDisplay)
         assertEquals(QuotaWindowKind.BALANCE, success.snapshot.windows.single().kind)
+    }
+
+    @Test
+    fun refresh_quotaUnavailable_surfacesErrorAndDropsStaleSuccess() = runTest {
+        val repo = FakePlatformSettingsRepository(
+            deepSeek = DeepSeekSettings(apiKey = "sk-test"),
+            widgetStates = mapOf(
+                PlatformIds.DEEPSEEK to WidgetDisplayState.Success(deepSeekSnapshot("9.99")),
+            ),
+        )
+        val interactor = BalanceRefreshInteractor(
+            repo,
+            listOf(FakeDeepSeekProvider(error = QuotaUnavailableException("网关未返回额度窗口"))),
+        )
+
+        val result = interactor.refresh(PlatformIds.DEEPSEEK)
+
+        val completed = assertIs<BalanceRefreshResult.Completed>(result)
+        assertEquals(WidgetDisplayState.Error("网关未返回额度窗口"), completed.state)
+        assertEquals(
+            WidgetDisplayState.Error("网关未返回额度窗口"),
+            repo.getWidgetState(PlatformIds.DEEPSEEK),
+        )
     }
 
     @Test

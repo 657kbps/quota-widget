@@ -253,6 +253,16 @@ class SessionExpiredException(
     message: String = "Session expired",
 ) : Exception(message)
 
+/**
+ * The platform answered, but returned nothing the widget can display (no
+ * connected account, no usage window). This is an expected data condition
+ * rather than a bug, so the refresh pipeline turns it into
+ * [WidgetDisplayState.Error] with the message shown to the user.
+ */
+class QuotaUnavailableException(
+    message: String,
+) : Exception(message)
+
 fun formatBalance(currency: CurrencyPreference, amount: String): String {
     val value = amount.trim().toDoubleOrNull() ?: 0.0
     val abs = kotlin.math.abs(value)

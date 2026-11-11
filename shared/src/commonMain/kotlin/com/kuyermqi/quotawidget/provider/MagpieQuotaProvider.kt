@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.provider
 
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
+import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
@@ -29,7 +30,7 @@ class MagpieQuotaProvider(
             apiKey = settings.apiKey,
         )
         val selected = MagpieQuotaClient.selectProvider(providers, settings.selectedProviderId)
-            ?: throw IllegalStateException(
+            ?: throw QuotaUnavailableException(
                 "Magpie 网关未返回 5 小时/每周/每月 额度窗口，" +
                     "请确认网关已连接订阅账号或带限额的 Key",
             )

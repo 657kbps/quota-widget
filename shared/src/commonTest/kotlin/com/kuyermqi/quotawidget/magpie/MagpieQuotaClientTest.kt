@@ -1,5 +1,6 @@
 package com.kuyermqi.quotawidget.magpie
 
+import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import kotlinx.serialization.json.Json
@@ -236,8 +237,8 @@ class MagpieQuotaClientTest {
     }
 
     @Test
-    fun toSnapshot_failsWithoutUsageWindows() {
-        val error = assertFailsWith<IllegalStateException> {
+    fun toSnapshot_reportsUnavailableInsteadOfCrashing() {
+        val error = assertFailsWith<QuotaUnavailableException> {
             MagpieQuotaClient.toSnapshot(emptyList(), updatedAtEpochMs = nowEpochMs)
         }
         assertTrue(error.message.orEmpty().contains("额度窗口"))

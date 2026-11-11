@@ -4,6 +4,7 @@ import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
+import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.formatUsagePrimaryDisplay
@@ -236,7 +237,7 @@ class MagpieQuotaClient(
             updatedAtEpochMs: Long = currentTimeMillis(),
         ): QuotaSnapshot {
             if (windows.isEmpty()) {
-                throw IllegalStateException(
+                throw QuotaUnavailableException(
                     "Magpie 网关未返回 5 小时/每周/每月 额度窗口，" +
                         "请确认网关已连接订阅账号或带限额的 Key",
                 )
