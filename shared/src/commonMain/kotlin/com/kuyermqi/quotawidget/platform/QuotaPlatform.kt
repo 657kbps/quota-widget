@@ -14,6 +14,7 @@ object PlatformIds {
     const val OPENCODE_GO = "opencode_go"
     const val CODEX = "codex"
     const val NEW_API = "new_api"
+    const val MAGPIE = "magpie"
 }
 
 object PlatformRegistry {
@@ -33,6 +34,10 @@ object PlatformRegistry {
         object : QuotaPlatform {
             override val id = PlatformIds.NEW_API
             override val displayName = "NewAPI"
+        },
+        object : QuotaPlatform {
+            override val id = PlatformIds.MAGPIE
+            override val displayName = "Magpie"
         },
     )
 

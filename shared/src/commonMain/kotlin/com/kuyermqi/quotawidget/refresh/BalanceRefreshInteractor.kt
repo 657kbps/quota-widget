@@ -32,6 +32,9 @@ class BalanceRefreshInteractor(
         if (settingsRepository.getNewApiSettings().isConfigured) {
             results += refresh(PlatformIds.NEW_API)
         }
+        if (settingsRepository.getMagpieSettings().isConfigured) {
+            results += refresh(PlatformIds.MAGPIE)
+        }
         return results
     }
 

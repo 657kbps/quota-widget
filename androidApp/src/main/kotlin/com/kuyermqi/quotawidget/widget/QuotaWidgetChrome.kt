@@ -142,6 +142,8 @@ internal suspend fun maybeRefreshIfConfigured(
             app.settingsRepository.getCodexSettings().isConfigured
         PlatformIds.NEW_API ->
             app.settingsRepository.getNewApiSettings().isConfigured
+        PlatformIds.MAGPIE ->
+            app.settingsRepository.getMagpieSettings().isConfigured
         else -> false
     }
     if (!configured) return

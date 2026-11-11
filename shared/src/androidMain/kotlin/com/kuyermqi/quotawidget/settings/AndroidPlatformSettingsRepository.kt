@@ -33,6 +33,8 @@ import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.decodeQuotaWindows
 import com.kuyermqi.quotawidget.domain.encodeQuotaWindows
 import com.kuyermqi.quotawidget.domain.formatBalance
+import com.kuyermqi.quotawidget.magpie.decodeMagpieProviders
+import com.kuyermqi.quotawidget.magpie.encodeMagpieProviders
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import kotlinx.coroutines.flow.Flow
@@ -245,6 +247,55 @@ class AndroidPlatformSettingsRepository(
         )
     }
 
+    override fun observeMagpieSettings(): Flow<MagpieSettings> =
+        dataStore.data.map { prefs -> prefs.toMagpieSettings() }
+
+    override suspend fun getMagpieSettings(): MagpieSettings =
+        dataStore.data.first().toMagpieSettings()
+
+    override suspend fun saveMagpieSettings(settings: MagpieSettings) {
+        dataStore.edit { prefs ->
+            if (!settings.isConfigured) {
+                prefs.remove(Keys.MAGPIE_BASE_URL)
+                prefs.remove(Keys.MAGPIE_KEY_ENC)
+                prefs.remove(Keys.MAGPIE_PROVIDERS)
+                prefs.remove(Keys.MAGPIE_SELECTED_PROVIDER)
+                prefs.clearWidgetPayload(PlatformIds.MAGPIE)
+                prefs[widgetStatusKey(PlatformIds.MAGPIE)] = Status.NOT_CONFIGURED
+            } else {
+                prefs[Keys.MAGPIE_BASE_URL] = settings.baseUrl.trim().trimEnd('/')
+                prefs[Keys.MAGPIE_KEY_ENC] = encrypt(settings.apiKey, MAGPIE_KEY_AD)
+                prefs[Keys.MAGPIE_PROVIDERS] = encodeMagpieProviders(settings.providers)
+                if (settings.selectedProviderId.isBlank()) {
+                    prefs.remove(Keys.MAGPIE_SELECTED_PROVIDER)
+                } else {
+                    prefs[Keys.MAGPIE_SELECTED_PROVIDER] = settings.selectedProviderId
+                }
+                val status = prefs[widgetStatusKey(PlatformIds.MAGPIE)]
+                if (status == null ||
+                    status == Status.NOT_CONFIGURED ||
+                    status == Status.NEEDS_REAUTH
+                ) {
+                    prefs[widgetStatusKey(PlatformIds.MAGPIE)] = Status.LOADING
+                }
+            }
+            prefs[Keys.MAGPIE_WIDGET_WINDOW] = settings.widgetWindowKind.name
+            prefs[Keys.MAGPIE_USAGE_DISPLAY] = settings.usageDisplayMode.name
+            prefs[Keys.MAGPIE_USAGE_PROGRESS_STYLE] = settings.usageProgressStyle.name
+        }
+    }
+
+    override suspend fun clearMagpieSettings() {
+        val current = getMagpieSettings()
+        saveMagpieSettings(
+            MagpieSettings(
+                widgetWindowKind = current.widgetWindowKind,
+                usageDisplayMode = current.usageDisplayMode,
+                usageProgressStyle = current.usageProgressStyle,
+            ),
+        )
+    }
+
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =
         dataStore.data.map { prefs -> prefs.toWidgetState(platformId) }
 
@@ -348,6 +399,7 @@ class AndroidPlatformSettingsRepository(
                 PlatformIds.OPENCODE_GO,
                 PlatformIds.CODEX,
                 PlatformIds.NEW_API,
+                PlatformIds.MAGPIE,
             )) {
                 prefs[refreshPhaseKey(platformId)] = RefreshIconPhase.Idle.name
             }
@@ -489,12 +541,31 @@ class AndroidPlatformSettingsRepository(
         )
     }
 
+    private fun Preferences.toMagpieSettings(): MagpieSettings {
+        val encrypted = this[Keys.MAGPIE_KEY_ENC]
+        val apiKey = encrypted
+            ?.let { runCatching { decrypt(it, MAGPIE_KEY_AD) }.getOrDefault("") }
+            .orEmpty()
+        return MagpieSettings(
+            baseUrl = this[Keys.MAGPIE_BASE_URL].orEmpty(),
+            apiKey = apiKey,
+            selectedProviderId = this[Keys.MAGPIE_SELECTED_PROVIDER].orEmpty(),
+            providers = decodeMagpieProviders(this[Keys.MAGPIE_PROVIDERS]),
+            widgetWindowKind = UsageWindowKind.fromStorage(this[Keys.MAGPIE_WIDGET_WINDOW]),
+            usageDisplayMode = UsageDisplayMode.fromStorage(this[Keys.MAGPIE_USAGE_DISPLAY]),
+            usageProgressStyle = UsageProgressStyle.fromStorage(
+                this[Keys.MAGPIE_USAGE_PROGRESS_STYLE],
+            ),
+        )
+    }
+
     private fun Preferences.isConfigured(platformId: String): Boolean =
         when (platformId) {
             PlatformIds.DEEPSEEK -> toDeepSeekSettings().apiKey.isNotBlank()
             PlatformIds.OPENCODE_GO -> toOpenCodeGoSettings().isConfigured
             PlatformIds.CODEX -> toCodexSettings().isConfigured
             PlatformIds.NEW_API -> toNewApiSettings().isConfigured
+            PlatformIds.MAGPIE -> toMagpieSettings().isConfigured
             else -> false
         }
 
@@ -647,6 +718,13 @@ class AndroidPlatformSettingsRepository(
         val NEW_API_QUOTA_PER_USD = longPreferencesKey("new_api_quota_per_usd")
         val NEW_API_USAGE_DISPLAY = stringPreferencesKey("new_api_usage_display")
         val NEW_API_USAGE_PROGRESS_STYLE = stringPreferencesKey("new_api_usage_progress_style")
+        val MAGPIE_BASE_URL = stringPreferencesKey("magpie_base_url")
+        val MAGPIE_KEY_ENC = stringPreferencesKey("magpie_key_enc")
+        val MAGPIE_PROVIDERS = stringPreferencesKey("magpie_providers")
+        val MAGPIE_SELECTED_PROVIDER = stringPreferencesKey("magpie_selected_provider")
+        val MAGPIE_WIDGET_WINDOW = stringPreferencesKey("magpie_widget_window")
+        val MAGPIE_USAGE_DISPLAY = stringPreferencesKey("magpie_usage_display")
+        val MAGPIE_USAGE_PROGRESS_STYLE = stringPreferencesKey("magpie_usage_progress_style")
         val ACTIVE_PLATFORM_ID = stringPreferencesKey("active_platform_id")
         val LEGACY_WIDGET_STATUS = stringPreferencesKey("widget_status")
         val LEGACY_WIDGET_ERROR = stringPreferencesKey("widget_error")
@@ -685,6 +763,7 @@ class AndroidPlatformSettingsRepository(
         private val CODEX_REFRESH_AD = "codex_refresh_token".encodeToByteArray()
         private val CODEX_ID_AD = "codex_id_token".encodeToByteArray()
         private val NEW_API_KEY_AD = "new_api_key".encodeToByteArray()
+        private val MAGPIE_KEY_AD = "magpie_key".encodeToByteArray()
 
         private fun widgetStatusKey(platformId: String) =
             stringPreferencesKey("widget_${platformId}_status")

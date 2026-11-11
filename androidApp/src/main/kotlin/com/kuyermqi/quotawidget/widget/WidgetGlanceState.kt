@@ -35,6 +35,7 @@ import com.kuyermqi.quotawidget.domain.formatBalance
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.settings.CodexSettings
+import com.kuyermqi.quotawidget.settings.MagpieSettings
 import com.kuyermqi.quotawidget.settings.NewApiSettings
 import com.kuyermqi.quotawidget.settings.OpenCodeGoSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
@@ -73,6 +74,9 @@ object WidgetGlanceState {
     val codexUsageProgressStyleKey = stringPreferencesKey("qw_codex_usage_progress_style")
     val newApiUsageDisplayModeKey = stringPreferencesKey("qw_new_api_usage_display")
     val newApiUsageProgressStyleKey = stringPreferencesKey("qw_new_api_usage_progress_style")
+    val magpieWindowKindKey = stringPreferencesKey("qw_magpie_window_kind")
+    val magpieUsageDisplayModeKey = stringPreferencesKey("qw_magpie_usage_display")
+    val magpieUsageProgressStyleKey = stringPreferencesKey("qw_magpie_usage_progress_style")
 
     private object Status {
         const val NOT_CONFIGURED = "not_configured"
@@ -116,6 +120,8 @@ object WidgetGlanceState {
             PlatformIds.NEW_API,
         ),
         Target(NewApiUsageWidget(), NewApiUsageWidget::class.java, PlatformIds.NEW_API),
+        Target(MagpieWidget(), MagpieWidget::class.java, PlatformIds.MAGPIE),
+        Target(MagpieCompactWidget(), MagpieCompactWidget::class.java, PlatformIds.MAGPIE),
     )
 
     suspend fun syncAndUpdate(context: Context, reason: String) {
@@ -125,6 +131,7 @@ object WidgetGlanceState {
         val openCodeSettings = repo.getOpenCodeGoSettings()
         val codexSettings = repo.getCodexSettings()
         val newApiSettings = repo.getNewApiSettings()
+        val magpieSettings = repo.getMagpieSettings()
         Log.i(TAG, "syncAndUpdate reason=$reason")
 
         val manager = GlanceAppWidgetManager(context)
@@ -148,6 +155,9 @@ object WidgetGlanceState {
                             },
                             newApiSettings = newApiSettings.takeIf {
                                 target.platformId == PlatformIds.NEW_API
+                            },
+                            magpieSettings = magpieSettings.takeIf {
+                                target.platformId == PlatformIds.MAGPIE
                             },
                         )
                     }
@@ -194,9 +204,22 @@ object WidgetGlanceState {
         } else {
             null
         }
+        val magpieSettings = if (platformId == PlatformIds.MAGPIE) {
+            repo.getMagpieSettings()
+        } else {
+            null
+        }
         updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
             prefs.toMutablePreferences().apply {
-                write(phase, display, appSettings, openCodeSettings, codexSettings, newApiSettings)
+                write(
+                    phase,
+                    display,
+                    appSettings,
+                    openCodeSettings,
+                    codexSettings,
+                    newApiSettings,
+                    magpieSettings,
+                )
             }
         }
         val verify = getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
@@ -243,6 +266,15 @@ object WidgetGlanceState {
 
     fun Preferences.toNewApiUsageProgressStyle(): UsageProgressStyle =
         UsageProgressStyle.fromStorage(this[newApiUsageProgressStyleKey])
+
+    fun Preferences.toMagpieUsageWindowKind(): UsageWindowKind =
+        UsageWindowKind.fromStorage(this[magpieWindowKindKey])
+
+    fun Preferences.toMagpieUsageDisplayMode(): UsageDisplayMode =
+        UsageDisplayMode.fromStorage(this[magpieUsageDisplayModeKey])
+
+    fun Preferences.toMagpieUsageProgressStyle(): UsageProgressStyle =
+        UsageProgressStyle.fromStorage(this[magpieUsageProgressStyleKey])
 
     fun Preferences.toDisplayState(): WidgetDisplayState {
         return when (this[statusKey]) {
@@ -294,6 +326,7 @@ object WidgetGlanceState {
         openCodeSettings: OpenCodeGoSettings?,
         codexSettings: CodexSettings?,
         newApiSettings: NewApiSettings?,
+        magpieSettings: MagpieSettings?,
     ) {
         this[refreshPhaseKey] = phase.name
         this[darkThemeModeKey] = appSettings.darkThemeMode.name
@@ -312,6 +345,11 @@ object WidgetGlanceState {
         if (newApiSettings != null) {
             this[newApiUsageDisplayModeKey] = newApiSettings.usageDisplayMode.name
             this[newApiUsageProgressStyleKey] = newApiSettings.usageProgressStyle.name
+        }
+        if (magpieSettings != null) {
+            this[magpieWindowKindKey] = magpieSettings.widgetWindowKind.name
+            this[magpieUsageDisplayModeKey] = magpieSettings.usageDisplayMode.name
+            this[magpieUsageProgressStyleKey] = magpieSettings.usageProgressStyle.name
         }
         when (display) {
             WidgetDisplayState.NotConfigured -> {
