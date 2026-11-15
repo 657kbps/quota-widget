@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.settings
 
 import com.kuyermqi.quotawidget.domain.AppSettings
+import com.kuyermqi.quotawidget.domain.HolidayCalendarCache
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
@@ -52,6 +53,8 @@ class FakePlatformSettingsRepository(
     private val refreshPhases = mutableMapOf<String, RefreshIconPhase>()
     private val refreshStartedAt = mutableMapOf<String, Long>()
     private val appSettingsFlow = MutableStateFlow(AppSettings())
+    private val peakValleyEnabledFlow = MutableStateFlow(true)
+    private val holidayCalendarCacheFlow = MutableStateFlow(HolidayCalendarCache.EMPTY)
 
     var platformTipDismissed: Boolean = false
     var oemBackgroundTipDismissed: Boolean = false
@@ -180,6 +183,25 @@ class FakePlatformSettingsRepository(
             usageProgressStyle = current.usageProgressStyle,
         )
         widgetFlow(PlatformIds.ZHIPU).value = WidgetDisplayState.NotConfigured
+    }
+
+    override fun observeDeepSeekPeakValleyEnabled(): Flow<Boolean> =
+        peakValleyEnabledFlow.asStateFlow()
+
+    override suspend fun isDeepSeekPeakValleyEnabled(): Boolean = peakValleyEnabledFlow.value
+
+    override suspend fun setDeepSeekPeakValleyEnabled(enabled: Boolean) {
+        peakValleyEnabledFlow.value = enabled
+    }
+
+    override fun observeHolidayCalendarCache(): Flow<HolidayCalendarCache> =
+        holidayCalendarCacheFlow.asStateFlow()
+
+    override suspend fun getHolidayCalendarCache(): HolidayCalendarCache =
+        holidayCalendarCacheFlow.value
+
+    override suspend fun saveHolidayCalendarCache(cache: HolidayCalendarCache) {
+        holidayCalendarCacheFlow.value = cache
     }
 
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =

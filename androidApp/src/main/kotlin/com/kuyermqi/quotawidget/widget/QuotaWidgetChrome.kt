@@ -75,6 +75,7 @@ internal suspend fun GlanceAppWidget.providePlatformGlance(
     context: Context,
     id: GlanceId,
     platformId: String,
+    showsPeakValley: Boolean = false,
     content: @Composable (
         state: WidgetDisplayState,
         refreshPhase: RefreshIconPhase,
@@ -88,6 +89,7 @@ internal suspend fun GlanceAppWidget.providePlatformGlance(
         id,
         app.settingsRepository,
         platformId,
+        showsPeakValley = showsPeakValley,
     )
     maybeRefreshIfConfigured(context, app, platformId)
     Log.i(TAG, "provideGlance id=$id platform=$platformId repo=${repoDisplay::class.simpleName}")
@@ -173,6 +175,13 @@ internal fun enqueueBootstrapRefresh(context: Context) {
 @Composable
 internal fun contextString(@StringRes resId: Int): String =
     LocalWidgetAndroidContext.current.getString(resId)
+
+@Composable
+internal fun contextString(@StringRes resId: Int, vararg formatArgs: Any): String =
+    LocalWidgetAndroidContext.current.getString(resId, *formatArgs)
+
+@Composable
+internal fun contextResources() = LocalWidgetAndroidContext.current.resources
 
 internal fun balanceTitleFontSize(formattedBalance: String): TextUnit =
     when {

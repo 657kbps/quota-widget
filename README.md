@@ -29,6 +29,7 @@
 - **多平台监控**：DeepSeek 账户余额、OpenCode Go 用量、Codex 订阅用量（每周 / 每月）、NewAPI 令牌余额与用量、Magpie 网关订阅额度、Kimi Code 与 Zhipu Coding Plan 订阅配额
 - **多种小组件尺寸**：标准、紧凑、用量总览，适配不同桌面布局
 - **后台自动刷新**：WorkManager 按设定间隔更新，支持手动点按刷新
+- **DeepSeek 峰谷时段**：标准小组件显示高峰 / 谷时、下次切换时间与倒计时（空间足够时）
 - **安全存储**：API Key / OAuth Token 经 Tink 加密后写入 DataStore
 - **主题可定制**：浅色 / 深色 / 跟随系统，以及自定义主题色
 - **后台保活提示**：引导关闭电池优化，并提供 [DontKillMyApp](https://dontkillmyapp.com/) 厂商设置参考
@@ -39,7 +40,7 @@
 
 | 平台 | 展示内容 | 小组件 |
 |------|----------|--------|
-| **DeepSeek** | API 账户余额 | 标准 · 紧凑 |
+| **DeepSeek** | API 账户余额 · 标准组件峰谷时段 / 价格档 / 倒计时 | 标准 · 紧凑 |
 | **OpenCode Go** | 滚动 / 每周 / 每月用量或余量（可配置） | 标准 · 紧凑 · 总览 |
 | **Codex** | 每周 / 每月用量或余量（可配置；应用内 OAuth 登录） | 标准 · 紧凑 · 总览 |
 | **NewAPI** | 令牌余额（USD）与用量/余量百分比（可配置 Base URL + API Key） | 余额标准 · 余额紧凑 · 用量 |
@@ -61,6 +62,17 @@
 4. 点按小组件上的刷新按钮即可立即更新
 
 部分国产 ROM 即使关闭电池优化仍可能限制后台；可参考 [DontKillMyApp](https://dontkillmyapp.com/) 为应用放行自启动 / 后台运行。
+
+## DeepSeek 峰谷时段
+
+标准 DeepSeek 小组件可显示当前价格档、下次切换时间和倒计时（高度足够时）。紧凑组件不受影响。
+
+- 按北京时间判断：工作日 09:00–12:00、14:00–18:00 为高峰，其余为谷时。高峰显示「梁文峰 · 原价」，谷时显示「梁文谷 · 半价」。
+- 周六、周日始终按谷时处理，包括调休补班日；国务院通知中的整段法定节假日按谷时处理。
+- 预置 2026、2027 年日历，来源 [holiday-cn](https://github.com/NateScarlet/holiday-cn)（MIT），已对照国务院办公厅通知。设置页可查看覆盖年份、更新状态并手动更新；启用时每周联网尝试更新今年和明年，失败会保留上一份有效缓存并显示状态。
+- 未配置 API Key、余额请求失败或离线时，峰谷与倒计时仍可正常显示；切换峰谷开关不会重新保存 API Key，也不会触发余额刷新。
+
+刷新限制：余额仍按原有 WorkManager 间隔刷新。峰谷/倒计时由系统非精确 `AlarmManager` 在目标切换点重算，并做最多每 30 分钟一次的低功耗本地刷新；Doze、厂商后台限制或系统延迟可能让静态组件上的倒计时暂时落后。组件同时显示准确的北京时间目标切换时刻作为补充，后台不会为倒计时请求余额。
 
 ## 从源码构建
 
@@ -135,6 +147,7 @@ fix: keep WorkManager Room constructors under R8 full mode
 ## 致谢
 
 - [DontKillMyApp](https://dontkillmyapp.com/) — 各厂商后台保活设置指南
+- [holiday-cn](https://github.com/NateScarlet/holiday-cn) — 预置节假日日历数据（MIT，许可证见 `androidApp/src/main/assets/holiday-cn/LICENSE`）
 - DeepSeek、OpenCode 等平台提供的开放接口
 
 ---

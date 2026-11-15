@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget
 
 import android.app.Application
+import com.kuyermqi.quotawidget.deepseek.peakvalley.HolidayCalendarRepository
 import com.kuyermqi.quotawidget.provider.CodexQuotaProvider
 import com.kuyermqi.quotawidget.provider.DeepSeekQuotaProvider
 import com.kuyermqi.quotawidget.provider.KimiCodeQuotaProvider
@@ -13,6 +14,8 @@ import com.kuyermqi.quotawidget.settings.AndroidPlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.update.UpdateCheckInteractor
+import com.kuyermqi.quotawidget.widget.DeepSeekPeakValleyCoordinator
+import com.kuyermqi.quotawidget.widget.HolidayCalendarScheduler
 import com.kuyermqi.quotawidget.widget.PeriodicRefreshScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +35,9 @@ class QuotaWidgetApp : Application() {
     lateinit var refreshInteractor: BalanceRefreshInteractor
         private set
 
+    lateinit var holidayCalendarRepository: HolidayCalendarRepository
+        private set
+
     lateinit var updateCheckInteractor: UpdateCheckInteractor
         private set
 
@@ -41,6 +47,7 @@ class QuotaWidgetApp : Application() {
         super.onCreate()
         instance = this
         settingsRepository = AndroidPlatformSettingsRepository(this)
+        holidayCalendarRepository = HolidayCalendarRepository(this, settingsRepository)
         // One-shot bootstrap so upgrades (prefs empty, DataStore has mode) don't flash.
         runBlocking {
             AppNightMode.apply(
@@ -69,6 +76,17 @@ class QuotaWidgetApp : Application() {
             android.util.Log.i("QuotaRefresh", "onCreate cleared refresh phases")
             val interval = settingsRepository.getAppSettings().refreshIntervalMinutes
             PeriodicRefreshScheduler.schedule(this@QuotaWidgetApp, interval)
+        }
+        appScope.launch {
+            settingsRepository.observeDeepSeekPeakValleyEnabled()
+                .distinctUntilChanged()
+                .collect { enabled ->
+                    HolidayCalendarScheduler.sync(this@QuotaWidgetApp, enabled)
+                    DeepSeekPeakValleyCoordinator.refresh(
+                        this@QuotaWidgetApp,
+                        "peak_valley_settings",
+                    )
+                }
         }
         appScope.launch {
             settingsRepository.observeAppSettings()

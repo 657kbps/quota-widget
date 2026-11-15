@@ -33,6 +33,7 @@ fun ColumnScope.DeepSeekConfigContent(
     isSaving: Boolean,
     saveError: String?,
     onSave: () -> Unit,
+    peakValleyContent: @Composable ColumnScope.() -> Unit = {},
 ) {
     OutlinedTextField(
         value = apiKey,
@@ -95,4 +96,5 @@ fun ColumnScope.DeepSeekConfigContent(
             Text("保存")
         }
     }
+    peakValleyContent()
 }

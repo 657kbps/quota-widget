@@ -2,6 +2,7 @@ package com.kuyermqi.quotawidget.settings
 
 import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
+import com.kuyermqi.quotawidget.domain.HolidayCalendarCache
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
@@ -164,6 +165,15 @@ interface PlatformSettingsRepository {
     suspend fun getZhipuSettings(): ZhipuSettings
     suspend fun saveZhipuSettings(settings: ZhipuSettings)
     suspend fun clearZhipuSettings()
+
+    /** Independent DeepSeek standard-widget peak/off-peak visibility; never touches the API key. */
+    fun observeDeepSeekPeakValleyEnabled(): Flow<Boolean>
+    suspend fun isDeepSeekPeakValleyEnabled(): Boolean
+    suspend fun setDeepSeekPeakValleyEnabled(enabled: Boolean)
+
+    fun observeHolidayCalendarCache(): Flow<HolidayCalendarCache>
+    suspend fun getHolidayCalendarCache(): HolidayCalendarCache
+    suspend fun saveHolidayCalendarCache(cache: HolidayCalendarCache)
 
     fun observeWidgetState(platformId: String): Flow<WidgetDisplayState>
     suspend fun getWidgetState(platformId: String): WidgetDisplayState

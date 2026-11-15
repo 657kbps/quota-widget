@@ -26,6 +26,7 @@ import com.kuyermqi.quotawidget.ui.UpdateAvailableDialog
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
 import com.kuyermqi.quotawidget.update.UpdateAvailability
+import com.kuyermqi.quotawidget.widget.DeepSeekPeakValleyCoordinator
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState
 import com.kuyermqi.quotawidget.widget.WidgetRefreshCoordinator
 import kotlinx.coroutines.launch
@@ -129,6 +130,11 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        DeepSeekPeakValleyCoordinator.requestRefresh(this, "activity_resume")
     }
 
     override fun onNewIntent(intent: Intent) {

@@ -1,7 +1,9 @@
 package com.kuyermqi.quotawidget.ui.home
 
+import android.content.res.Resources
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -9,16 +11,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import android.content.res.Resources
+import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.R
+import com.kuyermqi.quotawidget.deepseek.peakvalley.DeepSeekPeakValleyCalculator
+import com.kuyermqi.quotawidget.deepseek.peakvalley.HolidayCalendarTable
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
+import com.kuyermqi.quotawidget.domain.HolidayCalendarCache
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.settings.DeepSeekSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
+import com.kuyermqi.quotawidget.ui.components.CalendarUpdateNotice
 import com.kuyermqi.quotawidget.ui.components.DeepSeekConfigContent
+import com.kuyermqi.quotawidget.ui.components.DeepSeekPeakValleySection
+import com.kuyermqi.quotawidget.widget.DeepSeekPeakValleyCoordinator
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import java.time.Instant
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class DeepSeekHomeState internal constructor(
@@ -101,6 +115,50 @@ fun ColumnScope.DeepSeekHomeContent(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val calendarRepository = remember(context) {
+        (context.applicationContext as QuotaWidgetApp).holidayCalendarRepository
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val peakValleyEnabled by state.repository().observeDeepSeekPeakValleyEnabled()
+        .collectAsStateWithLifecycle(initialValue = true)
+    val calendarCache by state.repository().observeHolidayCalendarCache()
+        .collectAsStateWithLifecycle(initialValue = HolidayCalendarCache.EMPTY)
+    var nowEpochMs by remember { mutableStateOf(System.currentTimeMillis()) }
+    var isUpdatingCalendar by remember { mutableStateOf(false) }
+    var calendarNotice by remember { mutableStateOf<CalendarUpdateNotice?>(null) }
+    var calendarTable by remember { mutableStateOf(HolidayCalendarTable.EMPTY) }
+    LaunchedEffect(calendarCache) {
+        calendarTable = try {
+            calendarRepository.table()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Throwable) {
+            HolidayCalendarTable.EMPTY
+        }
+    }
+    val peakValleySnapshot = remember(calendarTable, nowEpochMs) {
+        DeepSeekPeakValleyCalculator(calendarTable).snapshotAt(
+            Instant.ofEpochMilli(nowEpochMs),
+        )
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                nowEpochMs = System.currentTimeMillis()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(lifecycleOwner) {
+        while (true) {
+            delay(30_000L)
+            if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                nowEpochMs = System.currentTimeMillis()
+            }
+        }
+    }
 
     DeepSeekConfigContent(
         apiKey = state.draftApiKey,
@@ -142,6 +200,51 @@ fun ColumnScope.DeepSeekHomeContent(
                     state.isSaving = false
                 }
             }
+        },
+        peakValleyContent = {
+            DeepSeekPeakValleySection(
+                enabled = peakValleyEnabled,
+                onEnabledChange = { enabled ->
+                    scope.launch {
+                        state.repository().setDeepSeekPeakValleyEnabled(enabled)
+                    }
+                },
+                snapshot = peakValleySnapshot,
+                currentYear = peakValleySnapshot.currentYear,
+                coveredYears = calendarTable.coveredYears(),
+                lastSuccessAtEpochMs = calendarCache.lastSuccessAtEpochMs,
+                failedYears = calendarCache.lastAttemptFailedYears,
+                notPublishedYears = calendarCache.lastAttemptNotPublishedYears,
+                isUpdating = isUpdatingCalendar,
+                updateNotice = calendarNotice,
+                onUpdate = {
+                    scope.launch {
+                        isUpdatingCalendar = true
+                        calendarNotice = null
+                        val result = try {
+                            calendarRepository.update()
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Throwable) {
+                            null
+                        }
+                        isUpdatingCalendar = false
+                        calendarNotice = when {
+                            result == null || result.failedYears.isNotEmpty() ->
+                                CalendarUpdateNotice.Failed
+                            result.notPublishedYears.isNotEmpty() ->
+                                CalendarUpdateNotice.NotPublished(
+                                    result.notPublishedYears.sorted(),
+                                )
+                            else -> CalendarUpdateNotice.Success
+                        }
+                        DeepSeekPeakValleyCoordinator.refresh(
+                            context,
+                            "deepseek_calendar_manual",
+                        )
+                    }
+                },
+            )
         },
     )
 }

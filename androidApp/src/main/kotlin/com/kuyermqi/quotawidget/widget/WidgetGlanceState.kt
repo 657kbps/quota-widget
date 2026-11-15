@@ -15,6 +15,7 @@ import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.kuyermqi.quotawidget.QuotaWidgetApp
+import com.kuyermqi.quotawidget.deepseek.peakvalley.HolidayCalendarTable
 import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.DEFAULT_CUSTOM_SEED_COLOR_ARGB
@@ -41,6 +42,8 @@ import com.kuyermqi.quotawidget.settings.NewApiSettings
 import com.kuyermqi.quotawidget.settings.OpenCodeGoSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.ZhipuSettings
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Glance [update] often recomposes without re-entering [GlanceAppWidget.provideGlance].
@@ -49,6 +52,9 @@ import com.kuyermqi.quotawidget.settings.ZhipuSettings
  */
 object WidgetGlanceState {
     private const val TAG = "QuotaRefresh"
+
+    /** Serializes Glance writes so a balance sync cannot overwrite a newer calendar mirror. */
+    internal val glanceWriteMutex = Mutex()
 
     val refreshPhaseKey = stringPreferencesKey("qw_refresh_phase")
     val statusKey = stringPreferencesKey("qw_status")
@@ -98,10 +104,16 @@ object WidgetGlanceState {
         val widget: GlanceAppWidget,
         val clazz: Class<out GlanceAppWidget>,
         val platformId: String,
+        val showsPeakValley: Boolean = false,
     )
 
     private fun targets(): List<Target> = listOf(
-        Target(DeepSeekBalanceWidget(), DeepSeekBalanceWidget::class.java, PlatformIds.DEEPSEEK),
+        Target(
+            DeepSeekBalanceWidget(),
+            DeepSeekBalanceWidget::class.java,
+            PlatformIds.DEEPSEEK,
+            showsPeakValley = true,
+        ),
         Target(
             DeepSeekBalanceCompactWidget(),
             DeepSeekBalanceCompactWidget::class.java,
@@ -158,51 +170,65 @@ object WidgetGlanceState {
         val zhipuSettings = repo.getZhipuSettings()
         Log.i(TAG, "syncAndUpdate reason=$reason")
 
-        val manager = GlanceAppWidgetManager(context)
-        var updated = 0
-        for (target in targets()) {
-            val display = repo.getWidgetState(target.platformId)
-            val phase = repo.getRefreshIconPhase(target.platformId)
-            val ids = manager.getGlanceIds(target.clazz)
-            ids.forEach { id ->
-                updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
-                    prefs.toMutablePreferences().apply {
-                        write(
-                            phase = phase,
-                            display = display,
-                            appSettings = appSettings,
-                            openCodeSettings = openCodeSettings.takeIf {
-                                target.platformId == PlatformIds.OPENCODE_GO
-                            },
-                            codexSettings = codexSettings.takeIf {
-                                target.platformId == PlatformIds.CODEX
-                            },
-                            newApiSettings = newApiSettings.takeIf {
-                                target.platformId == PlatformIds.NEW_API
-                            },
-                            magpieSettings = magpieSettings.takeIf {
-                                target.platformId == PlatformIds.MAGPIE
-                            },
-                            kimiCodeSettings = kimiCodeSettings.takeIf {
-                                target.platformId == PlatformIds.KIMI_CODE
-                            },
-                            zhipuSettings = zhipuSettings.takeIf {
-                                target.platformId == PlatformIds.ZHIPU
-                            },
-                        )
-                    }
-                }
-                target.widget.update(context, id)
-                updated++
-                Log.i(
-                    TAG,
-                    "syncAndUpdate applied id=$id type=${target.clazz.simpleName} " +
-                        "platform=${target.platformId} phase=$phase reason=$reason",
-                )
+        glanceWriteMutex.withLock {
+            val peakValleyEnabled = repo.isDeepSeekPeakValleyEnabled()
+            val peakValleyTable = if (peakValleyEnabled) {
+                app.holidayCalendarRepository.table()
+            } else {
+                null
             }
-        }
-        if (updated == 0) {
-            Log.w(TAG, "syncAndUpdate no glance ids")
+            val manager = GlanceAppWidgetManager(context)
+            var updated = 0
+            for (target in targets()) {
+                val display = repo.getWidgetState(target.platformId)
+                val phase = repo.getRefreshIconPhase(target.platformId)
+                val ids = manager.getGlanceIds(target.clazz)
+                ids.forEach { id ->
+                    updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
+                        prefs.toMutablePreferences().apply {
+                            write(
+                                phase = phase,
+                                display = display,
+                                appSettings = appSettings,
+                                openCodeSettings = openCodeSettings.takeIf {
+                                    target.platformId == PlatformIds.OPENCODE_GO
+                                },
+                                codexSettings = codexSettings.takeIf {
+                                    target.platformId == PlatformIds.CODEX
+                                },
+                                newApiSettings = newApiSettings.takeIf {
+                                    target.platformId == PlatformIds.NEW_API
+                                },
+                                magpieSettings = magpieSettings.takeIf {
+                                    target.platformId == PlatformIds.MAGPIE
+                                },
+                                kimiCodeSettings = kimiCodeSettings.takeIf {
+                                    target.platformId == PlatformIds.KIMI_CODE
+                                },
+                                zhipuSettings = zhipuSettings.takeIf {
+                                    target.platformId == PlatformIds.ZHIPU
+                                },
+                                peakValleyEnabled = peakValleyEnabled.takeIf {
+                                    target.showsPeakValley
+                                },
+                                peakValleyTable = peakValleyTable.takeIf {
+                                    target.showsPeakValley
+                                },
+                            )
+                        }
+                    }
+                    target.widget.update(context, id)
+                    updated++
+                    Log.i(
+                        TAG,
+                        "syncAndUpdate applied id=$id type=${target.clazz.simpleName} " +
+                            "platform=${target.platformId} phase=$phase reason=$reason",
+                    )
+                }
+            }
+            if (updated == 0) {
+                Log.w(TAG, "syncAndUpdate no glance ids")
+            }
         }
     }
 
@@ -215,55 +241,75 @@ object WidgetGlanceState {
         id: GlanceId,
         repo: PlatformSettingsRepository,
         platformId: String,
+        showsPeakValley: Boolean = false,
     ): WidgetDisplayState {
-        val phase = repo.getRefreshIconPhase(platformId)
-        val display = repo.getWidgetState(platformId)
-        val appSettings = repo.getAppSettings()
-        val openCodeSettings = if (platformId == PlatformIds.OPENCODE_GO) {
-            repo.getOpenCodeGoSettings()
-        } else {
-            null
-        }
-        val codexSettings = if (platformId == PlatformIds.CODEX) {
-            repo.getCodexSettings()
-        } else {
-            null
-        }
-        val newApiSettings = if (platformId == PlatformIds.NEW_API) {
-            repo.getNewApiSettings()
-        } else {
-            null
-        }
-        val magpieSettings = if (platformId == PlatformIds.MAGPIE) {
-            repo.getMagpieSettings()
-        } else {
-            null
-        }
-        val kimiCodeSettings = if (platformId == PlatformIds.KIMI_CODE) {
-            repo.getKimiCodeSettings()
-        } else {
-            null
-        }
-        val zhipuSettings = if (platformId == PlatformIds.ZHIPU) {
-            repo.getZhipuSettings()
-        } else {
-            null
-        }
-        updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
-            prefs.toMutablePreferences().apply {
-                write(
-                    phase = phase,
-                    display = display,
-                    appSettings = appSettings,
-                    openCodeSettings = openCodeSettings,
-                    codexSettings = codexSettings,
-                    newApiSettings = newApiSettings,
-                    magpieSettings = magpieSettings,
-                    kimiCodeSettings = kimiCodeSettings,
-                    zhipuSettings = zhipuSettings,
-                )
+        var displayOut: WidgetDisplayState? = null
+        glanceWriteMutex.withLock {
+            val phase = repo.getRefreshIconPhase(platformId)
+            val display = repo.getWidgetState(platformId)
+            val appSettings = repo.getAppSettings()
+            val openCodeSettings = if (platformId == PlatformIds.OPENCODE_GO) {
+                repo.getOpenCodeGoSettings()
+            } else {
+                null
             }
+            val codexSettings = if (platformId == PlatformIds.CODEX) {
+                repo.getCodexSettings()
+            } else {
+                null
+            }
+            val newApiSettings = if (platformId == PlatformIds.NEW_API) {
+                repo.getNewApiSettings()
+            } else {
+                null
+            }
+            val magpieSettings = if (platformId == PlatformIds.MAGPIE) {
+                repo.getMagpieSettings()
+            } else {
+                null
+            }
+            val kimiCodeSettings = if (platformId == PlatformIds.KIMI_CODE) {
+                repo.getKimiCodeSettings()
+            } else {
+                null
+            }
+            val zhipuSettings = if (platformId == PlatformIds.ZHIPU) {
+                repo.getZhipuSettings()
+            } else {
+                null
+            }
+            val peakValleyEnabled = if (showsPeakValley) {
+                repo.isDeepSeekPeakValleyEnabled()
+            } else {
+                null
+            }
+            val peakValleyTable = if (showsPeakValley && peakValleyEnabled == true) {
+                (context.applicationContext as QuotaWidgetApp)
+                    .holidayCalendarRepository
+                    .table()
+            } else {
+                null
+            }
+            updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
+                prefs.toMutablePreferences().apply {
+                    write(
+                        phase = phase,
+                        display = display,
+                        appSettings = appSettings,
+                        openCodeSettings = openCodeSettings,
+                        codexSettings = codexSettings,
+                        newApiSettings = newApiSettings,
+                        magpieSettings = magpieSettings,
+                        kimiCodeSettings = kimiCodeSettings,
+                        zhipuSettings = zhipuSettings,
+                        peakValleyEnabled = peakValleyEnabled,
+                        peakValleyTable = peakValleyTable,
+                    )
+                }
+            }
+            displayOut = display
         }
+        val display = checkNotNull(displayOut)
         val verify = getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
         Log.i(
             TAG,
@@ -389,7 +435,17 @@ object WidgetGlanceState {
         magpieSettings: MagpieSettings?,
         kimiCodeSettings: KimiCodeSettings?,
         zhipuSettings: ZhipuSettings?,
+        peakValleyEnabled: Boolean? = null,
+        peakValleyTable: HolidayCalendarTable? = null,
     ) {
+        if (peakValleyEnabled != null) {
+            DeepSeekPeakValleyGlanceState.write(
+                prefs = this,
+                enabled = peakValleyEnabled,
+                table = peakValleyTable,
+                computedAtEpochMs = System.currentTimeMillis(),
+            )
+        }
         this[refreshPhaseKey] = phase.name
         this[darkThemeModeKey] = appSettings.darkThemeMode.name
         this[themeColorModeKey] = appSettings.themeColorMode.name

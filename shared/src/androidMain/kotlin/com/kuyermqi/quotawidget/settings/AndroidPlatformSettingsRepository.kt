@@ -21,6 +21,7 @@ import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.DarkThemeMode
 import com.kuyermqi.quotawidget.domain.DEFAULT_CUSTOM_SEED_COLOR_ARGB
 import com.kuyermqi.quotawidget.domain.DEFAULT_REFRESH_INTERVAL_MINUTES
+import com.kuyermqi.quotawidget.domain.HolidayCalendarCache
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
@@ -41,8 +42,16 @@ import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "quota_widget_settings")
+
+private val holidayCalendarJson = Json {
+    ignoreUnknownKeys = true
+    isLenient = true
+}
 
 class AndroidPlatformSettingsRepository(
     context: Context,
@@ -379,6 +388,30 @@ class AndroidPlatformSettingsRepository(
         )
     }
 
+    override fun observeDeepSeekPeakValleyEnabled(): Flow<Boolean> =
+        dataStore.data.map { prefs -> prefs.toDeepSeekPeakValleyEnabled() }
+
+    override suspend fun isDeepSeekPeakValleyEnabled(): Boolean =
+        dataStore.data.first().toDeepSeekPeakValleyEnabled()
+
+    override suspend fun setDeepSeekPeakValleyEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.DEEPSEEK_PEAK_VALLEY_ENABLED] = enabled
+        }
+    }
+
+    override fun observeHolidayCalendarCache(): Flow<HolidayCalendarCache> =
+        dataStore.data.map { prefs -> prefs.toHolidayCalendarCache() }
+
+    override suspend fun getHolidayCalendarCache(): HolidayCalendarCache =
+        dataStore.data.first().toHolidayCalendarCache()
+
+    override suspend fun saveHolidayCalendarCache(cache: HolidayCalendarCache) {
+        dataStore.edit { prefs ->
+            prefs[Keys.HOLIDAY_CALENDAR_CACHE] = holidayCalendarJson.encodeToString(cache)
+        }
+    }
+
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =
         dataStore.data.map { prefs -> prefs.toWidgetState(platformId) }
 
@@ -558,6 +591,16 @@ class AndroidPlatformSettingsRepository(
             apiKey = apiKey,
             currency = CurrencyPreference.fromStorage(this[Keys.CURRENCY]),
         )
+    }
+
+    private fun Preferences.toDeepSeekPeakValleyEnabled(): Boolean =
+        this[Keys.DEEPSEEK_PEAK_VALLEY_ENABLED] ?: true
+
+    private fun Preferences.toHolidayCalendarCache(): HolidayCalendarCache {
+        val raw = this[Keys.HOLIDAY_CALENDAR_CACHE] ?: return HolidayCalendarCache.EMPTY
+        return runCatching {
+            holidayCalendarJson.decodeFromString<HolidayCalendarCache>(raw)
+        }.getOrDefault(HolidayCalendarCache.EMPTY)
     }
 
     private fun Preferences.toOpenCodeGoSettings(): OpenCodeGoSettings {
@@ -811,6 +854,8 @@ class AndroidPlatformSettingsRepository(
     private object Keys {
         val API_KEY_ENCRYPTED = stringPreferencesKey("deepseek_api_key_enc")
         val CURRENCY = stringPreferencesKey("deepseek_currency")
+        val DEEPSEEK_PEAK_VALLEY_ENABLED = booleanPreferencesKey("deepseek_peak_valley_enabled")
+        val HOLIDAY_CALENDAR_CACHE = stringPreferencesKey("holiday_calendar_cache")
         val OPENCODE_WORKSPACE_ID = stringPreferencesKey("opencode_workspace_id")
         val OPENCODE_WORKSPACE_NAME = stringPreferencesKey("opencode_workspace_name")
         val OPENCODE_AUTH_COOKIE_ENC = stringPreferencesKey("opencode_auth_cookie_enc")

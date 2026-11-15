@@ -4,17 +4,20 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
 import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalSize
 import androidx.glance.action.Action
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.appWidgetBackground
+import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -30,16 +33,23 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.kuyermqi.quotawidget.R
+import com.kuyermqi.quotawidget.deepseek.peakvalley.PeakValleyWidgetLayout
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.platform.PlatformIds
+import com.kuyermqi.quotawidget.widget.DeepSeekPeakValleyGlanceState.peakValleySnapshot
 
 class DeepSeekBalanceWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
     override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        providePlatformGlance(context, id, PlatformIds.DEEPSEEK) { state, refreshPhase, openApp, platformTitle ->
+        providePlatformGlance(
+            context = context,
+            id = id,
+            platformId = PlatformIds.DEEPSEEK,
+            showsPeakValley = true,
+        ) { state, refreshPhase, openApp, platformTitle ->
             DeepSeekWidgetContent(
                 state = state,
                 refreshPhase = refreshPhase,
@@ -55,7 +65,12 @@ class DeepSeekBalanceCompactWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        providePlatformGlance(context, id, PlatformIds.DEEPSEEK) { state, refreshPhase, openApp, _ ->
+        providePlatformGlance(context, id, PlatformIds.DEEPSEEK) {
+                state,
+                refreshPhase,
+                openApp,
+                _,
+            ->
             DeepSeekCompactWidgetContent(
                 state = state,
                 refreshPhase = refreshPhase,
@@ -72,6 +87,24 @@ private fun DeepSeekWidgetContent(
     openApp: Action,
     platformTitle: String,
 ) {
+    val prefs = currentState<Preferences>()
+    val nowEpochMs = System.currentTimeMillis()
+    val snapshot = prefs.peakValleySnapshot(nowEpochMs)
+    val size = LocalSize.current
+    val small = snapshot != null && PeakValleyWidgetLayout.useCompactLayout(size.height.value)
+    val peakValleyVisible = snapshot != null
+    val horizontalPadding = if (small) 12.dp else 14.dp
+    val topPadding = when {
+        !peakValleyVisible -> 14.dp
+        small -> 8.dp
+        else -> 12.dp
+    }
+    val bottomPadding = when {
+        !peakValleyVisible -> 22.dp
+        small -> 8.dp
+        else -> 18.dp
+    }
+
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -88,9 +121,15 @@ private fun DeepSeekWidgetContent(
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .padding(start = 14.dp, top = 14.dp, end = 14.dp, bottom = 22.dp),
+                .padding(
+                    start = horizontalPadding,
+                    top = topPadding,
+                    end = horizontalPadding,
+                    bottom = bottomPadding,
+                ),
         ) {
             WidgetHeader(PlatformIds.DEEPSEEK, platformTitle, refreshPhase, openApp)
+            if (small) Spacer(GlanceModifier.height(2.dp))
             Spacer(
                 modifier = GlanceModifier
                     .defaultWeight()
@@ -102,29 +141,37 @@ private fun DeepSeekWidgetContent(
                     BalanceBlock(
                         title = contextString(R.string.widget_not_configured),
                         subtitle = null,
-                        titleSize = 32.sp,
+                        titleSize = if (small) 26.sp else 32.sp,
                         openApp = openApp,
                     )
                 WidgetDisplayState.Loading ->
                     BalanceBlock(
                         title = contextString(R.string.widget_loading_balance),
                         subtitle = null,
-                        titleSize = 32.sp,
+                        titleSize = if (small) 26.sp else 32.sp,
                         openApp = openApp,
                     )
                 WidgetDisplayState.NeedsReauth ->
                     BalanceBlock(
                         title = contextString(R.string.widget_needs_reauth),
                         subtitle = null,
-                        titleSize = 32.sp,
+                        titleSize = if (small) 26.sp else 32.sp,
                         openApp = openApp,
                     )
                 is WidgetDisplayState.Success -> {
                     val balance = state.snapshot.primaryDisplay
                     BalanceBlock(
                         title = balance,
-                        subtitle = "更新于 ${WidgetDateFormatter.formatUpdatedAt(state.snapshot.updatedAtEpochMs)}",
-                        titleSize = balanceTitleFontSize(balance),
+                        subtitle = if (small) {
+                            null
+                        } else {
+                            "更新于 ${WidgetDateFormatter.formatUpdatedAt(state.snapshot.updatedAtEpochMs)}"
+                        },
+                        titleSize = if (small) {
+                            compactBalanceTitleFontSize(balance)
+                        } else {
+                            balanceTitleFontSize(balance)
+                        },
                         openApp = openApp,
                     )
                 }
@@ -132,9 +179,19 @@ private fun DeepSeekWidgetContent(
                     BalanceBlock(
                         title = contextString(R.string.widget_fetch_failed),
                         subtitle = null,
-                        titleSize = 32.sp,
+                        titleSize = if (small) 26.sp else 32.sp,
                         openApp = openApp,
                     )
+            }
+            if (snapshot != null) {
+                Spacer(GlanceModifier.height(if (small) 2.dp else 6.dp))
+                DeepSeekPeakValleyWidgetSection(
+                    snapshot = snapshot,
+                    showTarget = PeakValleyWidgetLayout.showTarget(size.width.value),
+                    showCountdown = PeakValleyWidgetLayout.showCountdown(size.height.value),
+                    compact = small,
+                    openApp = openApp,
+                )
             }
         }
     }
@@ -228,6 +285,27 @@ class DeepSeekBalanceWidgetReceiver : GlanceAppWidgetReceiver() {
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
         enqueueBootstrapRefresh(context)
+        DeepSeekPeakValleyCoordinator.requestRefresh(context, "widget_enabled")
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        DeepSeekPeakValleyCoordinator.requestRefresh(context, "widget_disabled")
+    }
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        DeepSeekPeakValleyCoordinator.requestRefresh(context, "widget_deleted")
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: android.appwidget.AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle,
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        DeepSeekPeakValleyCoordinator.requestRefresh(context, "widget_resized")
     }
 }
 
