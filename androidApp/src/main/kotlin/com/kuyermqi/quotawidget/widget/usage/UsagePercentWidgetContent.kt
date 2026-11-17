@@ -138,6 +138,8 @@ internal fun UsagePercentSuccessBlock(
         PlatformIds.KIMI_CODE,
         PlatformIds.ZHIPU,
         -> resolveCodexUsageSummaryWindowKind(snapshot.windows, windowKind) ?: windowKind
+        in PlatformIds.sessionPlatforms ->
+            resolveCodexUsageSummaryWindowKind(snapshot.windows, windowKind) ?: windowKind
         else -> windowKind
     }
     val used = snapshot.windows
@@ -148,6 +150,8 @@ internal fun UsagePercentSuccessBlock(
             formatNewApiUsageWidgetTitle(snapshot, usageDisplayMode)
                 ?: contextString(R.string.usage_unavailable)
         used != null -> formatUsageDisplayPercent(used, usageDisplayMode)
+        snapshot.platformId in PlatformIds.sessionPlatforms && snapshot.primaryDisplay.isNotBlank() ->
+            snapshot.primaryDisplay
         else -> contextString(R.string.usage_unavailable)
     }
     val showUsageProgress = showProgress &&

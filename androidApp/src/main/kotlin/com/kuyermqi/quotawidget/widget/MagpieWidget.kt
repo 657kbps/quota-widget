@@ -9,10 +9,14 @@ import androidx.glance.appwidget.SizeMode
 import androidx.glance.currentState
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
+import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toMagpieUsageDisplayMode
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toMagpieUsageProgressStyle
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toMagpieUsageWindowKind
+import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeComfortable
+import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeCompact
+import com.kuyermqi.quotawidget.widget.usage.UsageOverviewWidgetContent
 import com.kuyermqi.quotawidget.widget.usage.UsagePercentCompactContent
 import com.kuyermqi.quotawidget.widget.usage.UsagePercentWidgetContent
 
@@ -57,6 +61,33 @@ class MagpieCompactWidget : GlanceAppWidget() {
     }
 }
 
+class MagpieOverviewWidget : GlanceAppWidget() {
+    override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
+    override val sizeMode: SizeMode = SizeMode.Responsive(
+        setOf(UsageOverviewSizeCompact, UsageOverviewSizeComfortable),
+    )
+
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
+        providePlatformGlance(context, id, PlatformIds.MAGPIE) { state, refreshPhase, openApp, title ->
+            val prefs = currentState<Preferences>()
+            UsageOverviewWidgetContent(
+                platformId = PlatformIds.MAGPIE,
+                platformTitle = title,
+                state = state,
+                refreshPhase = refreshPhase,
+                openApp = openApp,
+                usageDisplayMode = prefs.toMagpieUsageDisplayMode(),
+                usageProgressStyle = prefs.toMagpieUsageProgressStyle(),
+                overviewKinds = listOf(
+                    QuotaWindowKind.FIVE_HOUR,
+                    QuotaWindowKind.WEEKLY,
+                    QuotaWindowKind.MONTHLY,
+                ),
+            )
+        }
+    }
+}
+
 class MagpieWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = MagpieWidget()
 
@@ -68,6 +99,15 @@ class MagpieWidgetReceiver : GlanceAppWidgetReceiver() {
 
 class MagpieCompactWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = MagpieCompactWidget()
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        enqueueBootstrapRefresh(context)
+    }
+}
+
+class MagpieOverviewWidgetReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = MagpieOverviewWidget()
 
     override fun onEnabled(context: Context) {
         super.onEnabled(context)

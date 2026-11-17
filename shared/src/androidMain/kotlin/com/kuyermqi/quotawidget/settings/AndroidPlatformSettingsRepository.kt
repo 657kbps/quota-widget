@@ -379,6 +379,76 @@ class AndroidPlatformSettingsRepository(
         )
     }
 
+    override fun observeSessionSettings(platformId: String): Flow<SessionPlatformSettings> =
+        dataStore.data.map { prefs -> prefs.toSessionSettings(platformId) }
+
+    override suspend fun getSessionSettings(platformId: String): SessionPlatformSettings =
+        dataStore.data.first().toSessionSettings(platformId)
+
+    override suspend fun saveSessionSettings(platformId: String, settings: SessionPlatformSettings) {
+        val previous = getSessionSettings(platformId)
+        val credentialsChanged = previous.accessToken != settings.accessToken ||
+            previous.refreshToken != settings.refreshToken ||
+            previous.apiKey != settings.apiKey ||
+            previous.expiresAtEpochMs != settings.expiresAtEpochMs
+        dataStore.edit { prefs ->
+            if (!settings.isConfiguredFor(platformId)) {
+                prefs.remove(sessionAccessKey(platformId))
+                prefs.remove(sessionRefreshKey(platformId))
+                prefs.remove(sessionApiKey(platformId))
+                prefs.remove(sessionExpiresAtKey(platformId))
+                prefs.remove(sessionAccountIdKey(platformId))
+                prefs.remove(sessionEmailKey(platformId))
+                prefs.remove(sessionPlanKey(platformId))
+                prefs.remove(sessionProjectIdKey(platformId))
+                prefs.remove(sessionDomainKey(platformId))
+                prefs.remove(sessionUidKey(platformId))
+                prefs.remove(sessionEnterpriseIdKey(platformId))
+                prefs.clearWidgetPayload(platformId)
+                prefs[widgetStatusKey(platformId)] = Status.NOT_CONFIGURED
+            } else {
+                putEncrypted(prefs, sessionAccessKey(platformId), settings.accessToken, platformId, "access")
+                putEncrypted(prefs, sessionRefreshKey(platformId), settings.refreshToken, platformId, "refresh")
+                putEncrypted(prefs, sessionApiKey(platformId), settings.apiKey, platformId, "api_key")
+                if (settings.expiresAtEpochMs > 0L) {
+                    prefs[sessionExpiresAtKey(platformId)] = settings.expiresAtEpochMs
+                } else {
+                    prefs.remove(sessionExpiresAtKey(platformId))
+                }
+                prefs.putOrRemove(sessionAccountIdKey(platformId), settings.accountId.trim())
+                prefs.putOrRemove(sessionEmailKey(platformId), settings.email.trim())
+                prefs.putOrRemove(sessionPlanKey(platformId), settings.plan.trim())
+                prefs.putOrRemove(sessionProjectIdKey(platformId), settings.projectId.trim())
+                prefs.putOrRemove(sessionDomainKey(platformId), settings.domain.trim())
+                prefs.putOrRemove(sessionUidKey(platformId), settings.uid.trim())
+                prefs.putOrRemove(sessionEnterpriseIdKey(platformId), settings.enterpriseId.trim())
+                val status = prefs[widgetStatusKey(platformId)]
+                if (credentialsChanged ||
+                    status == null ||
+                    status == Status.NOT_CONFIGURED ||
+                    status == Status.NEEDS_REAUTH
+                ) {
+                    prefs[widgetStatusKey(platformId)] = Status.LOADING
+                }
+            }
+            prefs[sessionWidgetWindowKey(platformId)] = settings.widgetWindowKind.name
+            prefs[sessionUsageDisplayKey(platformId)] = settings.usageDisplayMode.name
+            prefs[sessionUsageProgressStyleKey(platformId)] = settings.usageProgressStyle.name
+        }
+    }
+
+    override suspend fun clearSessionSettings(platformId: String) {
+        val current = getSessionSettings(platformId)
+        saveSessionSettings(
+            platformId,
+            SessionPlatformSettings(
+                widgetWindowKind = current.widgetWindowKind,
+                usageDisplayMode = current.usageDisplayMode,
+                usageProgressStyle = current.usageProgressStyle,
+            ),
+        )
+    }
+
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =
         dataStore.data.map { prefs -> prefs.toWidgetState(platformId) }
 
@@ -477,15 +547,16 @@ class AndroidPlatformSettingsRepository(
 
     override suspend fun clearAllRefreshIconPhases() {
         dataStore.edit { prefs ->
-            for (platformId in listOf(
-                PlatformIds.DEEPSEEK,
-                PlatformIds.OPENCODE_GO,
-                PlatformIds.CODEX,
-                PlatformIds.NEW_API,
-                PlatformIds.MAGPIE,
-                PlatformIds.KIMI_CODE,
-                PlatformIds.ZHIPU,
-            )) {
+            for (platformId in buildList {
+                add(PlatformIds.DEEPSEEK)
+                add(PlatformIds.OPENCODE_GO)
+                add(PlatformIds.CODEX)
+                add(PlatformIds.NEW_API)
+                add(PlatformIds.MAGPIE)
+                add(PlatformIds.KIMI_CODE)
+                add(PlatformIds.ZHIPU)
+                addAll(PlatformIds.sessionPlatforms)
+            }) {
                 prefs[refreshPhaseKey(platformId)] = RefreshIconPhase.Idle.name
             }
             prefs.remove(Keys.LEGACY_REFRESH_ICON_PHASE)
@@ -674,6 +745,33 @@ class AndroidPlatformSettingsRepository(
         )
     }
 
+    private fun Preferences.toSessionSettings(platformId: String): SessionPlatformSettings {
+        fun decryptOrEmpty(key: Preferences.Key<String>, field: String): String =
+            this[key]?.let {
+                runCatching { decrypt(it, sessionAd(platformId, field)) }.getOrDefault("")
+            }.orEmpty()
+        return SessionPlatformSettings(
+            accessToken = decryptOrEmpty(sessionAccessKey(platformId), "access"),
+            refreshToken = decryptOrEmpty(sessionRefreshKey(platformId), "refresh"),
+            apiKey = decryptOrEmpty(sessionApiKey(platformId), "api_key"),
+            expiresAtEpochMs = this[sessionExpiresAtKey(platformId)] ?: 0L,
+            accountId = this[sessionAccountIdKey(platformId)].orEmpty(),
+            email = this[sessionEmailKey(platformId)].orEmpty(),
+            plan = this[sessionPlanKey(platformId)].orEmpty(),
+            projectId = this[sessionProjectIdKey(platformId)].orEmpty(),
+            domain = this[sessionDomainKey(platformId)].orEmpty(),
+            uid = this[sessionUidKey(platformId)].orEmpty(),
+            enterpriseId = this[sessionEnterpriseIdKey(platformId)].orEmpty(),
+            widgetWindowKind = this[sessionWidgetWindowKey(platformId)]
+                ?.let { UsageWindowKind.fromStorage(it) }
+                ?: SessionPlatformSettings.defaultWindowKind(platformId),
+            usageDisplayMode = UsageDisplayMode.fromStorage(this[sessionUsageDisplayKey(platformId)]),
+            usageProgressStyle = UsageProgressStyle.fromStorage(
+                this[sessionUsageProgressStyleKey(platformId)],
+            ),
+        )
+    }
+
     private fun Preferences.isConfigured(platformId: String): Boolean =
         when (platformId) {
             PlatformIds.DEEPSEEK -> toDeepSeekSettings().apiKey.isNotBlank()
@@ -683,6 +781,7 @@ class AndroidPlatformSettingsRepository(
             PlatformIds.MAGPIE -> toMagpieSettings().isConfigured
             PlatformIds.KIMI_CODE -> toKimiCodeSettings().isConfigured
             PlatformIds.ZHIPU -> toZhipuSettings().isConfigured
+            in PlatformIds.sessionPlatforms -> toSessionSettings(platformId).isConfiguredFor(platformId)
             else -> false
         }
 
@@ -798,6 +897,27 @@ class AndroidPlatformSettingsRepository(
         remove(widgetQuotaOverspentKey(platformId))
     }
 
+    private fun putEncrypted(
+        prefs: MutablePreferences,
+        key: Preferences.Key<String>,
+        value: String,
+        platformId: String,
+        field: String,
+    ) {
+        if (value.isBlank()) {
+            prefs.remove(key)
+        } else {
+            prefs[key] = encrypt(value, sessionAd(platformId, field))
+        }
+    }
+
+    private fun MutablePreferences.putOrRemove(key: Preferences.Key<String>, value: String) {
+        if (value.isBlank()) remove(key) else this[key] = value
+    }
+
+    private fun sessionAd(platformId: String, field: String): ByteArray =
+        "session_${platformId}_$field".encodeToByteArray()
+
     private fun encrypt(plain: String, associatedData: ByteArray): String {
         val cipher = aead.encrypt(plain.encodeToByteArray(), associatedData)
         return Base64.encodeToString(cipher, Base64.NO_WRAP)
@@ -894,6 +1014,48 @@ class AndroidPlatformSettingsRepository(
         private val MAGPIE_KEY_AD = "magpie_key".encodeToByteArray()
         private val KIMI_CODE_KEY_AD = "kimi_code_api_key".encodeToByteArray()
         private val ZHIPU_KEY_AD = "zhipu_api_key".encodeToByteArray()
+
+        private fun sessionAccessKey(platformId: String) =
+            stringPreferencesKey("session_${platformId}_access_enc")
+
+        private fun sessionRefreshKey(platformId: String) =
+            stringPreferencesKey("session_${platformId}_refresh_enc")
+
+        private fun sessionApiKey(platformId: String) =
+            stringPreferencesKey("session_${platformId}_api_key_enc")
+
+        private fun sessionExpiresAtKey(platformId: String) =
+            longPreferencesKey("session_${platformId}_expires_at")
+
+        private fun sessionAccountIdKey(platformId: String) =
+            stringPreferencesKey("session_${platformId}_account_id")
+
+        private fun sessionEmailKey(platformId: String) =
+            stringPreferencesKey("session_${platformId}_email")
+
+        private fun sessionPlanKey(platformId: String) =
+            stringPreferencesKey("session_${platformId}_plan")
+
+        private fun sessionProjectIdKey(platformId: String) =
+            stringPreferencesKey("session_${platformId}_project_id")
+
+        private fun sessionDomainKey(platformId: String) =
+            stringPreferencesKey("session_${platformId}_domain")
+
+        private fun sessionUidKey(platformId: String) =
+            stringPreferencesKey("session_${platformId}_uid")
+
+        private fun sessionEnterpriseIdKey(platformId: String) =
+            stringPreferencesKey("session_${platformId}_enterprise_id")
+
+        private fun sessionWidgetWindowKey(platformId: String) =
+            stringPreferencesKey("session_${platformId}_widget_window")
+
+        private fun sessionUsageDisplayKey(platformId: String) =
+            stringPreferencesKey("session_${platformId}_usage_display")
+
+        private fun sessionUsageProgressStyleKey(platformId: String) =
+            stringPreferencesKey("session_${platformId}_usage_progress_style")
 
         private fun widgetStatusKey(platformId: String) =
             stringPreferencesKey("widget_${platformId}_status")

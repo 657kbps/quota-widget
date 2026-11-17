@@ -1,0 +1,517 @@
+package com.kuyermqi.quotawidget.ui.components
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
+import com.kuyermqi.quotawidget.R
+import com.kuyermqi.quotawidget.domain.QuotaWindow
+import com.kuyermqi.quotawidget.domain.QuotaWindowKind
+import com.kuyermqi.quotawidget.domain.UsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageWindowKind
+
+/** One selectable authentication method in an [AuthMethodChoiceList]. */
+data class AuthMethodOption(
+    val title: String,
+    val subtitle: String,
+    val configured: Boolean = false,
+    val onClick: () -> Unit,
+)
+
+/** Shared logged-out status line with an optional error below it. */
+@Composable
+fun ColumnScope.AuthStatusLine(
+    status: String,
+    error: String? = null,
+) {
+    Text(
+        text = status,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurface,
+    )
+    if (!error.isNullOrBlank()) {
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = error,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+        )
+    }
+}
+
+/** Shared account/method title and plan line. */
+@Composable
+fun ColumnScope.AuthSummaryHeader(
+    title: String,
+    subtitle: String? = null,
+) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurface,
+    )
+    if (!subtitle.isNullOrBlank()) {
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Transparent bottom-right change-auth action inside an account card. */
+@Composable
+private fun ColumnScope.AuthChangeMethodAction(
+    changeLabel: String,
+    onChangeAuthMethod: () -> Unit,
+    isBusy: Boolean,
+) {
+    Spacer(modifier = Modifier.height(4.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End,
+    ) {
+        TextButton(
+            onClick = onChangeAuthMethod,
+            enabled = !isBusy,
+        ) {
+            Text(
+                text = changeLabel,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+/** Card wrapper that visually separates account details from widget settings. */
+@Composable
+internal fun ColumnScope.AuthAccountCard(
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+        ) {
+            content()
+        }
+    }
+}
+
+/** Shared configured-account layout: summary, optional extra content, prefs, actions. */
+@Composable
+fun ColumnScope.AuthConfiguredPanel(
+    title: String,
+    subtitle: String? = null,
+    changeLabel: String? = null,
+    onChangeAuthMethod: (() -> Unit)? = null,
+    extraContent: @Composable ColumnScope.() -> Unit = {},
+    windows: List<QuotaWindow>,
+    widgetWindowKind: UsageWindowKind,
+    onWidgetWindowKindChange: (UsageWindowKind) -> Unit,
+    usageDisplayMode: UsageDisplayMode,
+    onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
+    usageProgressStyle: UsageProgressStyle,
+    onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
+    windowKindChoices: List<UsageWindowKind>,
+    showWindowKindPicker: Boolean = true,
+    overviewKinds: List<QuotaWindowKind>,
+    isBusy: Boolean,
+    isDirty: Boolean,
+    logoutLabel: String,
+    saveLabel: String,
+    onLogout: () -> Unit,
+    onSave: () -> Unit,
+) {
+    AuthAccountCard {
+        AuthSummaryHeader(
+            title = title,
+            subtitle = subtitle,
+        )
+        extraContent()
+        if (changeLabel != null && onChangeAuthMethod != null) {
+            AuthChangeMethodAction(
+                changeLabel = changeLabel,
+                onChangeAuthMethod = onChangeAuthMethod,
+                isBusy = isBusy,
+            )
+        }
+    }
+    Spacer(modifier = Modifier.height(16.dp))
+    UsageDisplayPrefsSection(
+        windows = windows,
+        widgetWindowKind = widgetWindowKind,
+        onWidgetWindowKindChange = onWidgetWindowKindChange,
+        usageDisplayMode = usageDisplayMode,
+        onUsageDisplayModeChange = onUsageDisplayModeChange,
+        usageProgressStyle = usageProgressStyle,
+        onUsageProgressStyleChange = onUsageProgressStyleChange,
+        enabled = !isBusy,
+        windowKindChoices = windowKindChoices,
+        showWindowKindPicker = showWindowKindPicker,
+        overviewKinds = overviewKinds,
+    )
+    AuthSummaryActions(
+        isBusy = isBusy,
+        isDirty = isDirty,
+        logoutLabel = logoutLabel,
+        saveLabel = saveLabel,
+        onLogout = onLogout,
+        onSave = onSave,
+    )
+}
+
+/** Shared animated switcher for auth sub-panels. */
+@Composable
+fun <T> AuthPanelSwitcher(
+    targetState: T,
+    label: String,
+    isForward: (initial: T, target: T) -> Boolean,
+    content: @Composable ColumnScope.(T) -> Unit,
+) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        AnimatedContent(
+            targetState = targetState,
+            transitionSpec = {
+                val direction = if (isForward(initialState, targetState)) {
+                    AnimatedContentTransitionScope.SlideDirection.Left
+                } else {
+                    AnimatedContentTransitionScope.SlideDirection.Right
+                }
+                val enter = slideIntoContainer(
+                    towards = direction,
+                    animationSpec = tween(
+                        durationMillis = 280,
+                        easing = FastOutSlowInEasing,
+                    ),
+                )
+                val exit = slideOutOfContainer(
+                    towards = direction,
+                    animationSpec = tween(
+                        durationMillis = 280,
+                        easing = FastOutSlowInEasing,
+                    ),
+                )
+                val transition = (enter + fadeIn(tween(180))) togetherWith
+                    (exit + fadeOut(tween(180)))
+                transition.using(
+                    SizeTransform(
+                        clip = true,
+                        sizeAnimationSpec = { _, _ ->
+                            tween<IntSize>(
+                                durationMillis = 280,
+                                easing = FastOutSlowInEasing,
+                            )
+                        },
+                    ),
+                )
+            },
+            label = label,
+            contentAlignment = Alignment.TopStart,
+            modifier = Modifier
+                .width(maxWidth)
+                .clipToBounds(),
+        ) { panel ->
+            Column(modifier = Modifier.fillMaxWidth()) {
+                content(panel)
+            }
+        }
+    }
+}
+
+/** Shared auth-method chooser used by session platforms and OpenCode Go. */
+@Composable
+fun ColumnScope.AuthMethodChoiceList(
+    options: List<AuthMethodOption>,
+    canCancelEdit: Boolean,
+    isBusy: Boolean,
+    backLabel: String,
+    configuredLabel: String,
+    onBack: () -> Unit,
+) {
+    if (canCancelEdit) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start,
+        ) {
+            TextButton(
+                onClick = onBack,
+                enabled = !isBusy,
+                contentPadding = PaddingValues(horizontal = 6.dp),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_arrow_back),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(backLabel)
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+    options.forEachIndexed { index, option ->
+        if (index > 0) Spacer(modifier = Modifier.height(8.dp))
+        AuthChoiceCard(
+            title = option.title,
+            subtitle = option.subtitle,
+            configured = option.configured,
+            configuredLabel = configuredLabel,
+            enabled = !isBusy,
+            onClick = option.onClick,
+        )
+    }
+}
+
+/** Shared bottom-right actions for a configured account. */
+@Composable
+fun ColumnScope.AuthSummaryActions(
+    isBusy: Boolean,
+    isDirty: Boolean,
+    logoutLabel: String,
+    saveLabel: String,
+    onLogout: () -> Unit,
+    onSave: () -> Unit,
+) {
+    Spacer(modifier = Modifier.height(12.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (isBusy) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+        }
+        TextButton(
+            onClick = onLogout,
+            enabled = !isBusy,
+        ) {
+            Text(logoutLabel)
+        }
+        Button(
+            onClick = onSave,
+            enabled = isDirty && !isBusy,
+        ) {
+            Text(saveLabel)
+        }
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+}
+
+/** Shared bottom-right auth form actions. */
+@Composable
+fun AuthFormActions(
+    isBusy: Boolean,
+    onBack: () -> Unit,
+    backLabel: String,
+    primaryLabel: String,
+    primaryEnabled: Boolean,
+    onPrimary: () -> Unit,
+    secondaryLabel: String? = null,
+    onSecondary: (() -> Unit)? = null,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.End,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (isBusy) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+            OutlinedButton(
+                onClick = onBack,
+                enabled = !isBusy,
+                modifier = Modifier.height(40.dp),
+                contentPadding = PaddingValues(horizontal = 20.dp),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_arrow_back),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(backLabel)
+            }
+            Button(
+                onClick = onPrimary,
+                enabled = primaryEnabled && !isBusy,
+                modifier = Modifier.height(40.dp),
+                contentPadding = PaddingValues(horizontal = 20.dp),
+            ) {
+                Text(primaryLabel)
+            }
+        }
+        if (secondaryLabel != null && onSecondary != null) {
+            TextButton(
+                onClick = onSecondary,
+                enabled = !isBusy,
+            ) {
+                Text(secondaryLabel)
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+/** Shared API-key editor used by session platforms and OpenCode Go. */
+@Composable
+fun ColumnScope.ApiKeyAuthEditor(
+    title: String,
+    apiKey: String,
+    onApiKeyChange: (String) -> Unit,
+    hasApiKey: Boolean,
+    configuredLabel: String,
+    apiKeyLabel: String,
+    apiKeyHint: String,
+    isBusy: Boolean,
+    backLabel: String,
+    saveLabel: String,
+    onBack: () -> Unit,
+    onSave: () -> Unit,
+    saveEnabled: Boolean = apiKey.isNotBlank(),
+) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    if (hasApiKey) {
+        Text(
+            text = configuredLabel,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+    OutlinedTextField(
+        value = apiKey,
+        onValueChange = onApiKeyChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text(apiKeyLabel) },
+        supportingText = { Text(apiKeyHint) },
+        singleLine = true,
+        visualTransformation = PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        enabled = !isBusy,
+    )
+    Spacer(modifier = Modifier.height(12.dp))
+    AuthFormActions(
+        isBusy = isBusy,
+        onBack = onBack,
+        backLabel = backLabel,
+        primaryLabel = saveLabel,
+        primaryEnabled = saveEnabled,
+        onPrimary = onSave,
+    )
+}
+
+@Composable
+private fun AuthChoiceCard(
+    title: String,
+    subtitle: String,
+    configured: Boolean,
+    configuredLabel: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Card(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+    ) {
+        ListItem(
+            headlineContent = {
+                Text(text = title)
+            },
+            supportingContent = {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
+            trailingContent = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (configured) {
+                        Text(
+                            text = configuredLabel,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                    Icon(
+                        painter = painterResource(R.drawable.ic_expand_more),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.rotate(-90f),
+                    )
+                }
+            },
+        )
+    }
+}

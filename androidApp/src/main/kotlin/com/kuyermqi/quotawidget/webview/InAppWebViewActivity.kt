@@ -38,8 +38,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.AppSettings
+import com.kuyermqi.quotawidget.domain.antigravity.AntigravityLoginWebViewFlow
+import com.kuyermqi.quotawidget.domain.cline.ClineLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.codex.CodexLoginWebViewFlow
+import com.kuyermqi.quotawidget.domain.commandcode.CommandCodeLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.opencode.OpenCodeLoginWebViewFlow
+import com.kuyermqi.quotawidget.domain.workbuddy.WorkBuddyLoginWebViewFlow
+import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
 
@@ -49,7 +54,7 @@ import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
  */
 class InAppWebViewActivity : ComponentActivity(), InAppWebViewHost {
     private val mainHandler = Handler(Looper.getMainLooper())
-    private lateinit var flow: InAppWebViewFlow
+    private var flow: InAppWebViewFlow? = null
 
     override val isFinishingOrDestroyed: Boolean
         get() = isFinishing || isDestroyed
@@ -81,17 +86,19 @@ class InAppWebViewActivity : ComponentActivity(), InAppWebViewHost {
         val url = intent.getStringExtra(EXTRA_URL).orEmpty()
         val title = intent.getStringExtra(EXTRA_TITLE).orEmpty()
         val flowId = intent.getStringExtra(EXTRA_FLOW_ID).orEmpty()
+        val userAgent = intent.getStringExtra(EXTRA_USER_AGENT).orEmpty()
         if (url.isBlank()) {
             finish()
             return
         }
-        val createdFlow = createFlow(flowId)
+        val createdFlow = createFlow(flowId, app.settingsRepository)
         if (flowId.isNotBlank() && createdFlow == null) {
             finish()
             return
         }
-        flow = createdFlow.orPassthrough()
-        flow.onPrepare()
+        val activeFlow = createdFlow.orPassthrough()
+        flow = activeFlow
+        activeFlow.onPrepare()
         setContent {
             val context = LocalContext.current
             val initialSettings = remember {
@@ -142,6 +149,9 @@ class InAppWebViewActivity : ComponentActivity(), InAppWebViewHost {
                                 CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true
+                                if (userAgent.isNotBlank()) {
+                                    settings.userAgentString = userAgent
+                                }
                                 settings.useWideViewPort = true
                                 settings.loadWithOverviewMode = true
                                 // Keep page prefers-color-scheme; avoid WebView forcing dark paint.
@@ -152,7 +162,7 @@ class InAppWebViewActivity : ComponentActivity(), InAppWebViewHost {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                     settings.isAlgorithmicDarkeningAllowed = false
                                 }
-                                webViewClient = LayoutFixingWebViewClient(flow.createWebViewClient())
+                                webViewClient = LayoutFixingWebViewClient(activeFlow.createWebViewClient())
                                 loadUrl(url)
                             }
                         },
@@ -167,14 +177,22 @@ class InAppWebViewActivity : ComponentActivity(), InAppWebViewHost {
 
     override fun onDestroy() {
         cancelPendingPosts()
-        flow.onDestroy()
+        flow?.onDestroy()
         super.onDestroy()
     }
 
-    private fun createFlow(flowId: String): InAppWebViewFlow? =
+    private fun createFlow(
+        flowId: String,
+        settingsRepository: PlatformSettingsRepository,
+    ): InAppWebViewFlow? =
         when (flowId) {
             OpenCodeLoginWebViewFlow.FLOW_ID -> OpenCodeLoginWebViewFlow(this)
             CodexLoginWebViewFlow.FLOW_ID -> CodexLoginWebViewFlow.fromIntent(this, intent)
+            WorkBuddyLoginWebViewFlow.FLOW_ID -> WorkBuddyLoginWebViewFlow.fromIntent(this, intent)
+            ClineLoginWebViewFlow.FLOW_ID -> ClineLoginWebViewFlow.fromIntent(this, intent)
+            CommandCodeLoginWebViewFlow.FLOW_ID -> CommandCodeLoginWebViewFlow.fromIntent(this, intent)
+            AntigravityLoginWebViewFlow.FLOW_ID ->
+                AntigravityLoginWebViewFlow.fromIntent(this, intent, settingsRepository)
             else -> null
         }
 
@@ -182,12 +200,14 @@ class InAppWebViewActivity : ComponentActivity(), InAppWebViewHost {
         const val EXTRA_URL = "extra_url"
         const val EXTRA_TITLE = "extra_title"
         const val EXTRA_FLOW_ID = "extra_flow_id"
+        const val EXTRA_USER_AGENT = "extra_user_agent"
 
         fun createIntent(
             context: Context,
             url: String,
             title: String,
             flowId: String? = null,
+            userAgent: String? = null,
         ): Intent =
             Intent(context, InAppWebViewActivity::class.java)
                 .putExtra(EXTRA_URL, url)
@@ -195,6 +215,9 @@ class InAppWebViewActivity : ComponentActivity(), InAppWebViewHost {
                 .apply {
                     if (!flowId.isNullOrBlank()) {
                         putExtra(EXTRA_FLOW_ID, flowId)
+                    }
+                    if (!userAgent.isNullOrBlank()) {
+                        putExtra(EXTRA_USER_AGENT, userAgent)
                     }
                 }
     }
@@ -217,6 +240,10 @@ private class LayoutFixingWebViewClient(
     override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean =
         @Suppress("DEPRECATION")
         delegate.shouldOverrideUrlLoading(view, url)
+
+    override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+        delegate.onPageStarted(view, url, favicon)
+    }
 
     override fun onPageFinished(view: WebView?, url: String?) {
         view?.injectFullViewportLayoutFix()

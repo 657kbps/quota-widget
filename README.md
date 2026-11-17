@@ -26,7 +26,7 @@
 
 ## 功能亮点
 
-- **多平台监控**：DeepSeek 账户余额、OpenCode Go 用量、Codex 订阅用量（每周 / 每月）、NewAPI 令牌余额与用量、Magpie 网关订阅额度、Kimi Code 与 Zhipu Coding Plan 订阅配额
+- **多平台监控**：DeepSeek 账户余额、OpenCode Go 用量、Codex 订阅用量（每周 / 每月）、NewAPI 令牌余额与用量、Magpie 网关订阅额度、Kimi Code 与 Zhipu Coding Plan 订阅配额，以及 WorkBuddy / WorkBuddy 国际版、Cline Pass、Command Code、Antigravity
 - **多种小组件尺寸**：标准、紧凑、用量总览，适配不同桌面布局
 - **后台自动刷新**：WorkManager 按设定间隔更新，支持手动点按刷新
 - **安全存储**：API Key / OAuth Token 经 Tink 加密后写入 DataStore
@@ -43,9 +43,18 @@
 | **OpenCode Go** | 滚动 / 每周 / 每月用量或余量（可配置） | 标准 · 紧凑 · 总览 |
 | **Codex** | 每周 / 每月用量或余量（可配置；应用内 OAuth 登录） | 标准 · 紧凑 · 总览 |
 | **NewAPI** | 令牌余额（USD）与用量/余量百分比（可配置 Base URL + API Key） | 余额标准 · 余额紧凑 · 用量 |
-| **Magpie** | 自部署网关各供应商的订阅额度（同供应商的多个账号合并展示；5 小时 / 每周 / 每月；可选择展示哪个供应商，默认取网关返回的第一个；可配置网关地址 + 网关密钥） | 标准 · 紧凑 |
+| **Magpie** | 自部署网关各供应商的订阅额度（同供应商的多个账号合并展示；5 小时 / 每周 / 每月；可选择展示哪个供应商，默认取网关返回的第一个；可配置网关地址 + 网关密钥） | 标准 · 紧凑 · 总览 |
 | **Kimi Code** | 5H / 每周 / 每月用量或余量（视套餐返回；可配置国内 / 海外站点） | 标准 · 紧凑 · 总览 |
 | **Zhipu Coding Plan** | 5H / 每周用量或余量（可配置国内 / 海外站点） | 标准 · 紧凑 · 总览 |
+| **WorkBuddy** | 每月积分额度 | 标准 · 紧凑 · 总览 |
+| **WorkBuddy 国际版** | 每月积分额度（国际版） | 标准 · 紧凑 · 总览 |
+| **Cline Pass** | 5 小时 / 每周 / 每月用量（应用内 WorkOS 登录，或 API Key） | 标准 · 紧凑 · 总览 |
+| **Command Code** | 5 小时 / 每周 / 每月额度与月度积分（应用内 Studio 登录，或 API Key） | 标准 · 紧凑 · 总览 |
+| **Antigravity** | 5 小时 / 每周模型额度（应用内 Google OAuth；非官方接入） | 标准 · 紧凑 · 总览 |
+
+> WorkBuddy、Cline、Command Code、Antigravity 的浏览器登录会在应用内 WebView 完成，登录后的回调会自动回填，无需手动复制 callback URL。
+>
+> Antigravity 使用非官方 API 接入，Google 可能对相关账号做风控；建议先在官方 Antigravity 桌面端登录账号并完成项目初始化，再在此应用登录。
 
 ## 下载
 

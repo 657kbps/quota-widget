@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -30,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.kuyermqi.quotawidget.R
@@ -37,6 +41,7 @@ import com.kuyermqi.quotawidget.R
 @Composable
 fun PlatformConfigItem(
     title: String,
+    logo: ProviderLogo?,
     expanded: Boolean,
     onToggle: () -> Unit,
     balanceText: String? = null,
@@ -79,6 +84,20 @@ fun PlatformConfigItem(
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (logo != null) {
+                    Image(
+                        painter = painterResource(logo.drawableRes),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        contentScale = ContentScale.Fit,
+                        colorFilter = if (logo.monochrome) {
+                            ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
+                        } else {
+                            null
+                        },
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                }
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,

@@ -8,6 +8,7 @@ import com.kuyermqi.quotawidget.provider.MagpieQuotaProvider
 import com.kuyermqi.quotawidget.provider.NewApiQuotaProvider
 import com.kuyermqi.quotawidget.provider.OpenCodeGoQuotaProvider
 import com.kuyermqi.quotawidget.provider.ZhipuQuotaProvider
+import com.kuyermqi.quotawidget.provider.sessionQuotaProviders
 import com.kuyermqi.quotawidget.refresh.BalanceRefreshInteractor
 import com.kuyermqi.quotawidget.settings.AndroidPlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
@@ -58,7 +59,7 @@ class QuotaWidgetApp : Application() {
                 MagpieQuotaProvider(),
                 KimiCodeQuotaProvider(),
                 ZhipuQuotaProvider(),
-            ),
+            ) + sessionQuotaProviders(),
         )
         updateCheckInteractor = UpdateCheckInteractor(
             settingsRepository = settingsRepository,
