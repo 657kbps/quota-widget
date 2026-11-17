@@ -43,6 +43,7 @@ import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.PlatformConfigItem
 import com.kuyermqi.quotawidget.ui.components.TipBanner
 import com.kuyermqi.quotawidget.ui.components.isIgnoringBatteryOptimizations
+import com.kuyermqi.quotawidget.ui.components.providerLogo
 import com.kuyermqi.quotawidget.ui.components.requestIgnoreBatteryOptimizations
 import com.kuyermqi.quotawidget.ui.home.CodexHomeContent
 import com.kuyermqi.quotawidget.ui.home.CodexHomeEffects
@@ -56,6 +57,8 @@ import com.kuyermqi.quotawidget.ui.home.NewApiHomeContent
 import com.kuyermqi.quotawidget.ui.home.NewApiHomeEffects
 import com.kuyermqi.quotawidget.ui.home.OpenCodeGoHomeContent
 import com.kuyermqi.quotawidget.ui.home.OpenCodeGoHomeEffects
+import com.kuyermqi.quotawidget.ui.home.SessionPlatformHomeContent
+import com.kuyermqi.quotawidget.ui.home.SessionPlatformHomeEffects
 import com.kuyermqi.quotawidget.ui.home.ZhipuHomeContent
 import com.kuyermqi.quotawidget.ui.home.ZhipuHomeEffects
 import com.kuyermqi.quotawidget.ui.home.rememberCodexHomeState
@@ -64,6 +67,7 @@ import com.kuyermqi.quotawidget.ui.home.rememberKimiCodeHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberMagpieHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberNewApiHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberOpenCodeGoHomeState
+import com.kuyermqi.quotawidget.ui.home.rememberSessionPlatformHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberZhipuHomeState
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState
@@ -113,6 +117,11 @@ fun HomeScreen(
     val magpie = rememberMagpieHomeState(settingsRepository)
     val kimiCode = rememberKimiCodeHomeState(settingsRepository)
     val zhipu = rememberZhipuHomeState(settingsRepository)
+    val workBuddy = rememberSessionPlatformHomeState(settingsRepository, PlatformIds.WORKBUDDY)
+    val workBuddyAi = rememberSessionPlatformHomeState(settingsRepository, PlatformIds.WORKBUDDY_AI)
+    val cline = rememberSessionPlatformHomeState(settingsRepository, PlatformIds.CLINE)
+    val commandCode = rememberSessionPlatformHomeState(settingsRepository, PlatformIds.COMMAND_CODE)
+    val antigravity = rememberSessionPlatformHomeState(settingsRepository, PlatformIds.ANTIGRAVITY)
 
     val deepSeekWidgetState = DeepSeekHomeEffects(deepSeek)
     val openCodeBindings = OpenCodeGoHomeEffects(openCode, onRefreshPlatform)
@@ -121,6 +130,14 @@ fun HomeScreen(
     val magpieWidgetState = MagpieHomeEffects(magpie)
     val kimiCodeWidgetState = KimiCodeHomeEffects(kimiCode)
     val zhipuWidgetState = ZhipuHomeEffects(zhipu)
+    val workBuddyBindings = SessionPlatformHomeEffects(workBuddy, settingsRepository, onRefreshPlatform)
+    val workBuddyAiBindings =
+        SessionPlatformHomeEffects(workBuddyAi, settingsRepository, onRefreshPlatform)
+    val clineBindings = SessionPlatformHomeEffects(cline, settingsRepository, onRefreshPlatform)
+    val commandCodeBindings =
+        SessionPlatformHomeEffects(commandCode, settingsRepository, onRefreshPlatform)
+    val antigravityBindings =
+        SessionPlatformHomeEffects(antigravity, settingsRepository, onRefreshPlatform)
 
     val hasVisibleTips = tipLoaded && (
         showBatteryOptimizationTip || showOemBackgroundTip || showPlatformTip
@@ -193,14 +210,47 @@ fun HomeScreen(
             loadingMsg = msgLoadingBalance,
             reauthMsg = msgNeedsReauth,
         )
+        PlatformIds.WORKBUDDY -> workBuddy.summaryLabel(
+            resources = resources,
+            widgetState = workBuddy.widgetState,
+            loadingMsg = msgLoadingBalance,
+            reauthMsg = msgNeedsReauth,
+        )
+        PlatformIds.WORKBUDDY_AI -> workBuddyAi.summaryLabel(
+            resources = resources,
+            widgetState = workBuddyAi.widgetState,
+            loadingMsg = msgLoadingBalance,
+            reauthMsg = msgNeedsReauth,
+        )
+        PlatformIds.CLINE -> cline.summaryLabel(
+            resources = resources,
+            widgetState = cline.widgetState,
+            loadingMsg = msgLoadingBalance,
+            reauthMsg = msgNeedsReauth,
+        )
+        PlatformIds.COMMAND_CODE -> commandCode.summaryLabel(
+            resources = resources,
+            widgetState = commandCode.widgetState,
+            loadingMsg = msgLoadingBalance,
+            reauthMsg = msgNeedsReauth,
+        )
+        PlatformIds.ANTIGRAVITY -> antigravity.summaryLabel(
+            resources = resources,
+            widgetState = antigravity.widgetState,
+            loadingMsg = msgLoadingBalance,
+            reauthMsg = msgNeedsReauth,
+        )
         else -> null
     }
 
     suspend fun refreshAll(showPullIndicator: Boolean = false) {
         val anyConfigured =
             deepSeek.isConfigured || openCode.isConfigured ||
-                codex.isConfigured || newApi.isConfigured ||
-                magpie.isConfigured || kimiCode.isConfigured || zhipu.isConfigured
+                codex.isConfigured || newApi.isConfigured || magpie.isConfigured ||
+                kimiCode.isConfigured || zhipu.isConfigured ||
+                workBuddy.isConfigured || workBuddyAi.isConfigured ||
+                cline.isConfigured || commandCode.isConfigured ||
+                antigravity.isConfigured
         if (!anyConfigured) return
         if (showPullIndicator) isRefreshing = true
         try {
@@ -225,9 +275,17 @@ fun HomeScreen(
         magpie.applyLoaded(settingsRepository.getMagpieSettings())
         kimiCode.applyLoaded(settingsRepository.getKimiCodeSettings())
         zhipu.applyLoaded(settingsRepository.getZhipuSettings())
+        workBuddy.applyPersisted(settingsRepository.getSessionSettings(PlatformIds.WORKBUDDY))
+        workBuddyAi.applyPersisted(settingsRepository.getSessionSettings(PlatformIds.WORKBUDDY_AI))
+        cline.applyPersisted(settingsRepository.getSessionSettings(PlatformIds.CLINE))
+        commandCode.applyPersisted(settingsRepository.getSessionSettings(PlatformIds.COMMAND_CODE))
+        antigravity.applyPersisted(settingsRepository.getSessionSettings(PlatformIds.ANTIGRAVITY))
         if (deepSeek.isConfigured || openCode.isConfigured ||
-            codex.isConfigured || newApi.isConfigured ||
-            magpie.isConfigured || kimiCode.isConfigured || zhipu.isConfigured
+            codex.isConfigured || newApi.isConfigured || magpie.isConfigured ||
+            kimiCode.isConfigured || zhipu.isConfigured ||
+            workBuddy.isConfigured || workBuddyAi.isConfigured ||
+            cline.isConfigured || commandCode.isConfigured ||
+            antigravity.isConfigured
         ) {
             refreshAll(showPullIndicator = false)
         }
@@ -333,6 +391,7 @@ fun HomeScreen(
                 items(PlatformRegistry.platforms, key = { it.id }) { platform ->
                     PlatformConfigItem(
                         title = platform.homeListName,
+                        logo = providerLogo(platform.id),
                         expanded = expandedPlatformId == platform.id,
                         onToggle = {
                             expandedPlatformId =
@@ -377,6 +436,31 @@ fun HomeScreen(
                             PlatformIds.ZHIPU -> ZhipuHomeContent(
                                 state = zhipu,
                                 onRefreshPlatform = onRefreshPlatform,
+                            )
+                            PlatformIds.WORKBUDDY -> SessionPlatformHomeContent(
+                                state = workBuddy,
+                                bindings = workBuddyBindings,
+                                widgetState = workBuddy.widgetState,
+                            )
+                            PlatformIds.WORKBUDDY_AI -> SessionPlatformHomeContent(
+                                state = workBuddyAi,
+                                bindings = workBuddyAiBindings,
+                                widgetState = workBuddyAi.widgetState,
+                            )
+                            PlatformIds.CLINE -> SessionPlatformHomeContent(
+                                state = cline,
+                                bindings = clineBindings,
+                                widgetState = cline.widgetState,
+                            )
+                            PlatformIds.COMMAND_CODE -> SessionPlatformHomeContent(
+                                state = commandCode,
+                                bindings = commandCodeBindings,
+                                widgetState = commandCode.widgetState,
+                            )
+                            PlatformIds.ANTIGRAVITY -> SessionPlatformHomeContent(
+                                state = antigravity,
+                                bindings = antigravityBindings,
+                                widgetState = antigravity.widgetState,
                             )
                         }
                     }

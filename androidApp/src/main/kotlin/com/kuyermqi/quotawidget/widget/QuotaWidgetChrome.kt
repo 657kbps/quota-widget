@@ -148,6 +148,8 @@ internal suspend fun maybeRefreshIfConfigured(
             app.settingsRepository.getKimiCodeSettings().isConfigured
         PlatformIds.ZHIPU ->
             app.settingsRepository.getZhipuSettings().isConfigured
+        in PlatformIds.sessionPlatforms ->
+            app.settingsRepository.getSessionSettings(platformId).isConfiguredFor(platformId)
         else -> false
     }
     if (!configured) return

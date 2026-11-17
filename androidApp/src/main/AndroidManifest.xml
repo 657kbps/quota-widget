@@ -169,6 +169,186 @@
                 android:resource="@xml/new_api_usage_widget_info" />
         </receiver>
 
+
+
+        <receiver
+            android:name=".widget.WorkBuddyCompactWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_workbuddy_compact_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/workbuddy_widget_compact_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.WorkBuddyAiCompactWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_workbuddy_ai_compact_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/workbuddy_ai_widget_compact_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.ClineCompactWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_cline_compact_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/cline_widget_compact_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.CommandCodeCompactWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_command_code_compact_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/command_code_widget_compact_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.AntigravityCompactWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_antigravity_compact_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/antigravity_widget_compact_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.WorkBuddyWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_workbuddy_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/workbuddy_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.WorkBuddyOverviewWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_workbuddy_overview_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/workbuddy_widget_overview_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.WorkBuddyAiWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_workbuddy_ai_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/workbuddy_ai_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.WorkBuddyAiOverviewWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_workbuddy_ai_overview_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/workbuddy_ai_widget_overview_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.ClineWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_cline_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/cline_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.ClineOverviewWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_cline_overview_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/cline_widget_overview_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.CommandCodeWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_command_code_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/command_code_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.CommandCodeOverviewWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_command_code_overview_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/command_code_widget_overview_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.AntigravityWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_antigravity_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/antigravity_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.AntigravityOverviewWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_antigravity_overview_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/antigravity_widget_overview_info" />
+        </receiver>
         <receiver
             android:name=".widget.MagpieWidgetReceiver"
             android:exported="true"
@@ -191,6 +371,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/magpie_widget_compact_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.MagpieOverviewWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_magpie_overview_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/magpie_widget_overview_info" />
         </receiver>
 
         <receiver

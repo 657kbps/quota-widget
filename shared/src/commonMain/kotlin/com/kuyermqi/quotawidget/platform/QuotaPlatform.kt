@@ -20,6 +20,20 @@ object PlatformIds {
     const val MAGPIE = "magpie"
     const val KIMI_CODE = "kimi_code"
     const val ZHIPU = "zhipu"
+    const val WORKBUDDY = "workbuddy"
+    const val WORKBUDDY_AI = "workbuddy_ai"
+    const val CLINE = "cline"
+    const val COMMAND_CODE = "command_code"
+    const val ANTIGRAVITY = "antigravity"
+
+    /** Platforms whose login state is kept in one generic [SessionPlatformSettings]. */
+    val sessionPlatforms: List<String> = listOf(
+        WORKBUDDY,
+        WORKBUDDY_AI,
+        CLINE,
+        COMMAND_CODE,
+        ANTIGRAVITY,
+    )
 }
 
 object PlatformRegistry {
@@ -53,7 +67,27 @@ object PlatformRegistry {
             override val displayName = "Zhipu"
             override val homeListName = "Zhipu GLM"
         },
-    )
+        object : QuotaPlatform {
+            override val id = PlatformIds.WORKBUDDY
+            override val displayName = "WorkBuddy"
+        },
+        object : QuotaPlatform {
+            override val id = PlatformIds.WORKBUDDY_AI
+            override val displayName = "WorkBuddy 国际版"
+        },
+        object : QuotaPlatform {
+            override val id = PlatformIds.CLINE
+            override val displayName = "Cline Pass"
+        },
+        object : QuotaPlatform {
+            override val id = PlatformIds.COMMAND_CODE
+            override val displayName = "Command Code"
+        },
+        object : QuotaPlatform {
+            override val id = PlatformIds.ANTIGRAVITY
+            override val displayName = "Antigravity"
+        },
+    ).sortedBy { it.displayName.lowercase() }
 
     fun find(id: String): QuotaPlatform? = platforms.find { it.id == id }
 

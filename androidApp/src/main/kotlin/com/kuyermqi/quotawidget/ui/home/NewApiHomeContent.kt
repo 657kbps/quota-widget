@@ -142,6 +142,9 @@ fun NewApiHomeEffects(state: NewApiHomeState): WidgetDisplayState {
     val observed by state.repository().observeWidgetState(PlatformIds.NEW_API)
         .collectAsStateWithLifecycle(initialValue = WidgetDisplayState.NotConfigured)
     LaunchedEffect(observed) {
+        if (observed is WidgetDisplayState.Success) {
+            state.saveError = null
+        }
         val success = observed as? WidgetDisplayState.Success ?: return@LaunchedEffect
         state.lastDisplay = success.snapshot.primaryDisplay
         state.lastUsedDisplay = success.snapshot.usedDisplay

@@ -88,6 +88,9 @@ fun DeepSeekHomeEffects(state: DeepSeekHomeState): WidgetDisplayState {
     val observed by state.repository().observeWidgetState(PlatformIds.DEEPSEEK)
         .collectAsStateWithLifecycle(initialValue = WidgetDisplayState.NotConfigured)
     LaunchedEffect(observed) {
+        if (observed is WidgetDisplayState.Success) {
+            state.saveError = null
+        }
         val success = observed as? WidgetDisplayState.Success ?: return@LaunchedEffect
         state.lastDisplay = success.snapshot.primaryDisplay
     }

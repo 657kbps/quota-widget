@@ -65,37 +65,40 @@ fun ColumnScope.MagpieConfigContent(
     saveError: String?,
     onSave: () -> Unit,
 ) {
-    OutlinedTextField(
-        value = baseUrl,
-        onValueChange = onBaseUrlChange,
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(stringResource(R.string.magpie_base_url_label)) },
-        placeholder = { Text(stringResource(R.string.magpie_base_url_hint)) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-        enabled = !isSaving,
-    )
-    Spacer(modifier = Modifier.height(12.dp))
-    OutlinedTextField(
-        value = apiKey,
-        onValueChange = onApiKeyChange,
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(stringResource(R.string.magpie_api_key_label)) },
-        supportingText = { Text(stringResource(R.string.magpie_api_key_hint)) },
-        singleLine = true,
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        enabled = !isSaving,
-    )
-    if (providers.size >= 2) {
-        Spacer(modifier = Modifier.height(16.dp))
-        MagpieProviderPicker(
-            providers = providers,
-            selectedProviderId = selectedProviderId,
-            usageDisplayMode = usageDisplayMode,
+    Spacer(modifier = Modifier.height(8.dp))
+    AuthAccountCard {
+        OutlinedTextField(
+            value = baseUrl,
+            onValueChange = onBaseUrlChange,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.magpie_base_url_label)) },
+            placeholder = { Text(stringResource(R.string.magpie_base_url_hint)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
             enabled = !isSaving,
-            onProviderSelected = onProviderSelected,
         )
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedTextField(
+            value = apiKey,
+            onValueChange = onApiKeyChange,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.magpie_api_key_label)) },
+            supportingText = { Text(stringResource(R.string.magpie_api_key_hint)) },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            enabled = !isSaving,
+        )
+        if (providers.size >= 2) {
+            Spacer(modifier = Modifier.height(16.dp))
+            MagpieProviderPicker(
+                providers = providers,
+                selectedProviderId = selectedProviderId,
+                usageDisplayMode = usageDisplayMode,
+                enabled = !isSaving,
+                onProviderSelected = onProviderSelected,
+            )
+        }
     }
     Spacer(modifier = Modifier.height(16.dp))
     val windowKindChoices = availableUsageWindowKinds(windows).ifEmpty {

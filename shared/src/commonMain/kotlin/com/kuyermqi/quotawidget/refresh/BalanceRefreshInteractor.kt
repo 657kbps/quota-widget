@@ -5,7 +5,6 @@ import com.kuyermqi.quotawidget.codex.CodexRegionUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
-import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.provider.QuotaProvider
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import kotlinx.coroutines.CancellationException
@@ -21,26 +20,10 @@ class BalanceRefreshInteractor(
      */
     suspend fun refreshAllConfigured(): List<BalanceRefreshResult> {
         val results = mutableListOf<BalanceRefreshResult>()
-        if (settingsRepository.getDeepSeekSettings().apiKey.isNotBlank()) {
-            results += refresh(PlatformIds.DEEPSEEK)
-        }
-        if (settingsRepository.getOpenCodeGoSettings().isConfigured) {
-            results += refresh(PlatformIds.OPENCODE_GO)
-        }
-        if (settingsRepository.getCodexSettings().isConfigured) {
-            results += refresh(PlatformIds.CODEX)
-        }
-        if (settingsRepository.getNewApiSettings().isConfigured) {
-            results += refresh(PlatformIds.NEW_API)
-        }
-        if (settingsRepository.getMagpieSettings().isConfigured) {
-            results += refresh(PlatformIds.MAGPIE)
-        }
-        if (settingsRepository.getKimiCodeSettings().isConfigured) {
-            results += refresh(PlatformIds.KIMI_CODE)
-        }
-        if (settingsRepository.getZhipuSettings().isConfigured) {
-            results += refresh(PlatformIds.ZHIPU)
+        for (provider in providers) {
+            if (provider.isConfigured(settingsRepository)) {
+                results += refresh(provider.platform.id)
+            }
         }
         return results
     }

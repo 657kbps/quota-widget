@@ -55,40 +55,43 @@ fun ColumnScope.ApiKeyUsageConfigContent(
     saveError: String?,
     onSave: () -> Unit,
 ) {
-    OutlinedTextField(
-        value = apiKey,
-        onValueChange = onApiKeyChange,
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(stringResource(R.string.api_key_label)) },
-        supportingText = { Text(apiKeyHint) },
-        singleLine = true,
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        enabled = !isSaving,
-    )
-    Spacer(modifier = Modifier.height(16.dp))
-    Text(
-        text = stringResource(R.string.service_region_label),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Spacer(modifier = Modifier.height(6.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        ServiceRegion.entries.forEach { option ->
-            FilterChip(
-                selected = region == option,
-                onClick = { onRegionChange(option) },
-                enabled = !isSaving,
-                label = { Text(stringResource(serviceRegionLabelRes(option))) },
-            )
+    Spacer(modifier = Modifier.height(8.dp))
+    AuthAccountCard {
+        OutlinedTextField(
+            value = apiKey,
+            onValueChange = onApiKeyChange,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.api_key_label)) },
+            supportingText = { Text(apiKeyHint) },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            enabled = !isSaving,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = stringResource(R.string.service_region_label),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ServiceRegion.entries.forEach { option ->
+                FilterChip(
+                    selected = region == option,
+                    onClick = { onRegionChange(option) },
+                    enabled = !isSaving,
+                    label = { Text(stringResource(serviceRegionLabelRes(option))) },
+                )
+            }
         }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = regionHint,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
-    Spacer(modifier = Modifier.height(4.dp))
-    Text(
-        text = regionHint,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
     Spacer(modifier = Modifier.height(16.dp))
 
     val availableWindowKinds = availableUsageWindowKinds(windows)

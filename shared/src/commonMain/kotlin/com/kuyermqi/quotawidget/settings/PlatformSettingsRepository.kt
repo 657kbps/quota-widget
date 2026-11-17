@@ -10,6 +10,7 @@ import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.ServiceRegion
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.magpie.MagpieProvider
+import com.kuyermqi.quotawidget.platform.PlatformIds
 import kotlinx.coroutines.flow.Flow
 
 data class DeepSeekSettings(
@@ -68,6 +69,52 @@ data class CodexSettings(
         get() = accessToken.isNotBlank() &&
             refreshToken.isNotBlank() &&
             accountId.isNotBlank()
+}
+
+/**
+ * Login state shared by the session-based providers (WorkBuddy, Cline,
+ * Command Code, Antigravity). Fields not used by a provider stay blank.
+ */
+data class SessionPlatformSettings(
+    val accessToken: String = "",
+    val refreshToken: String = "",
+    val expiresAtEpochMs: Long = 0L,
+    val apiKey: String = "",
+    val accountId: String = "",
+    val email: String = "",
+    val plan: String = "",
+    /** Antigravity Code Assist project id. */
+    val projectId: String = "",
+    /** WorkBuddy token domain; cloud-hosted enterprises answer on their own host. */
+    val domain: String = "",
+    /** WorkBuddy account uid. */
+    val uid: String = "",
+    /** WorkBuddy enterprise (team) id. */
+    val enterpriseId: String = "",
+    val widgetWindowKind: UsageWindowKind = UsageWindowKind.ROLLING,
+    val usageDisplayMode: UsageDisplayMode = UsageDisplayMode.USED,
+    val usageProgressStyle: UsageProgressStyle = UsageProgressStyle.BAR,
+) {
+    val accountLabel: String
+        get() = accountId.ifBlank { email }.ifBlank { uid }
+
+    fun isConfiguredFor(platformId: String): Boolean = when (platformId) {
+        PlatformIds.WORKBUDDY, PlatformIds.WORKBUDDY_AI ->
+            accessToken.isNotBlank() && refreshToken.isNotBlank()
+        PlatformIds.CLINE ->
+            (accessToken.isNotBlank() && refreshToken.isNotBlank()) || apiKey.isNotBlank()
+        PlatformIds.COMMAND_CODE -> apiKey.isNotBlank()
+        PlatformIds.ANTIGRAVITY -> refreshToken.isNotBlank()
+        else -> false
+    }
+
+    companion object {
+        fun defaultWindowKind(platformId: String): UsageWindowKind = when (platformId) {
+            PlatformIds.WORKBUDDY, PlatformIds.WORKBUDDY_AI,
+            PlatformIds.COMMAND_CODE -> UsageWindowKind.MONTHLY
+            else -> UsageWindowKind.ROLLING
+        }
+    }
 }
 
 data class NewApiSettings(
@@ -164,6 +211,11 @@ interface PlatformSettingsRepository {
     suspend fun getZhipuSettings(): ZhipuSettings
     suspend fun saveZhipuSettings(settings: ZhipuSettings)
     suspend fun clearZhipuSettings()
+
+    fun observeSessionSettings(platformId: String): Flow<SessionPlatformSettings>
+    suspend fun getSessionSettings(platformId: String): SessionPlatformSettings
+    suspend fun saveSessionSettings(platformId: String, settings: SessionPlatformSettings)
+    suspend fun clearSessionSettings(platformId: String)
 
     fun observeWidgetState(platformId: String): Flow<WidgetDisplayState>
     suspend fun getWidgetState(platformId: String): WidgetDisplayState

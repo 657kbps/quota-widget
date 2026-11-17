@@ -4,7 +4,7 @@
 
 ## 项目概览
 
-多平台 API 余额桌面小组件（Android）；当前支持 DeepSeek、OpenCode Go、Codex、NewAPI、Magpie、Kimi Code、Zhipu Coding Plan。
+多平台 API 余额桌面小组件（Android）；当前支持 DeepSeek、OpenCode Go、Codex、NewAPI、Magpie、Kimi Code、Zhipu Coding Plan、WorkBuddy / WorkBuddy 国际版、Cline Pass、Command Code、Antigravity。
 
 
 | 项       | 值                                          |
@@ -22,8 +22,8 @@
 
 ## 模块边界
 
-- `shared` — 领域模型、DeepSeek / OpenCode / Codex / NewAPI / Magpie / Kimi Code / Zhipu 客户端、刷新用例、平台设置接口与 Android 实现（`commonMain` / `androidMain`）。可复用逻辑放这里；不要依赖 Android UI / Glance / WorkManager。
-- `androidApp` — `Application` 装配、Compose 设置页、Glance 小组件、Worker、Manifest / 资源 / ProGuard。
+- `shared` — 领域模型、各平台客户端（含 Magpie、Kimi Code、Zhipu、WorkBuddy / Cline / Command Code / Antigravity）、刷新用例、平台设置接口与 Android 实现（`commonMain` / `androidMain`）。可复用逻辑放这里；不要依赖 Android UI / Glance / WorkManager。
+- `androidApp` — `Application` 装配、Compose 设置页、应用内 WebView 登录流程、Glance 小组件、Worker、Manifest / 资源 / ProGuard。
 
 包结构按职责划分，例如：`domain`、`deepseek`、`settings`、`refresh`、`widget`、`worker`、`ui`。新增代码放入对应包，避免扁平堆叠。
 

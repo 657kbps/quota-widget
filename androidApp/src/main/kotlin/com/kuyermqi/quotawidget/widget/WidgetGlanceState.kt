@@ -40,6 +40,7 @@ import com.kuyermqi.quotawidget.settings.MagpieSettings
 import com.kuyermqi.quotawidget.settings.NewApiSettings
 import com.kuyermqi.quotawidget.settings.OpenCodeGoSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
+import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.settings.ZhipuSettings
 
 /**
@@ -86,6 +87,15 @@ object WidgetGlanceState {
     val zhipuUsageDisplayModeKey = stringPreferencesKey("qw_zhipu_usage_display")
     val zhipuUsageProgressStyleKey = stringPreferencesKey("qw_zhipu_usage_progress_style")
 
+    private fun sessionWindowKindKey(platformId: String) =
+        stringPreferencesKey("qw_${platformId}_window_kind")
+
+    private fun sessionUsageDisplayModeKey(platformId: String) =
+        stringPreferencesKey("qw_${platformId}_usage_display")
+
+    private fun sessionUsageProgressStyleKey(platformId: String) =
+        stringPreferencesKey("qw_${platformId}_usage_progress_style")
+
     private object Status {
         const val NOT_CONFIGURED = "not_configured"
         const val LOADING = "loading"
@@ -130,6 +140,7 @@ object WidgetGlanceState {
         Target(NewApiUsageWidget(), NewApiUsageWidget::class.java, PlatformIds.NEW_API),
         Target(MagpieWidget(), MagpieWidget::class.java, PlatformIds.MAGPIE),
         Target(MagpieCompactWidget(), MagpieCompactWidget::class.java, PlatformIds.MAGPIE),
+        Target(MagpieOverviewWidget(), MagpieOverviewWidget::class.java, PlatformIds.MAGPIE),
         Target(KimiCodeWidget(), KimiCodeWidget::class.java, PlatformIds.KIMI_CODE),
         Target(
             KimiCodeCompactWidget(),
@@ -144,6 +155,53 @@ object WidgetGlanceState {
         Target(ZhipuWidget(), ZhipuWidget::class.java, PlatformIds.ZHIPU),
         Target(ZhipuCompactWidget(), ZhipuCompactWidget::class.java, PlatformIds.ZHIPU),
         Target(ZhipuOverviewWidget(), ZhipuOverviewWidget::class.java, PlatformIds.ZHIPU),
+        Target(WorkBuddyWidget(), WorkBuddyWidget::class.java, PlatformIds.WORKBUDDY),
+        Target(
+            WorkBuddyCompactWidget(),
+            WorkBuddyCompactWidget::class.java,
+            PlatformIds.WORKBUDDY,
+        ),
+        Target(
+            WorkBuddyOverviewWidget(),
+            WorkBuddyOverviewWidget::class.java,
+            PlatformIds.WORKBUDDY,
+        ),
+        Target(WorkBuddyAiWidget(), WorkBuddyAiWidget::class.java, PlatformIds.WORKBUDDY_AI),
+        Target(
+            WorkBuddyAiCompactWidget(),
+            WorkBuddyAiCompactWidget::class.java,
+            PlatformIds.WORKBUDDY_AI,
+        ),
+        Target(
+            WorkBuddyAiOverviewWidget(),
+            WorkBuddyAiOverviewWidget::class.java,
+            PlatformIds.WORKBUDDY_AI,
+        ),
+        Target(ClineWidget(), ClineWidget::class.java, PlatformIds.CLINE),
+        Target(ClineCompactWidget(), ClineCompactWidget::class.java, PlatformIds.CLINE),
+        Target(ClineOverviewWidget(), ClineOverviewWidget::class.java, PlatformIds.CLINE),
+        Target(CommandCodeWidget(), CommandCodeWidget::class.java, PlatformIds.COMMAND_CODE),
+        Target(
+            CommandCodeCompactWidget(),
+            CommandCodeCompactWidget::class.java,
+            PlatformIds.COMMAND_CODE,
+        ),
+        Target(
+            CommandCodeOverviewWidget(),
+            CommandCodeOverviewWidget::class.java,
+            PlatformIds.COMMAND_CODE,
+        ),
+        Target(AntigravityWidget(), AntigravityWidget::class.java, PlatformIds.ANTIGRAVITY),
+        Target(
+            AntigravityCompactWidget(),
+            AntigravityCompactWidget::class.java,
+            PlatformIds.ANTIGRAVITY,
+        ),
+        Target(
+            AntigravityOverviewWidget(),
+            AntigravityOverviewWidget::class.java,
+            PlatformIds.ANTIGRAVITY,
+        ),
     )
 
     suspend fun syncAndUpdate(context: Context, reason: String) {
@@ -156,6 +214,9 @@ object WidgetGlanceState {
         val magpieSettings = repo.getMagpieSettings()
         val kimiCodeSettings = repo.getKimiCodeSettings()
         val zhipuSettings = repo.getZhipuSettings()
+        val sessionSettings = PlatformIds.sessionPlatforms.associateWith { platformId ->
+            repo.getSessionSettings(platformId)
+        }
         Log.i(TAG, "syncAndUpdate reason=$reason")
 
         val manager = GlanceAppWidgetManager(context)
@@ -189,6 +250,7 @@ object WidgetGlanceState {
                             zhipuSettings = zhipuSettings.takeIf {
                                 target.platformId == PlatformIds.ZHIPU
                             },
+                            sessionSettings = sessionSettings,
                         )
                     }
                 }
@@ -249,6 +311,9 @@ object WidgetGlanceState {
         } else {
             null
         }
+        val sessionSettings = PlatformIds.sessionPlatforms.associateWith { sessionPlatformId ->
+            repo.getSessionSettings(sessionPlatformId)
+        }
         updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
             prefs.toMutablePreferences().apply {
                 write(
@@ -261,6 +326,7 @@ object WidgetGlanceState {
                     magpieSettings = magpieSettings,
                     kimiCodeSettings = kimiCodeSettings,
                     zhipuSettings = zhipuSettings,
+                    sessionSettings = sessionSettings,
                 )
             }
         }
@@ -336,6 +402,17 @@ object WidgetGlanceState {
     fun Preferences.toZhipuUsageProgressStyle(): UsageProgressStyle =
         UsageProgressStyle.fromStorage(this[zhipuUsageProgressStyleKey])
 
+    fun Preferences.toSessionUsageWindowKind(platformId: String): UsageWindowKind =
+        this[sessionWindowKindKey(platformId)]
+            ?.let { UsageWindowKind.fromStorage(it) }
+            ?: SessionPlatformSettings.defaultWindowKind(platformId)
+
+    fun Preferences.toSessionUsageDisplayMode(platformId: String): UsageDisplayMode =
+        UsageDisplayMode.fromStorage(this[sessionUsageDisplayModeKey(platformId)])
+
+    fun Preferences.toSessionUsageProgressStyle(platformId: String): UsageProgressStyle =
+        UsageProgressStyle.fromStorage(this[sessionUsageProgressStyleKey(platformId)])
+
     fun Preferences.toDisplayState(): WidgetDisplayState {
         return when (this[statusKey]) {
             Status.LOADING -> WidgetDisplayState.Loading
@@ -389,6 +466,7 @@ object WidgetGlanceState {
         magpieSettings: MagpieSettings?,
         kimiCodeSettings: KimiCodeSettings?,
         zhipuSettings: ZhipuSettings?,
+        sessionSettings: Map<String, SessionPlatformSettings>,
     ) {
         this[refreshPhaseKey] = phase.name
         this[darkThemeModeKey] = appSettings.darkThemeMode.name
@@ -422,6 +500,11 @@ object WidgetGlanceState {
             this[zhipuWindowKindKey] = zhipuSettings.widgetWindowKind.name
             this[zhipuUsageDisplayModeKey] = zhipuSettings.usageDisplayMode.name
             this[zhipuUsageProgressStyleKey] = zhipuSettings.usageProgressStyle.name
+        }
+        for ((platformId, settings) in sessionSettings) {
+            this[sessionWindowKindKey(platformId)] = settings.widgetWindowKind.name
+            this[sessionUsageDisplayModeKey(platformId)] = settings.usageDisplayMode.name
+            this[sessionUsageProgressStyleKey(platformId)] = settings.usageProgressStyle.name
         }
         when (display) {
             WidgetDisplayState.NotConfigured -> {

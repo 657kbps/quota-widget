@@ -187,6 +187,12 @@ fun OpenCodeGoHomeEffects(
         .collectAsStateWithLifecycle(initialValue = WidgetDisplayState.NotConfigured)
     val windows = (observed as? WidgetDisplayState.Success)?.snapshot?.windows.orEmpty()
 
+    LaunchedEffect(observed) {
+        if (observed is WidgetDisplayState.Success) {
+            state.error = null
+        }
+    }
+
     LaunchedEffect(
         observed,
         state.settings.widgetWindowKind,

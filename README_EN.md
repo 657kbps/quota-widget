@@ -26,7 +26,7 @@
 
 ## Features
 
-- **Multi-platform monitoring**: DeepSeek balance, OpenCode Go usage, Codex subscription usage (weekly / monthly), NewAPI token balance / usage, Magpie gateway allowances, and Kimi Code / Zhipu GLM Coding Plan subscription quotas
+- **Multi-platform monitoring**: DeepSeek balance, OpenCode Go usage, Codex subscription usage (weekly / monthly), NewAPI token balance / usage, Magpie gateway allowances, Kimi Code / Zhipu GLM Coding Plan subscription quotas, plus WorkBuddy / WorkBuddy International, Cline Pass, Command Code, and Antigravity
 - **Multiple widget sizes**: Standard, compact, and usage overview layouts
 - **Background refresh**: WorkManager periodic updates plus tap-to-refresh
 - **Secure storage**: API keys / OAuth tokens encrypted with Tink before DataStore persistence
@@ -42,9 +42,18 @@
 | **OpenCode Go** | Rolling / weekly / monthly usage or remaining (configurable) | Standard · Compact · Overview |
 | **Codex** | Weekly / monthly usage or remaining (in-app OAuth login) | Standard · Compact · Overview |
 | **NewAPI** | Token balance (USD) and usage/remaining percent (configurable Base URL + API Key) | Balance standard · Balance compact · Usage |
-| **Magpie** | Subscription allowances per provider of a self-hosted gateway (accounts of the same provider merged; 5h / week / month; pick the provider, defaults to the first one the gateway returns; configurable gateway URL + gateway key) | Standard · Compact |
+| **Magpie** | Subscription allowances per provider of a self-hosted gateway (accounts of the same provider merged; 5h / week / month; pick the provider, defaults to the first one the gateway returns; configurable gateway URL + gateway key) | Standard · Compact · Overview |
 | **Kimi Code** | 5h / weekly / monthly usage or remaining (depending on plan; CN / global site) | Standard · Compact · Overview |
 | **Zhipu GLM Coding Plan** | 5h / weekly usage or remaining (CN / global site) | Standard · Compact · Overview |
+| **WorkBuddy** | Monthly credit allowance | Standard · Compact · Overview |
+| **WorkBuddy International** | Monthly credit allowance (international build) | Standard · Compact · Overview |
+| **Cline Pass** | 5-hour / weekly / monthly usage (in-app WorkOS sign-in or API key) | Standard · Compact · Overview |
+| **Command Code** | 5-hour / weekly / monthly limits and monthly credits (in-app Studio sign-in or API key) | Standard · Compact · Overview |
+| **Antigravity** | 5-hour / weekly model quota (in-app Google OAuth; unofficial) | Standard · Compact · Overview |
+
+> WorkBuddy, Cline, Command Code, and Antigravity finish their browser sign-in inside an in-app WebView; the callback is captured automatically, so no callback URL needs to be copied manually.
+>
+> Antigravity uses an unofficial API integration. Google may flag related accounts, so sign in to the official Antigravity desktop app and provision a project there first when possible.
 
 ## Download
 

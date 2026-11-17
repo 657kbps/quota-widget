@@ -150,6 +150,12 @@ fun CodexHomeEffects(
         }
     }
 
+    LaunchedEffect(observed) {
+        if (observed is WidgetDisplayState.Success) {
+            state.error = null
+        }
+    }
+
     LaunchedEffect(
         observed,
         state.settings.widgetWindowKind,

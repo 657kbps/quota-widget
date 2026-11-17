@@ -17,6 +17,7 @@ class FakePlatformSettingsRepository(
     magpie: MagpieSettings = MagpieSettings(),
     kimiCode: KimiCodeSettings = KimiCodeSettings(),
     zhipu: ZhipuSettings = ZhipuSettings(),
+    sessionSettings: Map<String, SessionPlatformSettings> = emptyMap(),
     widgetStates: Map<String, WidgetDisplayState> = emptyMap(),
 ) : PlatformSettingsRepository {
     private val deepSeekFlow = MutableStateFlow(deepSeek)
@@ -26,6 +27,14 @@ class FakePlatformSettingsRepository(
     private val magpieFlow = MutableStateFlow(magpie)
     private val kimiCodeFlow = MutableStateFlow(kimiCode)
     private val zhipuFlow = MutableStateFlow(zhipu)
+    private val sessionFlows = mutableMapOf<String, MutableStateFlow<SessionPlatformSettings>>()
+        .apply {
+            for (platformId in PlatformIds.sessionPlatforms) {
+                getOrPut(platformId) {
+                    MutableStateFlow(sessionSettings[platformId] ?: SessionPlatformSettings())
+                }
+            }
+        }
     private val widgetFlows = mutableMapOf(
         PlatformIds.DEEPSEEK to MutableStateFlow(
             widgetStates[PlatformIds.DEEPSEEK] ?: WidgetDisplayState.NotConfigured,
@@ -182,6 +191,32 @@ class FakePlatformSettingsRepository(
         widgetFlow(PlatformIds.ZHIPU).value = WidgetDisplayState.NotConfigured
     }
 
+    override fun observeSessionSettings(platformId: String): Flow<SessionPlatformSettings> =
+        sessionFlow(platformId).asStateFlow()
+
+    override suspend fun getSessionSettings(platformId: String): SessionPlatformSettings =
+        sessionFlow(platformId).value
+
+    override suspend fun saveSessionSettings(
+        platformId: String,
+        settings: SessionPlatformSettings,
+    ) {
+        sessionFlow(platformId).value = settings
+        if (!settings.isConfiguredFor(platformId)) {
+            widgetFlow(platformId).value = WidgetDisplayState.NotConfigured
+        }
+    }
+
+    override suspend fun clearSessionSettings(platformId: String) {
+        val current = sessionFlow(platformId).value
+        sessionFlow(platformId).value = SessionPlatformSettings(
+            widgetWindowKind = current.widgetWindowKind,
+            usageDisplayMode = current.usageDisplayMode,
+            usageProgressStyle = current.usageProgressStyle,
+        )
+        widgetFlow(platformId).value = WidgetDisplayState.NotConfigured
+    }
+
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =
         widgetFlow(platformId).asStateFlow()
 
@@ -249,4 +284,7 @@ class FakePlatformSettingsRepository(
 
     private fun widgetFlow(platformId: String): MutableStateFlow<WidgetDisplayState> =
         widgetFlows.getOrPut(platformId) { MutableStateFlow(WidgetDisplayState.NotConfigured) }
+
+    private fun sessionFlow(platformId: String): MutableStateFlow<SessionPlatformSettings> =
+        sessionFlows.getOrPut(platformId) { MutableStateFlow(SessionPlatformSettings()) }
 }

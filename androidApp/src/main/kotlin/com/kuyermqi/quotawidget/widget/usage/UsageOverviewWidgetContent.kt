@@ -190,6 +190,15 @@ private fun UsageOverviewSuccessBlock(
     usageProgressStyle: UsageProgressStyle,
     overviewKinds: List<QuotaWindowKind>,
 ) {
+    if (snapshot.windows.isEmpty() && snapshot.primaryDisplay.isNotBlank()) {
+        BalanceBlock(
+            title = snapshot.primaryDisplay,
+            subtitle = null,
+            titleSize = 32.sp,
+            openApp = openApp,
+        )
+        return
+    }
     val kinds = overviewKinds.ifEmpty {
         listOf(QuotaWindowKind.WEEKLY, QuotaWindowKind.MONTHLY)
     }
