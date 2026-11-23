@@ -33,9 +33,14 @@ import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.formatUsageDisplayPercent
+import com.kuyermqi.quotawidget.domain.formatUsageResetCountdown
+import com.kuyermqi.quotawidget.domain.upcomingResetAtEpochMs
 import com.kuyermqi.quotawidget.domain.usage.usageWindowLabelRes
+import com.kuyermqi.quotawidget.domain.usage.usageWindowModeLabelRes
+import com.kuyermqi.quotawidget.util.currentTimeMillis
 import com.kuyermqi.quotawidget.widget.BalanceBlock
 import com.kuyermqi.quotawidget.widget.WidgetDateFormatter
 import com.kuyermqi.quotawidget.widget.WidgetHeader
@@ -97,6 +102,7 @@ fun UsageOverviewWidgetContent(
     openApp: Action,
     usageDisplayMode: UsageDisplayMode,
     usageProgressStyle: UsageProgressStyle,
+    usageResetStyle: UsageResetStyle,
     overviewKinds: List<QuotaWindowKind>,
 ) {
     val density = if (LocalSize.current.height >= UsageOverviewSizeComfortable.height) {
@@ -173,6 +179,7 @@ fun UsageOverviewWidgetContent(
                         density = density,
                         usageDisplayMode = usageDisplayMode,
                         usageProgressStyle = usageProgressStyle,
+                        usageResetStyle = usageResetStyle,
                         overviewKinds = overviewKinds,
                     )
                 }
@@ -188,6 +195,7 @@ private fun UsageOverviewSuccessBlock(
     density: OverviewDensity,
     usageDisplayMode: UsageDisplayMode,
     usageProgressStyle: UsageProgressStyle,
+    usageResetStyle: UsageResetStyle,
     overviewKinds: List<QuotaWindowKind>,
 ) {
     if (snapshot.windows.isEmpty() && snapshot.primaryDisplay.isNotBlank()) {
@@ -202,6 +210,7 @@ private fun UsageOverviewSuccessBlock(
     val kinds = overviewKinds.ifEmpty {
         listOf(QuotaWindowKind.WEEKLY, QuotaWindowKind.MONTHLY)
     }
+    val nowEpochMs = currentTimeMillis()
     Column(
         modifier = GlanceModifier
             .fillMaxWidth()
@@ -209,9 +218,21 @@ private fun UsageOverviewSuccessBlock(
     ) {
         kinds.forEachIndexed { index, kind ->
             if (index > 0) Spacer(GlanceModifier.height(density.rowGap))
+            val window = snapshot.windows.find { it.kind == kind }
             OverviewUsageRow(
-                label = contextString(usageWindowLabelRes(kind, usageDisplayMode)),
-                window = snapshot.windows.find { it.kind == kind },
+                label = contextString(
+                    R.string.usage_window_label_with_mode,
+                    contextString(usageWindowLabelRes(kind)),
+                    contextString(usageWindowModeLabelRes(usageDisplayMode)),
+                ),
+                window = window,
+                resetText = if (usageResetStyle == UsageResetStyle.HIDDEN) {
+                    null
+                } else {
+                    snapshot
+                        .upcomingResetAtEpochMs(kind, nowEpochMs)
+                        ?.let { formatUsageResetCountdown(it - nowEpochMs) }
+                },
                 openApp = openApp,
                 density = density,
                 usageDisplayMode = usageDisplayMode,
@@ -220,7 +241,10 @@ private fun UsageOverviewSuccessBlock(
         }
         Spacer(GlanceModifier.height(density.updatedGap))
         Text(
-            text = "更新于 ${WidgetDateFormatter.formatUpdatedAt(snapshot.updatedAtEpochMs)}",
+            text = contextString(
+                R.string.widget_updated_at,
+                WidgetDateFormatter.formatUpdatedAt(snapshot.updatedAtEpochMs),
+            ),
             style = TextStyle(
                 color = GlanceTheme.colors.onSurfaceVariant,
                 fontSize = density.updatedSize,
@@ -235,6 +259,7 @@ private fun UsageOverviewSuccessBlock(
 private fun OverviewUsageRow(
     label: String,
     window: QuotaWindow?,
+    resetText: String?,
     openApp: Action,
     density: OverviewDensity,
     usageDisplayMode: UsageDisplayMode,
@@ -243,6 +268,8 @@ private fun OverviewUsageRow(
     val used = window?.usedPercent
     val percentText = used?.let { formatUsageDisplayPercent(it, usageDisplayMode) }
         ?: contextString(R.string.usage_unavailable)
+    // A row without data should not advertise a reset for an empty window.
+    val resetLabel = resetText?.takeIf { used != null }
     when (usageProgressStyle) {
         UsageProgressStyle.CAPSULE -> {
             UsageCapsuleProgressBar(
@@ -253,6 +280,7 @@ private fun OverviewUsageRow(
                 height = density.capsuleHeight,
                 labelSize = density.labelSize,
                 percentSize = density.labelSize,
+                resetText = resetLabel,
             )
         }
         UsageProgressStyle.BAR -> {
@@ -266,7 +294,7 @@ private fun OverviewUsageRow(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = label,
+                        text = if (resetLabel != null) "$label · $resetLabel" else label,
                         style = TextStyle(
                             color = GlanceTheme.colors.onSurface,
                             fontSize = density.labelSize,

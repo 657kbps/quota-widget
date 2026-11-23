@@ -13,6 +13,7 @@ import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toMagpieUsageDisplayMode
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toMagpieUsageProgressStyle
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toMagpieUsageResetStyle
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toMagpieUsageWindowKind
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeComfortable
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeCompact
@@ -36,6 +37,7 @@ class MagpieWidget : GlanceAppWidget() {
                 windowKind = prefs.toMagpieUsageWindowKind(),
                 usageDisplayMode = prefs.toMagpieUsageDisplayMode(),
                 usageProgressStyle = prefs.toMagpieUsageProgressStyle(),
+                usageResetStyle = prefs.toMagpieUsageResetStyle(),
             )
         }
     }
@@ -56,6 +58,7 @@ class MagpieCompactWidget : GlanceAppWidget() {
                 windowKind = prefs.toMagpieUsageWindowKind(),
                 usageDisplayMode = prefs.toMagpieUsageDisplayMode(),
                 usageProgressStyle = prefs.toMagpieUsageProgressStyle(),
+                usageResetStyle = prefs.toMagpieUsageResetStyle(),
             )
         }
     }
@@ -78,6 +81,7 @@ class MagpieOverviewWidget : GlanceAppWidget() {
                 openApp = openApp,
                 usageDisplayMode = prefs.toMagpieUsageDisplayMode(),
                 usageProgressStyle = prefs.toMagpieUsageProgressStyle(),
+                usageResetStyle = prefs.toMagpieUsageResetStyle(),
                 overviewKinds = listOf(
                     QuotaWindowKind.FIVE_HOUR,
                     QuotaWindowKind.WEEKLY,

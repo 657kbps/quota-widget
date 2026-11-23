@@ -22,9 +22,12 @@ import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
 import com.kuyermqi.quotawidget.domain.presentCodexOverviewWindowKinds
+import com.kuyermqi.quotawidget.platform.PlatformIds
+import com.kuyermqi.quotawidget.platform.PlatformRegistry
 
 @Composable
 fun ColumnScope.CodexConfigContent(
@@ -41,9 +44,12 @@ fun ColumnScope.CodexConfigContent(
     onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
     usageProgressStyle: UsageProgressStyle,
     onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
+    usageResetStyle: UsageResetStyle,
+    onUsageResetStyleChange: (UsageResetStyle) -> Unit,
     onLogin: () -> Unit,
     onLogout: () -> Unit,
     onSave: () -> Unit,
+    updatedAtEpochMs: Long = 0L,
 ) {
     Spacer(modifier = Modifier.height(if (isLoggedIn) 4.dp else 8.dp))
     if (!isLoggedIn) {
@@ -91,10 +97,14 @@ fun ColumnScope.CodexConfigContent(
             onUsageDisplayModeChange = onUsageDisplayModeChange,
             usageProgressStyle = usageProgressStyle,
             onUsageProgressStyleChange = onUsageProgressStyleChange,
+            usageResetStyle = usageResetStyle,
+            onUsageResetStyleChange = onUsageResetStyleChange,
             enabled = !isBusy,
             windowKindChoices = availableWindowKinds,
             showWindowKindPicker = availableWindowKinds.size >= 2,
             overviewKinds = presentCodexOverviewWindowKinds(windows),
+            platformName = PlatformRegistry.displayName(PlatformIds.CODEX),
+            updatedAtEpochMs = updatedAtEpochMs,
         )
     }
     Spacer(modifier = Modifier.height(12.dp))

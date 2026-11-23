@@ -34,6 +34,7 @@ import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.opencode.OpenCodeWorkspace
 import com.kuyermqi.quotawidget.settings.OpenCodeAuthMethod
@@ -71,12 +72,15 @@ fun ColumnScope.OpenCodeGoConfigContent(
     onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
     usageProgressStyle: UsageProgressStyle,
     onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
+    usageResetStyle: UsageResetStyle,
+    onUsageResetStyleChange: (UsageResetStyle) -> Unit,
     onWorkspaceSelected: (OpenCodeWorkspace) -> Unit,
     onAuthPanelChange: (OpenCodeAuthPanel) -> Unit,
     onLogin: () -> Unit,
     onReauth: () -> Unit,
     onLogout: () -> Unit,
     onSave: (OpenCodeAuthMethod?) -> Unit,
+    updatedAtEpochMs: Long = 0L,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -121,11 +125,14 @@ fun ColumnScope.OpenCodeGoConfigContent(
                     onUsageDisplayModeChange = onUsageDisplayModeChange,
                     usageProgressStyle = usageProgressStyle,
                     onUsageProgressStyleChange = onUsageProgressStyleChange,
+                    usageResetStyle = usageResetStyle,
+                    onUsageResetStyleChange = onUsageResetStyleChange,
                     onWorkspaceSelected = onWorkspaceSelected,
                     onAuthPanelChange = onAuthPanelChange,
                     onReauth = onReauth,
                     onLogout = onLogout,
                     onSave = onSave,
+                    updatedAtEpochMs = updatedAtEpochMs,
                 )
                 OpenCodeAuthPanel.CHOOSE -> AuthChoiceList(
                     hasCookieSession = hasCookieSession,
@@ -178,11 +185,14 @@ private fun ColumnScope.AuthSummary(
     onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
     usageProgressStyle: UsageProgressStyle,
     onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
+    usageResetStyle: UsageResetStyle,
+    onUsageResetStyleChange: (UsageResetStyle) -> Unit,
     onWorkspaceSelected: (OpenCodeWorkspace) -> Unit,
     onAuthPanelChange: (OpenCodeAuthPanel) -> Unit,
     onReauth: () -> Unit,
     onLogout: () -> Unit,
     onSave: (OpenCodeAuthMethod?) -> Unit,
+    updatedAtEpochMs: Long = 0L,
 ) {
     val methodLabel = when (activeAuthMethod) {
         OpenCodeAuthMethod.COOKIE -> stringResource(R.string.opencode_auth_web_title)
@@ -233,6 +243,8 @@ private fun ColumnScope.AuthSummary(
         onUsageDisplayModeChange = onUsageDisplayModeChange,
         usageProgressStyle = usageProgressStyle,
         onUsageProgressStyleChange = onUsageProgressStyleChange,
+        usageResetStyle = usageResetStyle,
+        onUsageResetStyleChange = onUsageResetStyleChange,
         windowKindChoices = listOf(
             UsageWindowKind.ROLLING,
             UsageWindowKind.WEEKLY,
@@ -249,6 +261,9 @@ private fun ColumnScope.AuthSummary(
         saveLabel = stringResource(R.string.action_save),
         onLogout = onLogout,
         onSave = { onSave(null) },
+        platformName = stringResource(R.string.platform_name_opencode_go),
+        allowWindowFallback = false,
+        updatedAtEpochMs = updatedAtEpochMs,
     )
 }
 

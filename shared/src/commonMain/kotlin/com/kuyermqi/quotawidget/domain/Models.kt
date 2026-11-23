@@ -213,6 +213,24 @@ enum class UsageDisplayMode {
     }
 }
 
+/** How percent / compact / overview widgets surface the next reset time. */
+enum class UsageResetStyle {
+    /** No reset time; widgets keep their default footer. */
+    HIDDEN,
+    /** Footer line: the reset time replaces the "updated at" line. */
+    FOOTER,
+    /** Footer split in two lines: reset time first, "updated at" dimmed below (2×1 falls back to [FOOTER]). */
+    FOOTER_STACKED,
+    /** Countdown pill next to the large percent value. */
+    PILL,
+    ;
+
+    companion object {
+        fun fromStorage(value: String?): UsageResetStyle =
+            entries.find { it.name == value } ?: HIDDEN
+    }
+}
+
 /** Progress bar layout for usage widgets (percent and overview). */
 enum class UsageProgressStyle {
     /** Continuous thin bar; labels outside the bar. */

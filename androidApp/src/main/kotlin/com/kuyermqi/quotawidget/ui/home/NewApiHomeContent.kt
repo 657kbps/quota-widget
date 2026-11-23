@@ -55,6 +55,8 @@ class NewApiHomeState internal constructor(
         internal set
     var lastWindows by mutableStateOf<List<QuotaWindow>>(emptyList())
         internal set
+    var lastSnapshot by mutableStateOf<QuotaSnapshot?>(null)
+        internal set
     var isSaving by mutableStateOf(false)
         internal set
     var saveError by mutableStateOf<String?>(null)
@@ -153,6 +155,7 @@ fun NewApiHomeEffects(state: NewApiHomeState): WidgetDisplayState {
         state.lastTokenExpired = success.snapshot.tokenExpired
         state.lastQuotaOverspent = success.snapshot.quotaOverspent
         state.lastWindows = success.snapshot.windows
+        state.lastSnapshot = success.snapshot
     }
     return observed
 }
@@ -231,6 +234,7 @@ fun ColumnScope.NewApiHomeContent(
                         state.lastTokenExpired = false
                         state.lastQuotaOverspent = false
                         state.lastWindows = emptyList()
+                        state.lastSnapshot = null
                     }
                     state.saveError = when (
                         val result = onRefreshPlatform(PlatformIds.NEW_API)
@@ -244,5 +248,6 @@ fun ColumnScope.NewApiHomeContent(
                 }
             }
         },
+        newApiSnapshot = state.lastSnapshot,
     )
 }

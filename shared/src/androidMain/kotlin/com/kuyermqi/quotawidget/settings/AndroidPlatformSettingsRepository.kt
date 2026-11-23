@@ -23,6 +23,7 @@ import com.kuyermqi.quotawidget.domain.DEFAULT_CUSTOM_SEED_COLOR_ARGB
 import com.kuyermqi.quotawidget.domain.DEFAULT_REFRESH_INTERVAL_MINUTES
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -129,6 +130,7 @@ class AndroidPlatformSettingsRepository(
             prefs[Keys.OPENCODE_WIDGET_WINDOW] = settings.widgetWindowKind.name
             prefs[Keys.OPENCODE_USAGE_DISPLAY] = settings.usageDisplayMode.name
             prefs[Keys.OPENCODE_USAGE_PROGRESS_STYLE] = settings.usageProgressStyle.name
+            prefs[Keys.OPENCODE_USAGE_RESET_STYLE] = settings.usageResetStyle.name
         }
     }
 
@@ -139,6 +141,7 @@ class AndroidPlatformSettingsRepository(
                 widgetWindowKind = current.widgetWindowKind,
                 usageDisplayMode = current.usageDisplayMode,
                 usageProgressStyle = current.usageProgressStyle,
+                usageResetStyle = current.usageResetStyle,
             ),
         )
     }
@@ -192,6 +195,7 @@ class AndroidPlatformSettingsRepository(
             prefs[Keys.CODEX_WIDGET_WINDOW] = settings.widgetWindowKind.name
             prefs[Keys.CODEX_USAGE_DISPLAY] = settings.usageDisplayMode.name
             prefs[Keys.CODEX_USAGE_PROGRESS_STYLE] = settings.usageProgressStyle.name
+            prefs[Keys.CODEX_USAGE_RESET_STYLE] = settings.usageResetStyle.name
         }
     }
 
@@ -202,6 +206,7 @@ class AndroidPlatformSettingsRepository(
                 widgetWindowKind = current.widgetWindowKind,
                 usageDisplayMode = current.usageDisplayMode,
                 usageProgressStyle = current.usageProgressStyle,
+                usageResetStyle = current.usageResetStyle,
             ),
         )
     }
@@ -283,6 +288,7 @@ class AndroidPlatformSettingsRepository(
             prefs[Keys.MAGPIE_WIDGET_WINDOW] = settings.widgetWindowKind.name
             prefs[Keys.MAGPIE_USAGE_DISPLAY] = settings.usageDisplayMode.name
             prefs[Keys.MAGPIE_USAGE_PROGRESS_STYLE] = settings.usageProgressStyle.name
+            prefs[Keys.MAGPIE_USAGE_RESET_STYLE] = settings.usageResetStyle.name
         }
     }
 
@@ -293,6 +299,7 @@ class AndroidPlatformSettingsRepository(
                 widgetWindowKind = current.widgetWindowKind,
                 usageDisplayMode = current.usageDisplayMode,
                 usageProgressStyle = current.usageProgressStyle,
+                usageResetStyle = current.usageResetStyle,
             ),
         )
     }
@@ -323,6 +330,7 @@ class AndroidPlatformSettingsRepository(
             prefs[Keys.KIMI_CODE_WIDGET_WINDOW] = settings.widgetWindowKind.name
             prefs[Keys.KIMI_CODE_USAGE_DISPLAY] = settings.usageDisplayMode.name
             prefs[Keys.KIMI_CODE_USAGE_PROGRESS_STYLE] = settings.usageProgressStyle.name
+            prefs[Keys.KIMI_CODE_USAGE_RESET_STYLE] = settings.usageResetStyle.name
         }
     }
 
@@ -334,6 +342,7 @@ class AndroidPlatformSettingsRepository(
                 widgetWindowKind = current.widgetWindowKind,
                 usageDisplayMode = current.usageDisplayMode,
                 usageProgressStyle = current.usageProgressStyle,
+                usageResetStyle = current.usageResetStyle,
             ),
         )
     }
@@ -364,6 +373,7 @@ class AndroidPlatformSettingsRepository(
             prefs[Keys.ZHIPU_WIDGET_WINDOW] = settings.widgetWindowKind.name
             prefs[Keys.ZHIPU_USAGE_DISPLAY] = settings.usageDisplayMode.name
             prefs[Keys.ZHIPU_USAGE_PROGRESS_STYLE] = settings.usageProgressStyle.name
+            prefs[Keys.ZHIPU_USAGE_RESET_STYLE] = settings.usageResetStyle.name
         }
     }
 
@@ -375,6 +385,7 @@ class AndroidPlatformSettingsRepository(
                 widgetWindowKind = current.widgetWindowKind,
                 usageDisplayMode = current.usageDisplayMode,
                 usageProgressStyle = current.usageProgressStyle,
+                usageResetStyle = current.usageResetStyle,
             ),
         )
     }
@@ -434,6 +445,7 @@ class AndroidPlatformSettingsRepository(
             prefs[sessionWidgetWindowKey(platformId)] = settings.widgetWindowKind.name
             prefs[sessionUsageDisplayKey(platformId)] = settings.usageDisplayMode.name
             prefs[sessionUsageProgressStyleKey(platformId)] = settings.usageProgressStyle.name
+            prefs[sessionUsageResetStyleKey(platformId)] = settings.usageResetStyle.name
         }
     }
 
@@ -445,6 +457,7 @@ class AndroidPlatformSettingsRepository(
                 widgetWindowKind = current.widgetWindowKind,
                 usageDisplayMode = current.usageDisplayMode,
                 usageProgressStyle = current.usageProgressStyle,
+                usageResetStyle = current.usageResetStyle,
             ),
         )
     }
@@ -654,6 +667,9 @@ class AndroidPlatformSettingsRepository(
             usageProgressStyle = UsageProgressStyle.fromStorage(
                 this[Keys.OPENCODE_USAGE_PROGRESS_STYLE],
             ),
+            usageResetStyle = UsageResetStyle.fromStorage(
+                this[Keys.OPENCODE_USAGE_RESET_STYLE],
+            ),
         )
     }
 
@@ -674,6 +690,9 @@ class AndroidPlatformSettingsRepository(
             usageDisplayMode = UsageDisplayMode.fromStorage(this[Keys.CODEX_USAGE_DISPLAY]),
             usageProgressStyle = UsageProgressStyle.fromStorage(
                 this[Keys.CODEX_USAGE_PROGRESS_STYLE],
+            ),
+            usageResetStyle = UsageResetStyle.fromStorage(
+                this[Keys.CODEX_USAGE_RESET_STYLE],
             ),
         )
     }
@@ -712,6 +731,9 @@ class AndroidPlatformSettingsRepository(
             usageProgressStyle = UsageProgressStyle.fromStorage(
                 this[Keys.MAGPIE_USAGE_PROGRESS_STYLE],
             ),
+            usageResetStyle = UsageResetStyle.fromStorage(
+                this[Keys.MAGPIE_USAGE_RESET_STYLE],
+            ),
         )
     }
 
@@ -727,6 +749,9 @@ class AndroidPlatformSettingsRepository(
             usageProgressStyle = UsageProgressStyle.fromStorage(
                 this[Keys.KIMI_CODE_USAGE_PROGRESS_STYLE],
             ),
+            usageResetStyle = UsageResetStyle.fromStorage(
+                this[Keys.KIMI_CODE_USAGE_RESET_STYLE],
+            ),
         )
     }
 
@@ -741,6 +766,9 @@ class AndroidPlatformSettingsRepository(
             usageDisplayMode = UsageDisplayMode.fromStorage(this[Keys.ZHIPU_USAGE_DISPLAY]),
             usageProgressStyle = UsageProgressStyle.fromStorage(
                 this[Keys.ZHIPU_USAGE_PROGRESS_STYLE],
+            ),
+            usageResetStyle = UsageResetStyle.fromStorage(
+                this[Keys.ZHIPU_USAGE_RESET_STYLE],
             ),
         )
     }
@@ -768,6 +796,9 @@ class AndroidPlatformSettingsRepository(
             usageDisplayMode = UsageDisplayMode.fromStorage(this[sessionUsageDisplayKey(platformId)]),
             usageProgressStyle = UsageProgressStyle.fromStorage(
                 this[sessionUsageProgressStyleKey(platformId)],
+            ),
+            usageResetStyle = UsageResetStyle.fromStorage(
+                this[sessionUsageResetStyleKey(platformId)],
             ),
         )
     }
@@ -940,6 +971,8 @@ class AndroidPlatformSettingsRepository(
         val OPENCODE_USAGE_DISPLAY = stringPreferencesKey("opencode_go_usage_display")
         val OPENCODE_USAGE_PROGRESS_STYLE =
             stringPreferencesKey("opencode_go_usage_progress_style")
+        val OPENCODE_USAGE_RESET_STYLE =
+            stringPreferencesKey("opencode_go_usage_reset_style")
         val CODEX_ACCESS_ENC = stringPreferencesKey("codex_access_token_enc")
         val CODEX_REFRESH_ENC = stringPreferencesKey("codex_refresh_token_enc")
         val CODEX_ID_ENC = stringPreferencesKey("codex_id_token_enc")
@@ -950,6 +983,7 @@ class AndroidPlatformSettingsRepository(
         val CODEX_WIDGET_WINDOW = stringPreferencesKey("codex_widget_window")
         val CODEX_USAGE_DISPLAY = stringPreferencesKey("codex_usage_display")
         val CODEX_USAGE_PROGRESS_STYLE = stringPreferencesKey("codex_usage_progress_style")
+        val CODEX_USAGE_RESET_STYLE = stringPreferencesKey("codex_usage_reset_style")
         val NEW_API_BASE_URL = stringPreferencesKey("new_api_base_url")
         val NEW_API_KEY_ENC = stringPreferencesKey("new_api_key_enc")
         val NEW_API_QUOTA_PER_USD = longPreferencesKey("new_api_quota_per_usd")
@@ -962,17 +996,21 @@ class AndroidPlatformSettingsRepository(
         val MAGPIE_WIDGET_WINDOW = stringPreferencesKey("magpie_widget_window")
         val MAGPIE_USAGE_DISPLAY = stringPreferencesKey("magpie_usage_display")
         val MAGPIE_USAGE_PROGRESS_STYLE = stringPreferencesKey("magpie_usage_progress_style")
+        val MAGPIE_USAGE_RESET_STYLE = stringPreferencesKey("magpie_usage_reset_style")
         val KIMI_CODE_API_KEY_ENC = stringPreferencesKey("kimi_code_api_key_enc")
         val KIMI_CODE_REGION = stringPreferencesKey("kimi_code_region")
         val KIMI_CODE_WIDGET_WINDOW = stringPreferencesKey("kimi_code_widget_window")
         val KIMI_CODE_USAGE_DISPLAY = stringPreferencesKey("kimi_code_usage_display")
         val KIMI_CODE_USAGE_PROGRESS_STYLE =
             stringPreferencesKey("kimi_code_usage_progress_style")
+        val KIMI_CODE_USAGE_RESET_STYLE =
+            stringPreferencesKey("kimi_code_usage_reset_style")
         val ZHIPU_API_KEY_ENC = stringPreferencesKey("zhipu_api_key_enc")
         val ZHIPU_REGION = stringPreferencesKey("zhipu_region")
         val ZHIPU_WIDGET_WINDOW = stringPreferencesKey("zhipu_widget_window")
         val ZHIPU_USAGE_DISPLAY = stringPreferencesKey("zhipu_usage_display")
         val ZHIPU_USAGE_PROGRESS_STYLE = stringPreferencesKey("zhipu_usage_progress_style")
+        val ZHIPU_USAGE_RESET_STYLE = stringPreferencesKey("zhipu_usage_reset_style")
         val ACTIVE_PLATFORM_ID = stringPreferencesKey("active_platform_id")
         val LEGACY_WIDGET_STATUS = stringPreferencesKey("widget_status")
         val LEGACY_WIDGET_ERROR = stringPreferencesKey("widget_error")
@@ -1056,6 +1094,9 @@ class AndroidPlatformSettingsRepository(
 
         private fun sessionUsageProgressStyleKey(platformId: String) =
             stringPreferencesKey("session_${platformId}_usage_progress_style")
+
+        private fun sessionUsageResetStyleKey(platformId: String) =
+            stringPreferencesKey("session_${platformId}_usage_reset_style")
 
         private fun widgetStatusKey(platformId: String) =
             stringPreferencesKey("widget_${platformId}_status")

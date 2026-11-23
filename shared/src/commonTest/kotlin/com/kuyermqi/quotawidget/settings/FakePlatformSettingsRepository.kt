@@ -90,6 +90,7 @@ class FakePlatformSettingsRepository(
             widgetWindowKind = current.widgetWindowKind,
             usageDisplayMode = current.usageDisplayMode,
             usageProgressStyle = current.usageProgressStyle,
+            usageResetStyle = current.usageResetStyle,
         )
         widgetFlow(PlatformIds.OPENCODE_GO).value = WidgetDisplayState.NotConfigured
     }
@@ -109,6 +110,7 @@ class FakePlatformSettingsRepository(
             widgetWindowKind = current.widgetWindowKind,
             usageDisplayMode = current.usageDisplayMode,
             usageProgressStyle = current.usageProgressStyle,
+            usageResetStyle = current.usageResetStyle,
         )
         widgetFlow(PlatformIds.CODEX).value = WidgetDisplayState.NotConfigured
     }
@@ -147,6 +149,7 @@ class FakePlatformSettingsRepository(
             widgetWindowKind = current.widgetWindowKind,
             usageDisplayMode = current.usageDisplayMode,
             usageProgressStyle = current.usageProgressStyle,
+            usageResetStyle = current.usageResetStyle,
         )
         widgetFlow(PlatformIds.MAGPIE).value = WidgetDisplayState.NotConfigured
     }
@@ -167,6 +170,7 @@ class FakePlatformSettingsRepository(
             widgetWindowKind = current.widgetWindowKind,
             usageDisplayMode = current.usageDisplayMode,
             usageProgressStyle = current.usageProgressStyle,
+            usageResetStyle = current.usageResetStyle,
         )
         widgetFlow(PlatformIds.KIMI_CODE).value = WidgetDisplayState.NotConfigured
     }
@@ -187,6 +191,7 @@ class FakePlatformSettingsRepository(
             widgetWindowKind = current.widgetWindowKind,
             usageDisplayMode = current.usageDisplayMode,
             usageProgressStyle = current.usageProgressStyle,
+            usageResetStyle = current.usageResetStyle,
         )
         widgetFlow(PlatformIds.ZHIPU).value = WidgetDisplayState.NotConfigured
     }
@@ -213,6 +218,7 @@ class FakePlatformSettingsRepository(
             widgetWindowKind = current.widgetWindowKind,
             usageDisplayMode = current.usageDisplayMode,
             usageProgressStyle = current.usageProgressStyle,
+            usageResetStyle = current.usageResetStyle,
         )
         widgetFlow(platformId).value = WidgetDisplayState.NotConfigured
     }

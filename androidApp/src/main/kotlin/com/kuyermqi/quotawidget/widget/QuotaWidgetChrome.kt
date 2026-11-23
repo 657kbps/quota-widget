@@ -173,8 +173,8 @@ internal fun enqueueBootstrapRefresh(context: Context) {
 }
 
 @Composable
-internal fun contextString(@StringRes resId: Int): String =
-    LocalWidgetAndroidContext.current.getString(resId)
+internal fun contextString(@StringRes resId: Int, vararg formatArgs: Any): String =
+    LocalWidgetAndroidContext.current.getString(resId, *formatArgs)
 
 internal fun balanceTitleFontSize(formattedBalance: String): TextUnit =
     when {

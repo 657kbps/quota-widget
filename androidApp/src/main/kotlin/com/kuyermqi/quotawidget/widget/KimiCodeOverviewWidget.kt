@@ -15,6 +15,7 @@ import com.kuyermqi.quotawidget.domain.presentUsageOverviewWindowKinds
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toKimiCodeUsageDisplayMode
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toKimiCodeUsageProgressStyle
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toKimiCodeUsageResetStyle
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeComfortable
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeCompact
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewWidgetContent
@@ -44,6 +45,7 @@ class KimiCodeOverviewWidget : GlanceAppWidget() {
                 openApp = openApp,
                 usageDisplayMode = prefs.toKimiCodeUsageDisplayMode(),
                 usageProgressStyle = prefs.toKimiCodeUsageProgressStyle(),
+                usageResetStyle = prefs.toKimiCodeUsageResetStyle(),
                 overviewKinds = overviewKinds,
             )
         }

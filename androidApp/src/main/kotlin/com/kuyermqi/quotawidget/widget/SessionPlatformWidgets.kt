@@ -13,6 +13,7 @@ import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toSessionUsageDisplayMode
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toSessionUsageProgressStyle
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toSessionUsageResetStyle
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toSessionUsageWindowKind
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeComfortable
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeCompact
@@ -45,6 +46,7 @@ abstract class SessionUsageWidgetBase(
                     windowKind = prefs.toSessionUsageWindowKind(platformId),
                     usageDisplayMode = prefs.toSessionUsageDisplayMode(platformId),
                     usageProgressStyle = prefs.toSessionUsageProgressStyle(platformId),
+                    usageResetStyle = prefs.toSessionUsageResetStyle(platformId),
                 )
             } else if (overview) {
                 UsageOverviewWidgetContent(
@@ -55,6 +57,7 @@ abstract class SessionUsageWidgetBase(
                     openApp = openApp,
                     usageDisplayMode = prefs.toSessionUsageDisplayMode(platformId),
                     usageProgressStyle = prefs.toSessionUsageProgressStyle(platformId),
+                    usageResetStyle = prefs.toSessionUsageResetStyle(platformId),
                     overviewKinds = overviewKindsFor(platformId),
                 )
             } else {
@@ -67,6 +70,7 @@ abstract class SessionUsageWidgetBase(
                     windowKind = prefs.toSessionUsageWindowKind(platformId),
                     usageDisplayMode = prefs.toSessionUsageDisplayMode(platformId),
                     usageProgressStyle = prefs.toSessionUsageProgressStyle(platformId),
+                    usageResetStyle = prefs.toSessionUsageResetStyle(platformId),
                 )
             }
         }

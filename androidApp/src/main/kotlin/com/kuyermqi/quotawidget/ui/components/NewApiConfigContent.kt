@@ -22,11 +22,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.kuyermqi.quotawidget.R
+import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
+import com.kuyermqi.quotawidget.platform.PlatformIds
+import com.kuyermqi.quotawidget.platform.PlatformRegistry
 
 @Composable
 fun ColumnScope.NewApiConfigContent(
@@ -49,6 +52,7 @@ fun ColumnScope.NewApiConfigContent(
     isSaving: Boolean,
     saveError: String?,
     onSave: () -> Unit,
+    newApiSnapshot: QuotaSnapshot? = null,
 ) {
     OutlinedTextField(
         value = baseUrl,
@@ -83,7 +87,7 @@ fun ColumnScope.NewApiConfigContent(
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         enabled = !isSaving,
     )
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(modifier = Modifier.height(12.dp))
     UsageDisplayPrefsSection(
         windows = windows,
         widgetWindowKind = UsageWindowKind.TOKEN,
@@ -98,7 +102,12 @@ fun ColumnScope.NewApiConfigContent(
         overviewKinds = if (unlimitedQuota) emptyList() else listOf(QuotaWindowKind.TOKEN),
         showResetLabels = false,
         showProgressStyle = !unlimitedQuota,
+        showResetStyle = false,
         forceZeroProgressPreview = emptyLimitedQuota,
+        platformName = PlatformRegistry.displayName(PlatformIds.NEW_API),
+        supportsCompactAndOverviewPreview = false,
+        updatedAtEpochMs = newApiSnapshot?.updatedAtEpochMs ?: 0L,
+        newApiSnapshot = newApiSnapshot,
     )
     if (tokenExpired) {
         Spacer(modifier = Modifier.height(10.dp))

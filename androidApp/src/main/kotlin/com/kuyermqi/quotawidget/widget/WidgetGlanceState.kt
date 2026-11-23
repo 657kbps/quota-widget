@@ -22,6 +22,7 @@ import com.kuyermqi.quotawidget.domain.DEFAULT_REFRESH_INTERVAL_MINUTES
 import com.kuyermqi.quotawidget.domain.DarkThemeMode
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -72,20 +73,25 @@ object WidgetGlanceState {
     val openCodeWindowKindKey = stringPreferencesKey("qw_opencode_window_kind")
     val openCodeUsageDisplayModeKey = stringPreferencesKey("qw_opencode_usage_display")
     val openCodeUsageProgressStyleKey = stringPreferencesKey("qw_opencode_usage_progress_style")
+    val openCodeUsageResetStyleKey = stringPreferencesKey("qw_opencode_usage_reset_style")
     val codexWindowKindKey = stringPreferencesKey("qw_codex_window_kind")
     val codexUsageDisplayModeKey = stringPreferencesKey("qw_codex_usage_display")
     val codexUsageProgressStyleKey = stringPreferencesKey("qw_codex_usage_progress_style")
+    val codexUsageResetStyleKey = stringPreferencesKey("qw_codex_usage_reset_style")
     val newApiUsageDisplayModeKey = stringPreferencesKey("qw_new_api_usage_display")
     val newApiUsageProgressStyleKey = stringPreferencesKey("qw_new_api_usage_progress_style")
     val magpieWindowKindKey = stringPreferencesKey("qw_magpie_window_kind")
     val magpieUsageDisplayModeKey = stringPreferencesKey("qw_magpie_usage_display")
     val magpieUsageProgressStyleKey = stringPreferencesKey("qw_magpie_usage_progress_style")
+    val magpieUsageResetStyleKey = stringPreferencesKey("qw_magpie_usage_reset_style")
     val kimiCodeWindowKindKey = stringPreferencesKey("qw_kimi_code_window_kind")
     val kimiCodeUsageDisplayModeKey = stringPreferencesKey("qw_kimi_code_usage_display")
     val kimiCodeUsageProgressStyleKey = stringPreferencesKey("qw_kimi_code_usage_progress_style")
+    val kimiCodeUsageResetStyleKey = stringPreferencesKey("qw_kimi_code_usage_reset_style")
     val zhipuWindowKindKey = stringPreferencesKey("qw_zhipu_window_kind")
     val zhipuUsageDisplayModeKey = stringPreferencesKey("qw_zhipu_usage_display")
     val zhipuUsageProgressStyleKey = stringPreferencesKey("qw_zhipu_usage_progress_style")
+    val zhipuUsageResetStyleKey = stringPreferencesKey("qw_zhipu_usage_reset_style")
 
     private fun sessionWindowKindKey(platformId: String) =
         stringPreferencesKey("qw_${platformId}_window_kind")
@@ -95,6 +101,9 @@ object WidgetGlanceState {
 
     private fun sessionUsageProgressStyleKey(platformId: String) =
         stringPreferencesKey("qw_${platformId}_usage_progress_style")
+
+    private fun sessionUsageResetStyleKey(platformId: String) =
+        stringPreferencesKey("qw_${platformId}_usage_reset_style")
 
     private object Status {
         const val NOT_CONFIGURED = "not_configured"
@@ -358,6 +367,9 @@ object WidgetGlanceState {
     fun Preferences.toOpenCodeUsageProgressStyle(): UsageProgressStyle =
         UsageProgressStyle.fromStorage(this[openCodeUsageProgressStyleKey])
 
+    fun Preferences.toOpenCodeUsageResetStyle(): UsageResetStyle =
+        UsageResetStyle.fromStorage(this[openCodeUsageResetStyleKey])
+
     fun Preferences.toCodexUsageWindowKind(): UsageWindowKind =
         this[codexWindowKindKey]
             ?.let { UsageWindowKind.fromStorage(it) }
@@ -368,6 +380,9 @@ object WidgetGlanceState {
 
     fun Preferences.toCodexUsageProgressStyle(): UsageProgressStyle =
         UsageProgressStyle.fromStorage(this[codexUsageProgressStyleKey])
+
+    fun Preferences.toCodexUsageResetStyle(): UsageResetStyle =
+        UsageResetStyle.fromStorage(this[codexUsageResetStyleKey])
 
     fun Preferences.toNewApiUsageDisplayMode(): UsageDisplayMode =
         UsageDisplayMode.fromStorage(this[newApiUsageDisplayModeKey])
@@ -384,6 +399,9 @@ object WidgetGlanceState {
     fun Preferences.toMagpieUsageProgressStyle(): UsageProgressStyle =
         UsageProgressStyle.fromStorage(this[magpieUsageProgressStyleKey])
 
+    fun Preferences.toMagpieUsageResetStyle(): UsageResetStyle =
+        UsageResetStyle.fromStorage(this[magpieUsageResetStyleKey])
+
     fun Preferences.toKimiCodeUsageWindowKind(): UsageWindowKind =
         UsageWindowKind.fromStorage(this[kimiCodeWindowKindKey])
 
@@ -393,6 +411,9 @@ object WidgetGlanceState {
     fun Preferences.toKimiCodeUsageProgressStyle(): UsageProgressStyle =
         UsageProgressStyle.fromStorage(this[kimiCodeUsageProgressStyleKey])
 
+    fun Preferences.toKimiCodeUsageResetStyle(): UsageResetStyle =
+        UsageResetStyle.fromStorage(this[kimiCodeUsageResetStyleKey])
+
     fun Preferences.toZhipuUsageWindowKind(): UsageWindowKind =
         UsageWindowKind.fromStorage(this[zhipuWindowKindKey])
 
@@ -401,6 +422,9 @@ object WidgetGlanceState {
 
     fun Preferences.toZhipuUsageProgressStyle(): UsageProgressStyle =
         UsageProgressStyle.fromStorage(this[zhipuUsageProgressStyleKey])
+
+    fun Preferences.toZhipuUsageResetStyle(): UsageResetStyle =
+        UsageResetStyle.fromStorage(this[zhipuUsageResetStyleKey])
 
     fun Preferences.toSessionUsageWindowKind(platformId: String): UsageWindowKind =
         this[sessionWindowKindKey(platformId)]
@@ -412,6 +436,9 @@ object WidgetGlanceState {
 
     fun Preferences.toSessionUsageProgressStyle(platformId: String): UsageProgressStyle =
         UsageProgressStyle.fromStorage(this[sessionUsageProgressStyleKey(platformId)])
+
+    fun Preferences.toSessionUsageResetStyle(platformId: String): UsageResetStyle =
+        UsageResetStyle.fromStorage(this[sessionUsageResetStyleKey(platformId)])
 
     fun Preferences.toDisplayState(): WidgetDisplayState {
         return when (this[statusKey]) {
@@ -476,11 +503,13 @@ object WidgetGlanceState {
             this[openCodeWindowKindKey] = openCodeSettings.widgetWindowKind.name
             this[openCodeUsageDisplayModeKey] = openCodeSettings.usageDisplayMode.name
             this[openCodeUsageProgressStyleKey] = openCodeSettings.usageProgressStyle.name
+            this[openCodeUsageResetStyleKey] = openCodeSettings.usageResetStyle.name
         }
         if (codexSettings != null) {
             this[codexWindowKindKey] = codexSettings.widgetWindowKind.name
             this[codexUsageDisplayModeKey] = codexSettings.usageDisplayMode.name
             this[codexUsageProgressStyleKey] = codexSettings.usageProgressStyle.name
+            this[codexUsageResetStyleKey] = codexSettings.usageResetStyle.name
         }
         if (newApiSettings != null) {
             this[newApiUsageDisplayModeKey] = newApiSettings.usageDisplayMode.name
@@ -490,21 +519,25 @@ object WidgetGlanceState {
             this[magpieWindowKindKey] = magpieSettings.widgetWindowKind.name
             this[magpieUsageDisplayModeKey] = magpieSettings.usageDisplayMode.name
             this[magpieUsageProgressStyleKey] = magpieSettings.usageProgressStyle.name
+            this[magpieUsageResetStyleKey] = magpieSettings.usageResetStyle.name
         }
         if (kimiCodeSettings != null) {
             this[kimiCodeWindowKindKey] = kimiCodeSettings.widgetWindowKind.name
             this[kimiCodeUsageDisplayModeKey] = kimiCodeSettings.usageDisplayMode.name
             this[kimiCodeUsageProgressStyleKey] = kimiCodeSettings.usageProgressStyle.name
+            this[kimiCodeUsageResetStyleKey] = kimiCodeSettings.usageResetStyle.name
         }
         if (zhipuSettings != null) {
             this[zhipuWindowKindKey] = zhipuSettings.widgetWindowKind.name
             this[zhipuUsageDisplayModeKey] = zhipuSettings.usageDisplayMode.name
             this[zhipuUsageProgressStyleKey] = zhipuSettings.usageProgressStyle.name
+            this[zhipuUsageResetStyleKey] = zhipuSettings.usageResetStyle.name
         }
         for ((platformId, settings) in sessionSettings) {
             this[sessionWindowKindKey(platformId)] = settings.widgetWindowKind.name
             this[sessionUsageDisplayModeKey(platformId)] = settings.usageDisplayMode.name
             this[sessionUsageProgressStyleKey(platformId)] = settings.usageProgressStyle.name
+            this[sessionUsageResetStyleKey(platformId)] = settings.usageResetStyle.name
         }
         when (display) {
             WidgetDisplayState.NotConfigured -> {

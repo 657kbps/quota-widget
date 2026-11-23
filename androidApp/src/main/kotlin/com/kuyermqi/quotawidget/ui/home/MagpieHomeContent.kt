@@ -16,6 +16,7 @@ import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
@@ -46,9 +47,13 @@ class MagpieHomeState internal constructor(
         internal set
     var draftUsageProgressStyle by mutableStateOf(UsageProgressStyle.BAR)
         internal set
+    var draftUsageResetStyle by mutableStateOf(UsageResetStyle.HIDDEN)
+        internal set
     var lastDisplay by mutableStateOf<String?>(null)
         internal set
     var lastWindows by mutableStateOf<List<QuotaWindow>>(emptyList())
+        internal set
+    var lastUpdatedAtEpochMs by mutableStateOf(0L)
         internal set
     var isSaving by mutableStateOf(false)
         internal set
@@ -71,7 +76,8 @@ class MagpieHomeState internal constructor(
                 draftProviderId != saved.selectedProviderId ||
                 draftWindowKind != saved.widgetWindowKind ||
                 draftUsageDisplayMode != saved.usageDisplayMode ||
-                draftUsageProgressStyle != saved.usageProgressStyle
+                draftUsageProgressStyle != saved.usageProgressStyle ||
+                draftUsageResetStyle != saved.usageResetStyle
             )
 
     fun applyLoaded(settings: MagpieSettings) {
@@ -82,6 +88,7 @@ class MagpieHomeState internal constructor(
         draftWindowKind = settings.widgetWindowKind
         draftUsageDisplayMode = settings.usageDisplayMode
         draftUsageProgressStyle = settings.usageProgressStyle
+        draftUsageResetStyle = settings.usageResetStyle
         loaded = true
     }
 
@@ -181,6 +188,7 @@ fun MagpieHomeEffects(state: MagpieHomeState): WidgetDisplayState {
     LaunchedEffect(observed, state.saved.usageDisplayMode, state.saved.widgetWindowKind, resources) {
         val success = observed as? WidgetDisplayState.Success ?: return@LaunchedEffect
         state.lastWindows = success.snapshot.windows
+        state.lastUpdatedAtEpochMs = success.snapshot.updatedAtEpochMs
         state.lastDisplay = magpieUsageSummary(
             resources = resources,
             windows = success.snapshot.windows,
@@ -233,6 +241,11 @@ fun ColumnScope.MagpieHomeContent(
             state.draftUsageProgressStyle = it
             state.saveError = null
         },
+        usageResetStyle = state.draftUsageResetStyle,
+        onUsageResetStyleChange = {
+            state.draftUsageResetStyle = it
+            state.saveError = null
+        },
         isSaving = state.isSaving,
         isDirty = state.isDirty,
         saveError = state.saveError,
@@ -246,6 +259,7 @@ fun ColumnScope.MagpieHomeContent(
                     widgetWindowKind = state.draftWindowKind,
                     usageDisplayMode = state.draftUsageDisplayMode,
                     usageProgressStyle = state.draftUsageProgressStyle,
+                    usageResetStyle = state.draftUsageResetStyle,
                 )
                 state.isSaving = true
                 state.saveError = null
@@ -274,5 +288,6 @@ fun ColumnScope.MagpieHomeContent(
                 }
             }
         },
+        updatedAtEpochMs = state.lastUpdatedAtEpochMs,
     )
 }

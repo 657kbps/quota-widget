@@ -48,6 +48,7 @@ import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 
 /** One selectable authentication method in an [AuthMethodChoiceList]. */
@@ -100,26 +101,39 @@ fun ColumnScope.AuthSummaryHeader(
     }
 }
 
-/** Transparent bottom-right change-auth action inside an account card. */
+/** Transparent bottom-right secondary actions (logout, change-auth) inside an account card. */
 @Composable
-private fun ColumnScope.AuthChangeMethodAction(
-    changeLabel: String,
-    onChangeAuthMethod: () -> Unit,
+private fun ColumnScope.AuthCardSecondaryActions(
+    logoutLabel: String,
+    onLogout: () -> Unit,
+    changeLabel: String?,
+    onChangeAuthMethod: (() -> Unit)?,
     isBusy: Boolean,
 ) {
     Spacer(modifier = Modifier.height(4.dp))
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.End,
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         TextButton(
-            onClick = onChangeAuthMethod,
+            onClick = onLogout,
             enabled = !isBusy,
+            contentPadding = PaddingValues(horizontal = 8.dp),
         ) {
-            Text(
-                text = changeLabel,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            Text(logoutLabel)
+        }
+        if (changeLabel != null && onChangeAuthMethod != null) {
+            TextButton(
+                onClick = onChangeAuthMethod,
+                enabled = !isBusy,
+                contentPadding = PaddingValues(horizontal = 8.dp),
+            ) {
+                Text(
+                    text = changeLabel,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
     }
 }
@@ -147,7 +161,7 @@ internal fun ColumnScope.AuthAccountCard(
     }
 }
 
-/** Shared configured-account layout: summary, optional extra content, prefs, actions. */
+/** Shared configured-account layout: summary, optional extra content, secondary actions, prefs, save. */
 @Composable
 fun ColumnScope.AuthConfiguredPanel(
     title: String,
@@ -162,6 +176,8 @@ fun ColumnScope.AuthConfiguredPanel(
     onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
     usageProgressStyle: UsageProgressStyle,
     onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
+    usageResetStyle: UsageResetStyle,
+    onUsageResetStyleChange: (UsageResetStyle) -> Unit,
     windowKindChoices: List<UsageWindowKind>,
     showWindowKindPicker: Boolean = true,
     overviewKinds: List<QuotaWindowKind>,
@@ -171,6 +187,9 @@ fun ColumnScope.AuthConfiguredPanel(
     saveLabel: String,
     onLogout: () -> Unit,
     onSave: () -> Unit,
+    platformName: String = "",
+    allowWindowFallback: Boolean = true,
+    updatedAtEpochMs: Long = 0L,
 ) {
     AuthAccountCard {
         AuthSummaryHeader(
@@ -178,15 +197,15 @@ fun ColumnScope.AuthConfiguredPanel(
             subtitle = subtitle,
         )
         extraContent()
-        if (changeLabel != null && onChangeAuthMethod != null) {
-            AuthChangeMethodAction(
-                changeLabel = changeLabel,
-                onChangeAuthMethod = onChangeAuthMethod,
-                isBusy = isBusy,
-            )
-        }
+        AuthCardSecondaryActions(
+            logoutLabel = logoutLabel,
+            onLogout = onLogout,
+            changeLabel = changeLabel,
+            onChangeAuthMethod = onChangeAuthMethod,
+            isBusy = isBusy,
+        )
     }
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(modifier = Modifier.height(12.dp))
     UsageDisplayPrefsSection(
         windows = windows,
         widgetWindowKind = widgetWindowKind,
@@ -195,17 +214,20 @@ fun ColumnScope.AuthConfiguredPanel(
         onUsageDisplayModeChange = onUsageDisplayModeChange,
         usageProgressStyle = usageProgressStyle,
         onUsageProgressStyleChange = onUsageProgressStyleChange,
+        usageResetStyle = usageResetStyle,
+        onUsageResetStyleChange = onUsageResetStyleChange,
         enabled = !isBusy,
         windowKindChoices = windowKindChoices,
         showWindowKindPicker = showWindowKindPicker,
         overviewKinds = overviewKinds,
+        platformName = platformName,
+        allowWindowFallback = allowWindowFallback,
+        updatedAtEpochMs = updatedAtEpochMs,
     )
-    AuthSummaryActions(
+    AuthSaveAction(
         isBusy = isBusy,
         isDirty = isDirty,
-        logoutLabel = logoutLabel,
         saveLabel = saveLabel,
-        onLogout = onLogout,
         onSave = onSave,
     )
 }
@@ -312,14 +334,12 @@ fun ColumnScope.AuthMethodChoiceList(
     }
 }
 
-/** Shared bottom-right actions for a configured account. */
+/** Shared bottom-right save action for a configured account. */
 @Composable
-fun ColumnScope.AuthSummaryActions(
+private fun ColumnScope.AuthSaveAction(
     isBusy: Boolean,
     isDirty: Boolean,
-    logoutLabel: String,
     saveLabel: String,
-    onLogout: () -> Unit,
     onSave: () -> Unit,
 ) {
     Spacer(modifier = Modifier.height(12.dp))
@@ -334,12 +354,6 @@ fun ColumnScope.AuthSummaryActions(
                 strokeWidth = 2.dp,
             )
             Spacer(modifier = Modifier.width(4.dp))
-        }
-        TextButton(
-            onClick = onLogout,
-            enabled = !isBusy,
-        ) {
-            Text(logoutLabel)
         }
         Button(
             onClick = onSave,

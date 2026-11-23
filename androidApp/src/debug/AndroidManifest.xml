@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <receiver
+            android:name=".debug.SeedWidgetsReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.kuyermqi.quotawidget.debug.ACTION_SEED" />
+            </intent-filter>
+        </receiver>
+
+        <activity
+            android:name=".debug.SeedPinActivity"
+            android:exported="true"
+            android:label="Seed widgets" />
+    </application>
+</manifest>

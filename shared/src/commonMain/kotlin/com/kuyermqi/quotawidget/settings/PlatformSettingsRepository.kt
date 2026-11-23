@@ -4,6 +4,7 @@ import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
@@ -27,6 +28,7 @@ data class OpenCodeGoSettings(
     val widgetWindowKind: UsageWindowKind = UsageWindowKind.ROLLING,
     val usageDisplayMode: UsageDisplayMode = UsageDisplayMode.USED,
     val usageProgressStyle: UsageProgressStyle = UsageProgressStyle.BAR,
+    val usageResetStyle: UsageResetStyle = UsageResetStyle.HIDDEN,
 ) {
     val hasCookieSession: Boolean
         get() = workspaceId.isNotBlank() && authCookie.isNotBlank()
@@ -64,6 +66,7 @@ data class CodexSettings(
     val widgetWindowKind: UsageWindowKind = UsageWindowKind.WEEKLY,
     val usageDisplayMode: UsageDisplayMode = UsageDisplayMode.USED,
     val usageProgressStyle: UsageProgressStyle = UsageProgressStyle.BAR,
+    val usageResetStyle: UsageResetStyle = UsageResetStyle.HIDDEN,
 ) {
     val isConfigured: Boolean
         get() = accessToken.isNotBlank() &&
@@ -94,6 +97,7 @@ data class SessionPlatformSettings(
     val widgetWindowKind: UsageWindowKind = UsageWindowKind.ROLLING,
     val usageDisplayMode: UsageDisplayMode = UsageDisplayMode.USED,
     val usageProgressStyle: UsageProgressStyle = UsageProgressStyle.BAR,
+    val usageResetStyle: UsageResetStyle = UsageResetStyle.HIDDEN,
 ) {
     val accountLabel: String
         get() = accountId.ifBlank { email }.ifBlank { uid }
@@ -150,6 +154,7 @@ data class MagpieSettings(
     val widgetWindowKind: UsageWindowKind = UsageWindowKind.ROLLING,
     val usageDisplayMode: UsageDisplayMode = UsageDisplayMode.USED,
     val usageProgressStyle: UsageProgressStyle = UsageProgressStyle.BAR,
+    val usageResetStyle: UsageResetStyle = UsageResetStyle.HIDDEN,
 ) {
     val isConfigured: Boolean
         get() = baseUrl.isNotBlank() && apiKey.isNotBlank()
@@ -161,6 +166,7 @@ data class KimiCodeSettings(
     val widgetWindowKind: UsageWindowKind = UsageWindowKind.ROLLING,
     val usageDisplayMode: UsageDisplayMode = UsageDisplayMode.USED,
     val usageProgressStyle: UsageProgressStyle = UsageProgressStyle.BAR,
+    val usageResetStyle: UsageResetStyle = UsageResetStyle.HIDDEN,
 ) {
     val isConfigured: Boolean
         get() = apiKey.isNotBlank()
@@ -172,6 +178,7 @@ data class ZhipuSettings(
     val widgetWindowKind: UsageWindowKind = UsageWindowKind.ROLLING,
     val usageDisplayMode: UsageDisplayMode = UsageDisplayMode.USED,
     val usageProgressStyle: UsageProgressStyle = UsageProgressStyle.BAR,
+    val usageResetStyle: UsageResetStyle = UsageResetStyle.HIDDEN,
 ) {
     val isConfigured: Boolean
         get() = apiKey.isNotBlank()

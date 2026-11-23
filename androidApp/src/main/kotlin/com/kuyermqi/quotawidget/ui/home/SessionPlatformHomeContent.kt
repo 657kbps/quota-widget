@@ -21,6 +21,7 @@ import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
@@ -30,6 +31,7 @@ import com.kuyermqi.quotawidget.domain.commandcode.CommandCodeLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.session.SessionLoginResult
 import com.kuyermqi.quotawidget.domain.workbuddy.WorkBuddyLoginWebViewFlow
 import com.kuyermqi.quotawidget.platform.PlatformIds
+import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.ui.components.SessionAuthPanel
@@ -71,6 +73,8 @@ class SessionPlatformHomeState internal constructor(
         internal set
     var draftUsageProgressStyle by mutableStateOf(UsageProgressStyle.BAR)
         internal set
+    var draftUsageResetStyle by mutableStateOf(UsageResetStyle.HIDDEN)
+        internal set
     var lastDisplay by mutableStateOf<String?>(null)
         internal set
     var widgetState by mutableStateOf<WidgetDisplayState>(WidgetDisplayState.NotConfigured)
@@ -96,7 +100,8 @@ class SessionPlatformHomeState internal constructor(
             val prefsChanged = isConfigured && (
                 draftWindowKind != settings.widgetWindowKind ||
                     draftUsageDisplayMode != settings.usageDisplayMode ||
-                    draftUsageProgressStyle != settings.usageProgressStyle
+                    draftUsageProgressStyle != settings.usageProgressStyle ||
+                    draftUsageResetStyle != settings.usageResetStyle
                 )
             return keyChanged || prefsChanged
         }
@@ -106,6 +111,7 @@ class SessionPlatformHomeState internal constructor(
         draftWindowKind = next.widgetWindowKind
         draftUsageDisplayMode = next.usageDisplayMode
         draftUsageProgressStyle = next.usageProgressStyle
+        draftUsageResetStyle = next.usageResetStyle
     }
 
     fun applyPersisted(next: SessionPlatformSettings) {
@@ -206,6 +212,7 @@ class SessionPlatformHomeState internal constructor(
             widgetWindowKind = draftWindowKind,
             usageDisplayMode = draftUsageDisplayMode,
             usageProgressStyle = draftUsageProgressStyle,
+            usageResetStyle = draftUsageResetStyle,
         )
         settings = next
         applyDraft(next)
@@ -446,6 +453,8 @@ fun ColumnScope.SessionPlatformHomeContent(
         onUsageDisplayModeChange = { state.draftUsageDisplayMode = it },
         usageProgressStyle = state.draftUsageProgressStyle,
         onUsageProgressStyleChange = { state.draftUsageProgressStyle = it },
+        usageResetStyle = state.draftUsageResetStyle,
+        onUsageResetStyleChange = { state.draftUsageResetStyle = it },
         overviewKinds = overviewKinds,
         notice = if (state.platformId == PlatformIds.ANTIGRAVITY) {
             stringResource(R.string.session_antigravity_notice)
@@ -459,5 +468,8 @@ fun ColumnScope.SessionPlatformHomeContent(
         onLogin = bindings.onLogin,
         onLogout = bindings.onLogout,
         onSave = bindings.onSave,
+        platformName = PlatformRegistry.displayName(state.platformId),
+        updatedAtEpochMs =
+            (widgetState as? WidgetDisplayState.Success)?.snapshot?.updatedAtEpochMs ?: 0L,
     )
 }

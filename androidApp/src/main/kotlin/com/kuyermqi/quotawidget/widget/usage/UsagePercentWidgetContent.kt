@@ -10,13 +10,18 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.action.Action
 import androidx.glance.appwidget.appWidgetBackground
+import androidx.glance.appwidget.cornerRadius
+import androidx.glance.background
+import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
+import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -25,16 +30,20 @@ import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.formatNewApiUsageWidgetTitle
 import com.kuyermqi.quotawidget.domain.formatNewApiWidgetFooter
 import com.kuyermqi.quotawidget.domain.formatUsageDisplayPercent
+import com.kuyermqi.quotawidget.domain.formatUsageResetCountdown
 import com.kuyermqi.quotawidget.domain.newApiUsageProgressDisplayMode
 import com.kuyermqi.quotawidget.domain.newApiUsageProgressUsedPercent
 import com.kuyermqi.quotawidget.domain.newApiUsageWidgetShowsProgress
 import com.kuyermqi.quotawidget.domain.resolveCodexUsageSummaryWindowKind
+import com.kuyermqi.quotawidget.domain.upcomingResetAtEpochMs
 import com.kuyermqi.quotawidget.platform.PlatformIds
+import com.kuyermqi.quotawidget.util.currentTimeMillis
 import com.kuyermqi.quotawidget.widget.BalanceBlock
 import com.kuyermqi.quotawidget.widget.WidgetDateFormatter
 import com.kuyermqi.quotawidget.widget.WidgetHeader
@@ -54,6 +63,7 @@ fun UsagePercentWidgetContent(
     windowKind: UsageWindowKind,
     usageDisplayMode: UsageDisplayMode,
     usageProgressStyle: UsageProgressStyle,
+    usageResetStyle: UsageResetStyle,
 ) {
     Box(
         modifier = GlanceModifier
@@ -108,6 +118,7 @@ fun UsagePercentWidgetContent(
                         windowKind = windowKind,
                         usageDisplayMode = usageDisplayMode,
                         usageProgressStyle = usageProgressStyle,
+                        usageResetStyle = usageResetStyle,
                         openApp = openApp,
                         showProgress = true,
                     )
@@ -129,6 +140,7 @@ internal fun UsagePercentSuccessBlock(
     windowKind: UsageWindowKind,
     usageDisplayMode: UsageDisplayMode,
     usageProgressStyle: UsageProgressStyle,
+    usageResetStyle: UsageResetStyle,
     openApp: Action,
     showProgress: Boolean,
     compact: Boolean = false,
@@ -142,9 +154,8 @@ internal fun UsagePercentSuccessBlock(
             resolveCodexUsageSummaryWindowKind(snapshot.windows, windowKind) ?: windowKind
         else -> windowKind
     }
-    val used = snapshot.windows
-        .find { it.kind == effectiveWindowKind.toQuotaWindowKind() }
-        ?.usedPercent
+    val window = snapshot.windows.find { it.kind == effectiveWindowKind.toQuotaWindowKind() }
+    val used = window?.usedPercent
     val usageText = when {
         snapshot.platformId == PlatformIds.NEW_API ->
             formatNewApiUsageWidgetTitle(snapshot, usageDisplayMode)
@@ -170,21 +181,64 @@ internal fun UsagePercentSuccessBlock(
     } else {
         usageDisplayMode
     }
-    Column(modifier = GlanceModifier.fillMaxWidth()) {
-        Text(
-            text = usageText,
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurface,
-                fontSize = if (compact) {
-                    compactBalanceTitleFontSize(usageText)
-                } else {
-                    balanceTitleFontSize(usageText)
-                },
-                fontWeight = FontWeight.Bold,
-            ),
-            maxLines = 1,
-            modifier = GlanceModifier.clickableNoRipple(openApp),
+    val nowEpochMs = currentTimeMillis()
+    // Only advertise a reset for a window that actually has data to show.
+    val resetAtEpochMs = if (used != null) {
+        snapshot.upcomingResetAtEpochMs(
+            kind = effectiveWindowKind.toQuotaWindowKind(),
+            nowEpochMs = nowEpochMs,
         )
+    } else {
+        null
+    }
+    // A 2×1 widget has no room for a pill beside the value.
+    val pillText = resetAtEpochMs
+        ?.takeIf { usageResetStyle == UsageResetStyle.PILL && !compact }
+        ?.let { formatUsageResetCountdown(it - nowEpochMs) }
+    // A 2×1 widget has no room for a second footer line either.
+    val resetStyle = when {
+        compact && usageResetStyle == UsageResetStyle.FOOTER_STACKED -> UsageResetStyle.FOOTER
+        compact && usageResetStyle == UsageResetStyle.PILL -> UsageResetStyle.FOOTER
+        else -> usageResetStyle
+    }
+    val baseTitleSize = if (compact) {
+        compactBalanceTitleFontSize(usageText)
+    } else {
+        balanceTitleFontSize(usageText)
+    }
+    val usageTextSize = if (pillText != null) {
+        minOf(26f, baseTitleSize.value).sp
+    } else {
+        baseTitleSize
+    }
+    Column(modifier = GlanceModifier.fillMaxWidth()) {
+        if (pillText != null) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = usageText,
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSurface,
+                        fontSize = usageTextSize,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    maxLines = 1,
+                    modifier = GlanceModifier.clickableNoRipple(openApp),
+                )
+                Spacer(GlanceModifier.width(6.dp))
+                UsageResetPill(text = pillText, openApp = openApp)
+            }
+        } else {
+            Text(
+                text = usageText,
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurface,
+                    fontSize = usageTextSize,
+                    fontWeight = FontWeight.Bold,
+                ),
+                maxLines = 1,
+                modifier = GlanceModifier.clickableNoRipple(openApp),
+            )
+        }
         if (showUsageProgress && progressUsed != null) {
             Spacer(GlanceModifier.height(8.dp))
             when (usageProgressStyle) {
@@ -204,25 +258,84 @@ internal fun UsagePercentSuccessBlock(
         } else {
             Spacer(GlanceModifier.height(4.dp))
         }
-        val updated =
-            "更新于 ${WidgetDateFormatter.formatUpdatedAt(snapshot.updatedAtEpochMs)}"
-        val footer = if (snapshot.platformId == PlatformIds.NEW_API) {
+        val updatedText = contextString(
+            R.string.widget_updated_at,
+            WidgetDateFormatter.formatUpdatedAt(snapshot.updatedAtEpochMs),
+        )
+        val updatedFooter = if (snapshot.platformId == PlatformIds.NEW_API) {
             formatNewApiWidgetFooter(
                 snapshot = snapshot,
                 expiredLabel = contextString(R.string.new_api_token_expired),
-                updatedAtText = updated,
+                updatedAtText = updatedText,
             )
         } else {
-            updated
+            updatedText
         }
+        when {
+            resetAtEpochMs != null && resetStyle == UsageResetStyle.FOOTER -> Text(
+                text = resetAtText(resetAtEpochMs, nowEpochMs),
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                    // Absolute dates are long; 2×1 keeps them inside the value column.
+                    fontSize = if (compact) 10.sp else 12.sp,
+                ),
+                maxLines = 1,
+                modifier = GlanceModifier.clickableNoRipple(openApp),
+            )
+            resetAtEpochMs != null && resetStyle == UsageResetStyle.FOOTER_STACKED -> {
+                Text(
+                    text = resetAtText(resetAtEpochMs, nowEpochMs),
+                    style = TextStyle(
+                        color = GlanceTheme.colors.primary,
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Medium,
+                    ),
+                    maxLines = 1,
+                    modifier = GlanceModifier.clickableNoRipple(openApp),
+                )
+                Spacer(GlanceModifier.height(2.dp))
+                Text(
+                    text = updatedFooter,
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSurfaceVariant,
+                        fontSize = 10.sp,
+                    ),
+                    maxLines = 1,
+                    modifier = GlanceModifier.clickableNoRipple(openApp),
+                )
+            }
+            else -> Text(
+                text = updatedFooter,
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                    fontSize = if (compact) 11.sp else 12.sp,
+                ),
+                maxLines = 1,
+                modifier = GlanceModifier.clickableNoRipple(openApp),
+            )
+        }
+    }
+}
+
+/** Small countdown capsule shown next to the large percent value (reset style C). */
+@Composable
+private fun UsageResetPill(text: String, openApp: Action) {
+    Box(
+        modifier = GlanceModifier
+            .background(GlanceTheme.colors.secondaryContainer)
+            .cornerRadius(7.dp)
+            .padding(horizontal = 6.dp, vertical = 3.dp)
+            .clickableNoRipple(openApp),
+        contentAlignment = Alignment.Center,
+    ) {
         Text(
-            text = footer,
+            text = text,
             style = TextStyle(
-                color = GlanceTheme.colors.onSurfaceVariant,
-                fontSize = if (compact) 11.sp else 12.sp,
+                color = GlanceTheme.colors.onSecondaryContainer,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
             ),
             maxLines = 1,
-            modifier = GlanceModifier.clickableNoRipple(openApp),
         )
     }
 }

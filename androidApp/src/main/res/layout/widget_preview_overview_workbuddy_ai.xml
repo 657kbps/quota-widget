@@ -58,7 +58,7 @@
                 android:layout_weight="1"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="@string/usage_window_monthly"
+                android:text="@string/widget_preview_window_monthly"
                 android:textColor="#191C1A"
                 android:textSize="12sp" />
 

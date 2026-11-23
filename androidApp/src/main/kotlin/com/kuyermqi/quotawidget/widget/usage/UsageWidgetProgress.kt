@@ -77,6 +77,7 @@ internal fun UsageCapsuleProgressBar(
     cornerRadius: Dp = 8.dp,
     labelSize: TextUnit = 12.sp,
     percentSize: TextUnit = 12.sp,
+    resetText: String? = null,
 ) {
     val fillFraction = usedPercent?.let {
         displayUsageFillFraction(it, usageDisplayMode)
@@ -93,6 +94,7 @@ internal fun UsageCapsuleProgressBar(
         cornerRadius = cornerRadius,
         labelSize = labelSize,
         percentSize = percentSize,
+        resetText = resetText,
     )
 }
 
@@ -106,6 +108,7 @@ internal fun UsageCapsuleProgressBar(
     cornerRadius: Dp = 8.dp,
     labelSize: TextUnit = 12.sp,
     percentSize: TextUnit = 12.sp,
+    resetText: String? = null,
 ) {
     val progress = fillFraction.coerceIn(0f, 1f)
     val trackColor = if (nearLimit) {
@@ -152,7 +155,7 @@ internal fun UsageCapsuleProgressBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = label,
+                text = if (resetText != null) "$label · $resetText" else label,
                 style = TextStyle(
                     color = contentColor,
                     fontSize = labelSize,

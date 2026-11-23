@@ -23,6 +23,7 @@ import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.widget.RefreshButton
@@ -39,6 +40,7 @@ fun UsagePercentCompactContent(
     windowKind: UsageWindowKind,
     usageDisplayMode: UsageDisplayMode,
     usageProgressStyle: UsageProgressStyle,
+    usageResetStyle: UsageResetStyle,
 ) {
     Box(
         modifier = GlanceModifier
@@ -71,6 +73,7 @@ fun UsagePercentCompactContent(
                             windowKind = windowKind,
                             usageDisplayMode = usageDisplayMode,
                             usageProgressStyle = usageProgressStyle,
+                            usageResetStyle = usageResetStyle,
                             openApp = openApp,
                             showProgress = false,
                             compact = true,

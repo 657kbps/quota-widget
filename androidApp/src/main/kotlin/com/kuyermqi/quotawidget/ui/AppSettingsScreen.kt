@@ -9,8 +9,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,7 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -62,9 +59,11 @@ import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.DarkThemeMode
 import com.kuyermqi.quotawidget.domain.ThemeColorMode
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
+import com.kuyermqi.quotawidget.ui.components.FlowOptionGroup
+import com.kuyermqi.quotawidget.ui.components.SegmentedOptionRow
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppSettingsScreen(
     settingsRepository: PlatformSettingsRepository,
@@ -127,77 +126,59 @@ fun AppSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             item(key = "dark_mode") {
+                val labelOn = stringResource(R.string.app_settings_dark_mode_on)
+                val labelOff = stringResource(R.string.app_settings_dark_mode_off)
+                val labelSystem = stringResource(R.string.app_settings_dark_mode_system)
                 SettingsSection(title = stringResource(R.string.app_settings_dark_mode)) {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        FilterChip(
-                            selected = appSettings.darkThemeMode == DarkThemeMode.Dark,
-                            onClick = {
-                                scope.launch {
-                                    settingsRepository.saveAppSettings(
-                                        appSettings.copy(darkThemeMode = DarkThemeMode.Dark),
-                                    )
-                                }
-                            },
-                            label = { Text(stringResource(R.string.app_settings_dark_mode_on)) },
-                        )
-                        FilterChip(
-                            selected = appSettings.darkThemeMode == DarkThemeMode.Light,
-                            onClick = {
-                                scope.launch {
-                                    settingsRepository.saveAppSettings(
-                                        appSettings.copy(darkThemeMode = DarkThemeMode.Light),
-                                    )
-                                }
-                            },
-                            label = { Text(stringResource(R.string.app_settings_dark_mode_off)) },
-                        )
-                        FilterChip(
-                            selected = appSettings.darkThemeMode == DarkThemeMode.FollowSystem,
-                            onClick = {
-                                scope.launch {
-                                    settingsRepository.saveAppSettings(
-                                        appSettings.copy(darkThemeMode = DarkThemeMode.FollowSystem),
-                                    )
-                                }
-                            },
-                            label = { Text(stringResource(R.string.app_settings_dark_mode_system)) },
-                        )
-                    }
+                    SegmentedOptionRow(
+                        options = listOf(
+                            DarkThemeMode.Dark,
+                            DarkThemeMode.Light,
+                            DarkThemeMode.FollowSystem,
+                        ),
+                        selectedOption = appSettings.darkThemeMode,
+                        labelOf = { mode ->
+                            when (mode) {
+                                DarkThemeMode.Dark -> labelOn
+                                DarkThemeMode.Light -> labelOff
+                                DarkThemeMode.FollowSystem -> labelSystem
+                            }
+                        },
+                        onOptionSelected = { mode ->
+                            scope.launch {
+                                settingsRepository.saveAppSettings(
+                                    appSettings.copy(darkThemeMode = mode),
+                                )
+                            }
+                        },
+                    )
                 }
             }
 
             item(key = "theme_color") {
+                val labelSystem = stringResource(R.string.app_settings_theme_color_system)
+                val labelCustom = stringResource(R.string.app_settings_theme_color_custom)
                 SettingsSection(title = stringResource(R.string.app_settings_theme_color)) {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        FilterChip(
-                            selected = appSettings.themeColorMode == ThemeColorMode.FollowSystem,
-                            onClick = {
-                                scope.launch {
-                                    settingsRepository.saveAppSettings(
-                                        appSettings.copy(themeColorMode = ThemeColorMode.FollowSystem),
-                                    )
-                                }
-                            },
-                            label = { Text(stringResource(R.string.app_settings_theme_color_system)) },
-                        )
-                        FilterChip(
-                            selected = appSettings.themeColorMode == ThemeColorMode.Custom,
-                            onClick = {
-                                scope.launch {
-                                    settingsRepository.saveAppSettings(
-                                        appSettings.copy(themeColorMode = ThemeColorMode.Custom),
-                                    )
-                                }
-                            },
-                            label = { Text(stringResource(R.string.app_settings_theme_color_custom)) },
-                        )
-                    }
+                    SegmentedOptionRow(
+                        options = listOf(
+                            ThemeColorMode.FollowSystem,
+                            ThemeColorMode.Custom,
+                        ),
+                        selectedOption = appSettings.themeColorMode,
+                        labelOf = { mode ->
+                            when (mode) {
+                                ThemeColorMode.FollowSystem -> labelSystem
+                                ThemeColorMode.Custom -> labelCustom
+                            }
+                        },
+                        onOptionSelected = { mode ->
+                            scope.launch {
+                                settingsRepository.saveAppSettings(
+                                    appSettings.copy(themeColorMode = mode),
+                                )
+                            }
+                        },
+                    )
                     if (appSettings.themeColorMode == ThemeColorMode.Custom) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(
@@ -225,58 +206,42 @@ fun AppSettingsScreen(
             }
 
             item(key = "refresh_interval") {
+                val intervalLabels = ALLOWED_REFRESH_INTERVAL_MINUTES.associateWith { minutes ->
+                    refreshIntervalLabel(minutes)
+                }
                 SettingsSection(title = stringResource(R.string.app_settings_refresh_interval)) {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        ALLOWED_REFRESH_INTERVAL_MINUTES.forEach { minutes ->
-                            FilterChip(
-                                selected = appSettings.refreshIntervalMinutes == minutes,
-                                onClick = {
-                                    scope.launch {
-                                        settingsRepository.saveAppSettings(
-                                            appSettings.copy(refreshIntervalMinutes = minutes),
-                                        )
-                                        onRefreshIntervalChanged(minutes)
-                                    }
-                                },
-                                label = { Text(refreshIntervalLabel(minutes)) },
-                            )
-                        }
-                    }
+                    FlowOptionGroup(
+                        options = ALLOWED_REFRESH_INTERVAL_MINUTES,
+                        selectedOption = appSettings.refreshIntervalMinutes,
+                        labelOf = { minutes -> intervalLabels[minutes] ?: "" },
+                        onOptionSelected = { minutes ->
+                            scope.launch {
+                                settingsRepository.saveAppSettings(
+                                    appSettings.copy(refreshIntervalMinutes = minutes),
+                                )
+                                onRefreshIntervalChanged(minutes)
+                            }
+                        },
+                    )
                 }
             }
 
             item(key = "check_updates_on_launch") {
+                val labelOn = stringResource(R.string.app_settings_check_updates_on)
+                val labelOff = stringResource(R.string.app_settings_check_updates_off)
                 SettingsSection(title = stringResource(R.string.app_settings_check_updates_on_launch)) {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        FilterChip(
-                            selected = appSettings.checkForUpdatesOnLaunch,
-                            onClick = {
-                                scope.launch {
-                                    settingsRepository.saveAppSettings(
-                                        appSettings.copy(checkForUpdatesOnLaunch = true),
-                                    )
-                                }
-                            },
-                            label = { Text(stringResource(R.string.app_settings_check_updates_on)) },
-                        )
-                        FilterChip(
-                            selected = !appSettings.checkForUpdatesOnLaunch,
-                            onClick = {
-                                scope.launch {
-                                    settingsRepository.saveAppSettings(
-                                        appSettings.copy(checkForUpdatesOnLaunch = false),
-                                    )
-                                }
-                            },
-                            label = { Text(stringResource(R.string.app_settings_check_updates_off)) },
-                        )
-                    }
+                    SegmentedOptionRow(
+                        options = listOf(true, false),
+                        selectedOption = appSettings.checkForUpdatesOnLaunch,
+                        labelOf = { enabled -> if (enabled) labelOn else labelOff },
+                        onOptionSelected = { enabled ->
+                            scope.launch {
+                                settingsRepository.saveAppSettings(
+                                    appSettings.copy(checkForUpdatesOnLaunch = enabled),
+                                )
+                            }
+                        },
+                    )
                 }
             }
         }
