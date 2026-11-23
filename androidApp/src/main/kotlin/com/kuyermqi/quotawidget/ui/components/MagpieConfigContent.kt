@@ -42,11 +42,11 @@ import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
-import com.kuyermqi.quotawidget.domain.formatUsagePrimaryDisplay
 import com.kuyermqi.quotawidget.domain.presentCodexOverviewWindowKinds
 import com.kuyermqi.quotawidget.magpie.MagpieProvider
 import com.kuyermqi.quotawidget.platform.PlatformIds
-import com.kuyermqi.quotawidget.platform.PlatformRegistry
+import com.kuyermqi.quotawidget.ui.platformDisplayName
+import com.kuyermqi.quotawidget.ui.usage.formatUsageWindowsSummary
 
 @Composable
 fun ColumnScope.MagpieConfigContent(
@@ -126,7 +126,7 @@ fun ColumnScope.MagpieConfigContent(
         showWindowKindPicker = windowKindChoices.size >= 2,
         overviewKinds = presentCodexOverviewWindowKinds(windows),
         platformName = providers.find { it.id == selectedProviderId }?.displayName
-            ?: PlatformRegistry.displayName(PlatformIds.MAGPIE),
+            ?: platformDisplayName(PlatformIds.MAGPIE),
         allowWindowFallback = false,
         updatedAtEpochMs = updatedAtEpochMs,
     )
@@ -223,7 +223,7 @@ private fun MagpieProviderPicker(
                                 color = if (isSelected) selectedColor else Color.Unspecified,
                             )
                             Text(
-                                text = formatUsagePrimaryDisplay(provider.windows, usageDisplayMode),
+                                text = formatUsageWindowsSummary(provider.windows, usageDisplayMode),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

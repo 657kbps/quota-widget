@@ -123,7 +123,7 @@ fun rememberCodexHomeState(
  * Must be called from HomeScreen (not only when the platform row is expanded).
  */
 @Composable
-fun CodexHomeEffects(
+fun codexHomeEffects(
     state: CodexHomeState,
     onRefreshPlatform: suspend (String) -> WidgetDisplayState,
 ): CodexHomeBindings {

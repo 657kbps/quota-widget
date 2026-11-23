@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kuyermqi.quotawidget.R
 
@@ -114,7 +115,9 @@ fun PlatformConfigItem(
                 Spacer(modifier = Modifier.weight(1f))
                 Icon(
                     painter = painterResource(R.drawable.ic_expand_more),
-                    contentDescription = if (expanded) "收起" else "展开",
+                    contentDescription = stringResource(
+                        if (expanded) R.string.action_collapse else R.string.action_expand,
+                    ),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.rotate(arrowRotation),
                 )

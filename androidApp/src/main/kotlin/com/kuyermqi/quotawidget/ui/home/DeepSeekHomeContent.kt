@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -31,6 +32,8 @@ class DeepSeekHomeState internal constructor(
     var draftCurrency by mutableStateOf(CurrencyPreference.CNY)
         internal set
     var lastDisplay by mutableStateOf<String?>(null)
+        internal set
+    var lastUpdatedAtEpochMs by mutableLongStateOf(0L)
         internal set
     var isSaving by mutableStateOf(false)
         internal set
@@ -84,7 +87,7 @@ fun rememberDeepSeekHomeState(
 
 /** Collects widget state and keeps [DeepSeekHomeState.lastDisplay] in sync. */
 @Composable
-fun DeepSeekHomeEffects(state: DeepSeekHomeState): WidgetDisplayState {
+fun deepSeekHomeEffects(state: DeepSeekHomeState): WidgetDisplayState {
     val observed by state.repository().observeWidgetState(PlatformIds.DEEPSEEK)
         .collectAsStateWithLifecycle(initialValue = WidgetDisplayState.NotConfigured)
     LaunchedEffect(observed) {
@@ -93,6 +96,7 @@ fun DeepSeekHomeEffects(state: DeepSeekHomeState): WidgetDisplayState {
         }
         val success = observed as? WidgetDisplayState.Success ?: return@LaunchedEffect
         state.lastDisplay = success.snapshot.primaryDisplay
+        state.lastUpdatedAtEpochMs = success.snapshot.updatedAtEpochMs
     }
     return observed
 }
@@ -116,6 +120,8 @@ fun ColumnScope.DeepSeekHomeContent(
             state.draftCurrency = it
             state.saveError = null
         },
+        balance = if (state.draftCurrency == state.saved.currency) state.lastDisplay.orEmpty() else "",
+        updatedAtEpochMs = if (state.draftCurrency == state.saved.currency) state.lastUpdatedAtEpochMs else 0L,
         isDirty = state.isDirty,
         isSaving = state.isSaving,
         saveError = state.saveError,
@@ -133,6 +139,7 @@ fun ColumnScope.DeepSeekHomeContent(
                     state.draftApiKey = next.apiKey
                     if (next.apiKey.isBlank()) {
                         state.lastDisplay = null
+                        state.lastUpdatedAtEpochMs = 0L
                     }
                     state.saveError = when (
                         val result = onRefreshPlatform(PlatformIds.DEEPSEEK)

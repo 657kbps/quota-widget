@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -47,8 +48,11 @@ import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.locale.AppLocale
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
+import com.kuyermqi.quotawidget.ui.platformNameRes
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toAppLanguage
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toAppThemeSettings
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toDisplayState
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toRefreshPhase
@@ -92,9 +96,15 @@ internal suspend fun GlanceAppWidget.providePlatformGlance(
     maybeRefreshIfConfigured(context, app, platformId)
     Log.i(TAG, "provideGlance id=$id platform=$platformId repo=${repoDisplay::class.simpleName}")
     provideContent {
-        CompositionLocalProvider(LocalWidgetAndroidContext provides context) {
-            val prefs = currentState<Preferences>()
-            val glanceState = prefs.toDisplayState()
+        val prefs = currentState<Preferences>()
+        val appLanguage = prefs.toAppLanguage()
+        val systemLocales = context.resources.configuration.locales
+        val primarySystemLocale = if (systemLocales.isEmpty) null else systemLocales[0]
+        val localizedContext = remember(context, appLanguage, primarySystemLocale) {
+            AppLocale.wrap(context, appLanguage)
+        }
+        CompositionLocalProvider(LocalWidgetAndroidContext provides localizedContext) {
+            val glanceState = prefs.toDisplayState(localizedContext)
             val state = if (
                 prefs[WidgetGlanceState.statusKey] == null &&
                 repoDisplay !is WidgetDisplayState.NotConfigured
@@ -104,11 +114,9 @@ internal suspend fun GlanceAppWidget.providePlatformGlance(
                 glanceState
             }
             val refreshPhase = prefs.toRefreshPhase()
-            val themeColors = colorProvidersFor(context, prefs.toAppThemeSettings())
-            val platformTitle = when (state) {
-                is WidgetDisplayState.Success -> state.snapshot.platformName
-                else -> PlatformRegistry.displayName(platformId)
-            }
+            val themeColors = colorProvidersFor(localizedContext, prefs.toAppThemeSettings())
+            val platformTitle = platformNameRes(platformId)?.let { contextString(it) }
+                ?: PlatformRegistry.displayName(platformId)
             val openApp = actionStartActivity<MainActivity>(
                 actionParametersOf(
                     ActionParameters.Key<String>(MainActivity.EXTRA_FOCUS_PLATFORM_ID)
@@ -175,6 +183,15 @@ internal fun enqueueBootstrapRefresh(context: Context) {
 @Composable
 internal fun contextString(@StringRes resId: Int, vararg formatArgs: Any): String =
     LocalWidgetAndroidContext.current.getString(resId, *formatArgs)
+
+@Composable
+internal fun widgetContext(): Context = LocalWidgetAndroidContext.current
+
+@Composable
+internal fun updatedAtLabel(epochMs: Long): String = contextString(
+    R.string.widget_updated_at,
+    WidgetDateFormatter.formatUpdatedAt(widgetContext(), epochMs),
+)
 
 internal fun balanceTitleFontSize(formattedBalance: String): TextUnit =
     when {
@@ -261,7 +278,7 @@ internal fun RefreshButton(
             RefreshIconPhase.Idle -> {
                 Image(
                     provider = ImageProvider(R.drawable.ic_refresh),
-                    contentDescription = "刷新",
+                    contentDescription = contextString(R.string.widget_refresh_action),
                     colorFilter = ColorFilter.tint(GlanceTheme.colors.primary),
                     modifier = GlanceModifier
                         .size(iconSize)

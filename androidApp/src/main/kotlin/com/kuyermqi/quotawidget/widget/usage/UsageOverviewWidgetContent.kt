@@ -38,14 +38,14 @@ import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.formatUsageDisplayPercent
 import com.kuyermqi.quotawidget.domain.formatUsageResetCountdown
 import com.kuyermqi.quotawidget.domain.upcomingResetAtEpochMs
-import com.kuyermqi.quotawidget.domain.usage.usageWindowLabelRes
-import com.kuyermqi.quotawidget.domain.usage.usageWindowModeLabelRes
+import com.kuyermqi.quotawidget.domain.usage.overviewWindowLabel
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import com.kuyermqi.quotawidget.widget.BalanceBlock
-import com.kuyermqi.quotawidget.widget.WidgetDateFormatter
 import com.kuyermqi.quotawidget.widget.WidgetHeader
 import com.kuyermqi.quotawidget.widget.clickableNoRipple
 import com.kuyermqi.quotawidget.widget.contextString
+import com.kuyermqi.quotawidget.widget.updatedAtLabel
+import com.kuyermqi.quotawidget.widget.widgetContext
 import com.kuyermqi.quotawidget.widget.systemWidgetBackgroundCornerRadius
 
 val UsageOverviewSizeCompact = DpSize(110.dp, 110.dp)
@@ -211,6 +211,7 @@ private fun UsageOverviewSuccessBlock(
         listOf(QuotaWindowKind.WEEKLY, QuotaWindowKind.MONTHLY)
     }
     val nowEpochMs = currentTimeMillis()
+    val resources = widgetContext().resources
     Column(
         modifier = GlanceModifier
             .fillMaxWidth()
@@ -219,12 +220,9 @@ private fun UsageOverviewSuccessBlock(
         kinds.forEachIndexed { index, kind ->
             if (index > 0) Spacer(GlanceModifier.height(density.rowGap))
             val window = snapshot.windows.find { it.kind == kind }
+            val label = overviewWindowLabel(resources, kind)
             OverviewUsageRow(
-                label = contextString(
-                    R.string.usage_window_label_with_mode,
-                    contextString(usageWindowLabelRes(kind)),
-                    contextString(usageWindowModeLabelRes(usageDisplayMode)),
-                ),
+                label = label,
                 window = window,
                 resetText = if (usageResetStyle == UsageResetStyle.HIDDEN) {
                     null
@@ -241,10 +239,7 @@ private fun UsageOverviewSuccessBlock(
         }
         Spacer(GlanceModifier.height(density.updatedGap))
         Text(
-            text = contextString(
-                R.string.widget_updated_at,
-                WidgetDateFormatter.formatUpdatedAt(snapshot.updatedAtEpochMs),
-            ),
+            text = updatedAtLabel(snapshot.updatedAtEpochMs),
             style = TextStyle(
                 color = GlanceTheme.colors.onSurfaceVariant,
                 fontSize = density.updatedSize,

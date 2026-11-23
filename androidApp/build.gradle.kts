@@ -12,9 +12,16 @@ android {
     defaultConfig {
         applicationId = "com.kuyermqi.quotawidget"
         minSdk = libs.versions.android.minSdk.get().toInt()
+        //noinspection OldTargetApi
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 21
         versionName = (findProperty("versionName") as String?) ?: "1.11.0"
+    }
+    bundle {
+        // Keep every locale in the base artifact so the in-app language picker works offline.
+        language {
+            enableSplit = false
+        }
     }
     packaging {
         resources {
@@ -54,7 +61,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             ndk {
-                abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+                abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64")
             }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

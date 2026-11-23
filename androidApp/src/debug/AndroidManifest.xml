@@ -1,10 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application>
         <receiver
+            android:name=".widget.DebugRefreshReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="com.kuyermqi.quotawidget.ACTION_DEBUG_REFRESH" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Debug-only adb entry point; a permission would prevent shell broadcasts. -->
+        <receiver
             android:name=".debug.SeedWidgetsReceiver"
-            android:exported="true">
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
             <intent-filter>
                 <action android:name="com.kuyermqi.quotawidget.debug.ACTION_SEED" />
             </intent-filter>

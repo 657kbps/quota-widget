@@ -133,8 +133,7 @@ private fun NewApiBalanceWidgetContent(
                 is WidgetDisplayState.Success -> {
                     val balance = formatNewApiBalanceTitle(state.snapshot, usageDisplayMode)
                         ?: contextString(R.string.usage_unavailable)
-                    val updated =
-                        "更新于 ${WidgetDateFormatter.formatUpdatedAt(state.snapshot.updatedAtEpochMs)}"
+                    val updated = updatedAtLabel(state.snapshot.updatedAtEpochMs)
                     BalanceBlock(
                         title = balance,
                         subtitle = formatNewApiWidgetFooter(
@@ -194,8 +193,7 @@ private fun NewApiBalanceCompactWidgetContent(
                 is WidgetDisplayState.Success -> {
                     val primary = formatNewApiBalanceTitle(state.snapshot, usageDisplayMode)
                         ?: contextString(R.string.usage_unavailable)
-                    val updated =
-                        "更新于 ${WidgetDateFormatter.formatUpdatedAt(state.snapshot.updatedAtEpochMs)}"
+                    val updated = updatedAtLabel(state.snapshot.updatedAtEpochMs)
                     Triple(
                         primary,
                         formatNewApiWidgetFooter(

@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<network-security-config>
-    <!-- NewAPI 等自托管实例可能使用 http:// 地址 -->
-    <base-config cleartextTrafficPermitted="true" />
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <!-- NewAPI 等自托管实例可能使用 http:// 地址，需要允许明文流量。 -->
+    <base-config
+        cleartextTrafficPermitted="true"
+        tools:ignore="InsecureBaseConfiguration" />
 </network-security-config>

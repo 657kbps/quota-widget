@@ -123,7 +123,7 @@ private fun DeepSeekWidgetContent(
                     val balance = state.snapshot.primaryDisplay
                     BalanceBlock(
                         title = balance,
-                        subtitle = "更新于 ${WidgetDateFormatter.formatUpdatedAt(state.snapshot.updatedAtEpochMs)}",
+                        subtitle = updatedAtLabel(state.snapshot.updatedAtEpochMs),
                         titleSize = balanceTitleFontSize(balance),
                         openApp = openApp,
                     )
@@ -176,7 +176,7 @@ private fun DeepSeekCompactWidgetContent(
                     val primary = state.snapshot.primaryDisplay
                     Triple(
                         primary,
-                        "更新于 ${WidgetDateFormatter.formatUpdatedAt(state.snapshot.updatedAtEpochMs)}",
+                        updatedAtLabel(state.snapshot.updatedAtEpochMs),
                         compactBalanceTitleFontSize(primary),
                     )
                 }

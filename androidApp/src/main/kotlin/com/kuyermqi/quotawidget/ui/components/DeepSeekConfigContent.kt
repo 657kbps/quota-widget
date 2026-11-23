@@ -18,8 +18,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
 
 @Composable
@@ -28,6 +30,8 @@ fun ColumnScope.DeepSeekConfigContent(
     onApiKeyChange: (String) -> Unit,
     currency: CurrencyPreference,
     onCurrencyChange: (CurrencyPreference) -> Unit,
+    balance: String,
+    updatedAtEpochMs: Long,
     isDirty: Boolean,
     isSaving: Boolean,
     saveError: String?,
@@ -37,7 +41,7 @@ fun ColumnScope.DeepSeekConfigContent(
         value = apiKey,
         onValueChange = onApiKeyChange,
         modifier = Modifier.fillMaxWidth(),
-        label = { Text("API Key") },
+        label = { Text(stringResource(R.string.api_key_label)) },
         singleLine = true,
         visualTransformation = PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -45,7 +49,7 @@ fun ColumnScope.DeepSeekConfigContent(
     )
     Spacer(modifier = Modifier.height(12.dp))
     Text(
-        text = "显示货币",
+        text = stringResource(R.string.deepseek_currency_label),
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -59,9 +63,15 @@ fun ColumnScope.DeepSeekConfigContent(
     )
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-        text = "若接口未返回所选货币，将自动回退到另一币种。",
+        text = stringResource(R.string.deepseek_currency_hint),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(modifier = Modifier.height(12.dp))
+    DeepSeekWidgetPreviewCard(
+        balance = balance,
+        currency = currency,
+        updatedAtEpochMs = updatedAtEpochMs,
     )
     if (!saveError.isNullOrBlank()) {
         Spacer(modifier = Modifier.height(10.dp))
@@ -88,7 +98,7 @@ fun ColumnScope.DeepSeekConfigContent(
             onClick = onSave,
             enabled = isDirty && !isSaving,
         ) {
-            Text("保存")
+            Text(stringResource(R.string.action_save))
         }
     }
 }

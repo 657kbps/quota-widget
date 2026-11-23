@@ -29,7 +29,7 @@ import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.platform.PlatformIds
-import com.kuyermqi.quotawidget.platform.PlatformRegistry
+import com.kuyermqi.quotawidget.ui.platformDisplayName
 
 @Composable
 fun ColumnScope.NewApiConfigContent(
@@ -104,7 +104,7 @@ fun ColumnScope.NewApiConfigContent(
         showProgressStyle = !unlimitedQuota,
         showResetStyle = false,
         forceZeroProgressPreview = emptyLimitedQuota,
-        platformName = PlatformRegistry.displayName(PlatformIds.NEW_API),
+        platformName = platformDisplayName(PlatformIds.NEW_API),
         supportsCompactAndOverviewPreview = false,
         updatedAtEpochMs = newApiSnapshot?.updatedAtEpochMs ?: 0L,
         newApiSnapshot = newApiSnapshot,

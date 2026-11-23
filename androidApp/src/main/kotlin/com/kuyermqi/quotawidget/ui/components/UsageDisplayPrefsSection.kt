@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -62,6 +63,7 @@ import androidx.core.graphics.ColorUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.kuyermqi.quotawidget.R
+import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
@@ -69,6 +71,7 @@ import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
+import com.kuyermqi.quotawidget.domain.formatBalance
 import com.kuyermqi.quotawidget.domain.displayUsageFillFraction
 import com.kuyermqi.quotawidget.domain.formatNewApiUsageWidgetTitle
 import com.kuyermqi.quotawidget.domain.formatNewApiWidgetFooter
@@ -80,8 +83,8 @@ import com.kuyermqi.quotawidget.domain.newApiUsageProgressUsedPercent
 import com.kuyermqi.quotawidget.domain.newApiUsageWidgetShowsProgress
 import com.kuyermqi.quotawidget.domain.resetAtEpochMs
 import com.kuyermqi.quotawidget.domain.resolveCodexUsageSummaryWindowKind
+import com.kuyermqi.quotawidget.domain.usage.overviewWindowLabel
 import com.kuyermqi.quotawidget.domain.usage.usageWindowLabelRes
-import com.kuyermqi.quotawidget.domain.usage.usageWindowModeLabelRes
 import com.kuyermqi.quotawidget.widget.ResetMoment
 import com.kuyermqi.quotawidget.widget.WidgetDateFormatter
 import com.kuyermqi.quotawidget.widget.balanceTitleFontSize
@@ -91,6 +94,11 @@ private enum class WidgetPreviewLayout {
     STANDARD,
     COMPACT,
     OVERVIEW,
+}
+
+private enum class DeepSeekPreviewLayout {
+    STANDARD,
+    COMPACT,
 }
 
 private val RESET_VISIBLE_STYLES = listOf(
@@ -341,33 +349,14 @@ private fun PrefsFieldLabel(text: String) {
 }
 
 @Composable
-private fun WidgetLayoutsPreviewCard(
-    platformName: String,
-    windows: List<QuotaWindow>,
-    widgetWindowKind: UsageWindowKind,
-    usageDisplayMode: UsageDisplayMode,
-    usageProgressStyle: UsageProgressStyle,
-    usageResetStyle: UsageResetStyle,
-    overviewKinds: List<QuotaWindowKind>,
-    showResetLabels: Boolean,
-    showProgressStyle: Boolean,
-    forceZeroProgressPreview: Boolean,
-    supportsCompactAndOverviewPreview: Boolean,
-    allowWindowFallback: Boolean,
-    updatedAtEpochMs: Long,
-    newApiSnapshot: QuotaSnapshot?,
+private fun <T> WidgetPreviewCard(
+    options: List<T>,
+    selectedOption: T,
+    labelOf: (T) -> String,
+    onOptionSelected: (T) -> Unit,
+    widgetModifier: (T) -> Modifier,
+    content: @Composable (T) -> Unit,
 ) {
-    var selectedLayout by remember { mutableStateOf(WidgetPreviewLayout.STANDARD) }
-    val effectiveLayout = if (supportsCompactAndOverviewPreview) {
-        selectedLayout
-    } else {
-        WidgetPreviewLayout.STANDARD
-    }
-
-    val labelStandard = stringResource(R.string.usage_preview_layout_standard)
-    val labelCompact = stringResource(R.string.usage_preview_layout_compact)
-    val labelOverview = stringResource(R.string.usage_preview_layout_overview)
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -381,63 +370,28 @@ private fun WidgetLayoutsPreviewCard(
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 12.dp),
         ) {
-            Row(
+            Text(
+                text = stringResource(R.string.usage_preview_title),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = stringResource(R.string.usage_preview_title),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 8.dp),
+            )
+            if (options.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                SegmentedOptionRow(
+                    options = options,
+                    selectedOption = selectedOption,
+                    labelOf = labelOf,
+                    onOptionSelected = onOptionSelected,
+                    showIcon = false,
+                    minHeight = 32.dp,
+                    modifier = Modifier.fillMaxWidth(),
                 )
-                if (supportsCompactAndOverviewPreview) {
-                    SegmentedOptionRow(
-                        options = WidgetPreviewLayout.entries,
-                        selectedOption = selectedLayout,
-                        labelOf = { layout ->
-                            when (layout) {
-                                WidgetPreviewLayout.STANDARD -> labelStandard
-                                WidgetPreviewLayout.COMPACT -> labelCompact
-                                WidgetPreviewLayout.OVERVIEW -> labelOverview
-                            }
-                        },
-                        onOptionSelected = { selectedLayout = it },
-                        showIcon = false,
-                        minHeight = 32.dp,
-                        modifier = Modifier.widthIn(min = 144.dp, max = 184.dp),
-                    )
-                }
             }
             Spacer(modifier = Modifier.height(10.dp))
 
-            val updatedLabel = if (updatedAtEpochMs > 0L) {
-                stringResource(
-                    R.string.widget_updated_at,
-                    WidgetDateFormatter.formatUpdatedAt(updatedAtEpochMs),
-                )
-            } else {
-                stringResource(R.string.usage_preview_updated_sample)
-            }
-            val widgetModifier = when (effectiveLayout) {
-                WidgetPreviewLayout.STANDARD -> Modifier
-                    .widthIn(max = 184.dp)
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                WidgetPreviewLayout.COMPACT -> Modifier
-                    .widthIn(max = 184.dp)
-                    .fillMaxWidth()
-                    .height(92.dp)
-                WidgetPreviewLayout.OVERVIEW -> Modifier
-                    .widthIn(max = 184.dp)
-                    .fillMaxWidth()
-                    .height(if (overviewKinds.size >= 3) 208.dp else 184.dp)
-            }
             val wallpaperColors = rememberWallpaperBackdropColors()
             val fallbackStageColor = MaterialTheme.colorScheme.surfaceContainerLow
             val stageModifier = Modifier
@@ -478,54 +432,249 @@ private fun WidgetLayoutsPreviewCard(
                 contentAlignment = Alignment.Center,
             ) {
                 Surface(
-                    modifier = widgetModifier,
+                    modifier = widgetModifier(selectedOption),
                     shape = RoundedCornerShape(widgetCornerRadius),
                     color = widgetBackgroundColor,
                 ) {
                     CompositionLocalProvider(LocalTextStyle provides TextStyle.Default) {
-                        when (effectiveLayout) {
-                            WidgetPreviewLayout.STANDARD -> StandardWidgetPreview(
-                                platformName = platformName,
-                                windows = windows,
-                                widgetWindowKind = widgetWindowKind,
-                                usageDisplayMode = usageDisplayMode,
-                                usageProgressStyle = usageProgressStyle,
-                                usageResetStyle = usageResetStyle,
-                                showResetLabels = showResetLabels,
-                                showProgressStyle = showProgressStyle,
-                                forceZeroProgressPreview = forceZeroProgressPreview,
-                                allowWindowFallback = allowWindowFallback,
-                                updatedAtEpochMs = updatedAtEpochMs,
-                                updatedLabel = updatedLabel,
-                                newApiSnapshot = newApiSnapshot,
-                            )
-                            WidgetPreviewLayout.COMPACT -> CompactWidgetPreview(
-                                windows = windows,
-                                widgetWindowKind = widgetWindowKind,
-                                usageDisplayMode = usageDisplayMode,
-                                usageResetStyle = usageResetStyle,
-                                showResetLabels = showResetLabels,
-                                forceZeroProgressPreview = forceZeroProgressPreview,
-                                allowWindowFallback = allowWindowFallback,
-                                updatedAtEpochMs = updatedAtEpochMs,
-                                updatedLabel = updatedLabel,
-                            )
-                            WidgetPreviewLayout.OVERVIEW -> OverviewWidgetPreview(
-                                platformName = platformName,
-                                windows = windows,
-                                overviewKinds = overviewKinds,
-                                usageDisplayMode = usageDisplayMode,
-                                usageProgressStyle = usageProgressStyle,
-                                usageResetStyle = usageResetStyle,
-                                showResetLabels = showResetLabels,
-                                forceZeroProgressPreview = forceZeroProgressPreview,
-                                updatedAtEpochMs = updatedAtEpochMs,
-                                updatedLabel = updatedLabel,
-                            )
-                        }
+                        content(selectedOption)
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun WidgetLayoutsPreviewCard(
+    platformName: String,
+    windows: List<QuotaWindow>,
+    widgetWindowKind: UsageWindowKind,
+    usageDisplayMode: UsageDisplayMode,
+    usageProgressStyle: UsageProgressStyle,
+    usageResetStyle: UsageResetStyle,
+    overviewKinds: List<QuotaWindowKind>,
+    showResetLabels: Boolean,
+    showProgressStyle: Boolean,
+    forceZeroProgressPreview: Boolean,
+    supportsCompactAndOverviewPreview: Boolean,
+    allowWindowFallback: Boolean,
+    updatedAtEpochMs: Long,
+    newApiSnapshot: QuotaSnapshot?,
+) {
+    val context = LocalContext.current
+    var selectedLayout by remember { mutableStateOf(WidgetPreviewLayout.STANDARD) }
+    val effectiveLayout = if (supportsCompactAndOverviewPreview) {
+        selectedLayout
+    } else {
+        WidgetPreviewLayout.STANDARD
+    }
+
+    val labelStandard = stringResource(R.string.usage_preview_layout_standard)
+    val labelCompact = stringResource(R.string.usage_preview_layout_compact)
+    val labelOverview = stringResource(R.string.usage_preview_layout_overview)
+    val updatedLabel = if (updatedAtEpochMs > 0L) {
+        stringResource(
+            R.string.widget_updated_at,
+            WidgetDateFormatter.formatUpdatedAt(context, updatedAtEpochMs),
+        )
+    } else {
+        stringResource(R.string.usage_preview_updated_sample)
+    }
+
+    WidgetPreviewCard(
+        options = if (supportsCompactAndOverviewPreview) {
+            WidgetPreviewLayout.entries
+        } else {
+            emptyList()
+        },
+        selectedOption = effectiveLayout,
+        labelOf = { layout ->
+            when (layout) {
+                WidgetPreviewLayout.STANDARD -> labelStandard
+                WidgetPreviewLayout.COMPACT -> labelCompact
+                WidgetPreviewLayout.OVERVIEW -> labelOverview
+            }
+        },
+        onOptionSelected = { selectedLayout = it },
+        widgetModifier = { layout ->
+            when (layout) {
+                WidgetPreviewLayout.STANDARD -> Modifier
+                    .widthIn(max = 184.dp)
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                WidgetPreviewLayout.COMPACT -> Modifier
+                    .widthIn(max = 184.dp)
+                    .fillMaxWidth()
+                    .height(92.dp)
+                WidgetPreviewLayout.OVERVIEW -> Modifier
+                    .widthIn(max = 184.dp)
+                    .fillMaxWidth()
+                    .height(if (overviewKinds.size >= 3) 208.dp else 184.dp)
+            }
+        },
+    ) { layout ->
+        when (layout) {
+            WidgetPreviewLayout.STANDARD -> StandardWidgetPreview(
+                platformName = platformName,
+                windows = windows,
+                widgetWindowKind = widgetWindowKind,
+                usageDisplayMode = usageDisplayMode,
+                usageProgressStyle = usageProgressStyle,
+                usageResetStyle = usageResetStyle,
+                showResetLabels = showResetLabels,
+                showProgressStyle = showProgressStyle,
+                forceZeroProgressPreview = forceZeroProgressPreview,
+                allowWindowFallback = allowWindowFallback,
+                updatedAtEpochMs = updatedAtEpochMs,
+                updatedLabel = updatedLabel,
+                newApiSnapshot = newApiSnapshot,
+            )
+            WidgetPreviewLayout.COMPACT -> CompactWidgetPreview(
+                windows = windows,
+                widgetWindowKind = widgetWindowKind,
+                usageDisplayMode = usageDisplayMode,
+                usageResetStyle = usageResetStyle,
+                showResetLabels = showResetLabels,
+                forceZeroProgressPreview = forceZeroProgressPreview,
+                allowWindowFallback = allowWindowFallback,
+                updatedAtEpochMs = updatedAtEpochMs,
+                updatedLabel = updatedLabel,
+            )
+            WidgetPreviewLayout.OVERVIEW -> OverviewWidgetPreview(
+                platformName = platformName,
+                windows = windows,
+                overviewKinds = overviewKinds,
+                usageDisplayMode = usageDisplayMode,
+                usageProgressStyle = usageProgressStyle,
+                usageResetStyle = usageResetStyle,
+                showResetLabels = showResetLabels,
+                forceZeroProgressPreview = forceZeroProgressPreview,
+                updatedAtEpochMs = updatedAtEpochMs,
+                updatedLabel = updatedLabel,
+            )
+        }
+    }
+}
+
+@Composable
+internal fun DeepSeekWidgetPreviewCard(
+    balance: String,
+    currency: CurrencyPreference,
+    updatedAtEpochMs: Long,
+) {
+    val context = LocalContext.current
+    var selectedLayout by remember { mutableStateOf(DeepSeekPreviewLayout.STANDARD) }
+    val previewBalance = balance.ifBlank {
+        formatBalance(currency, "12.50")
+    }
+    val labelStandard = stringResource(R.string.usage_preview_layout_standard)
+    val labelCompact = stringResource(R.string.usage_preview_layout_compact)
+    val updatedLabel = if (updatedAtEpochMs > 0L) {
+        stringResource(
+            R.string.widget_updated_at,
+            WidgetDateFormatter.formatUpdatedAt(context, updatedAtEpochMs),
+        )
+    } else {
+        stringResource(R.string.usage_preview_updated_sample)
+    }
+
+    WidgetPreviewCard(
+        options = DeepSeekPreviewLayout.entries,
+        selectedOption = selectedLayout,
+        labelOf = { layout ->
+            when (layout) {
+                DeepSeekPreviewLayout.STANDARD -> labelStandard
+                DeepSeekPreviewLayout.COMPACT -> labelCompact
+            }
+        },
+        onOptionSelected = { selectedLayout = it },
+        widgetModifier = { layout ->
+            when (layout) {
+                DeepSeekPreviewLayout.STANDARD -> Modifier
+                    .widthIn(max = 184.dp)
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                DeepSeekPreviewLayout.COMPACT -> Modifier
+                    .widthIn(max = 184.dp)
+                    .fillMaxWidth()
+                    .height(92.dp)
+            }
+        },
+    ) { layout ->
+        when (layout) {
+            DeepSeekPreviewLayout.STANDARD ->
+                DeepSeekStandardBalancePreview(previewBalance, updatedLabel)
+            DeepSeekPreviewLayout.COMPACT ->
+                DeepSeekCompactBalancePreview(previewBalance, updatedLabel)
+        }
+    }
+}
+
+@Composable
+private fun DeepSeekStandardBalancePreview(
+    balance: String,
+    updatedLabel: String,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(start = 14.dp, top = 14.dp, end = 14.dp, bottom = 22.dp),
+    ) {
+        PreviewWidgetHeader(title = stringResource(R.string.platform_name_deepseek))
+        Spacer(modifier = Modifier.weight(1f))
+        Text(
+            text = balance,
+            style = previewTextStyle(balanceTitleFontSize(balance), FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = updatedLabel,
+            style = previewTextStyle(12.sp, lineHeight = 14.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun DeepSeekCompactBalancePreview(
+    balance: String,
+    updatedLabel: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = balance,
+                style = previewTextStyle(compactBalanceTitleFontSize(balance), FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = updatedLabel,
+                style = previewTextStyle(11.sp, lineHeight = 13.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+        Box(
+            modifier = Modifier.size(34.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_refresh),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(30.dp),
+            )
         }
     }
 }
@@ -546,6 +695,7 @@ private fun StandardWidgetPreview(
     updatedLabel: String,
     newApiSnapshot: QuotaSnapshot?,
 ) {
+    val context = LocalContext.current
     val resolvedKind = resolvePreviewWindowKind(windows, widgetWindowKind, allowWindowFallback)
     val window = windows.find { it.kind == resolvedKind.toQuotaWindowKind() }
     val used = if (forceZeroProgressPreview) 0.0 else window?.usedPercent
@@ -582,7 +732,7 @@ private fun StandardWidgetPreview(
         null
     }
     val resetAtLabel = resetAtMs
-        ?.let { WidgetDateFormatter.resetMoment(it, nowMs) }
+        ?.let { WidgetDateFormatter.resetMoment(context, it, nowMs) }
         ?.let { formatResetAtLabel(it) }
     val pillText = resetAtMs
         ?.takeIf { usageResetStyle == UsageResetStyle.PILL }
@@ -724,6 +874,7 @@ private fun CompactWidgetPreview(
     updatedAtEpochMs: Long,
     updatedLabel: String,
 ) {
+    val context = LocalContext.current
     val resolvedKind = resolvePreviewWindowKind(windows, widgetWindowKind, allowWindowFallback)
     val window = windows.find { it.kind == resolvedKind.toQuotaWindowKind() }
     val used = if (forceZeroProgressPreview) 0.0 else window?.usedPercent
@@ -738,7 +889,7 @@ private fun CompactWidgetPreview(
         null
     }
     val resetAtLabel = resetAtMs
-        ?.let { WidgetDateFormatter.resetMoment(it, nowMs) }
+        ?.let { WidgetDateFormatter.resetMoment(context, it, nowMs) }
         ?.let { formatResetAtLabel(it) }
     val footerText = resetAtLabel ?: updatedLabel
     val scheme = MaterialTheme.colorScheme
@@ -793,6 +944,7 @@ private fun OverviewWidgetPreview(
     updatedAtEpochMs: Long,
     updatedLabel: String,
 ) {
+    val resources = LocalResources.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -806,11 +958,7 @@ private fun OverviewWidgetPreview(
         overviewKinds.forEachIndexed { index, kind ->
             if (index > 0) Spacer(modifier = Modifier.height(10.dp))
             UsageWindowBar(
-                label = stringResource(
-                    R.string.usage_window_label_with_mode,
-                    stringResource(usageWindowLabelRes(kind)),
-                    stringResource(usageWindowModeLabelRes(usageDisplayMode)),
-                ),
+                label = overviewWindowLabel(resources, kind),
                 window = windows.find { it.kind == kind },
                 usageDisplayMode = usageDisplayMode,
                 usageProgressStyle = usageProgressStyle,

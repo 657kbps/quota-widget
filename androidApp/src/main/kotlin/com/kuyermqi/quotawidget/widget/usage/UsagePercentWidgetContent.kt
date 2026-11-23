@@ -45,12 +45,12 @@ import com.kuyermqi.quotawidget.domain.upcomingResetAtEpochMs
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import com.kuyermqi.quotawidget.widget.BalanceBlock
-import com.kuyermqi.quotawidget.widget.WidgetDateFormatter
 import com.kuyermqi.quotawidget.widget.WidgetHeader
 import com.kuyermqi.quotawidget.widget.balanceTitleFontSize
 import com.kuyermqi.quotawidget.widget.clickableNoRipple
 import com.kuyermqi.quotawidget.widget.compactBalanceTitleFontSize
 import com.kuyermqi.quotawidget.widget.contextString
+import com.kuyermqi.quotawidget.widget.updatedAtLabel
 import com.kuyermqi.quotawidget.widget.systemWidgetBackgroundCornerRadius
 
 @Composable
@@ -258,10 +258,7 @@ internal fun UsagePercentSuccessBlock(
         } else {
             Spacer(GlanceModifier.height(4.dp))
         }
-        val updatedText = contextString(
-            R.string.widget_updated_at,
-            WidgetDateFormatter.formatUpdatedAt(snapshot.updatedAtEpochMs),
-        )
+        val updatedText = updatedAtLabel(snapshot.updatedAtEpochMs)
         val updatedFooter = if (snapshot.platformId == PlatformIds.NEW_API) {
             formatNewApiWidgetFooter(
                 snapshot = snapshot,

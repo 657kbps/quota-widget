@@ -1,7 +1,6 @@
 package com.kuyermqi.quotawidget
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
@@ -11,13 +10,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuyermqi.quotawidget.domain.AppSettings
+import com.kuyermqi.quotawidget.locale.LocaleAwareActivity
 import com.kuyermqi.quotawidget.ui.AppSettingsScreen
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
 import com.kuyermqi.quotawidget.widget.PeriodicRefreshScheduler
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState
 
-class AppSettingsActivity : ComponentActivity() {
+class AppSettingsActivity : LocaleAwareActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)

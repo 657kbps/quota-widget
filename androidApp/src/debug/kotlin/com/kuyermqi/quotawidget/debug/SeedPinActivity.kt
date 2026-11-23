@@ -1,5 +1,6 @@
 package com.kuyermqi.quotawidget.debug
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
@@ -83,6 +84,7 @@ class SeedPinActivity : Activity() {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private fun pin(receiverName: String) {
         val manager = AppWidgetManager.getInstance(this)
         val provider = ComponentName(this, receiverName)

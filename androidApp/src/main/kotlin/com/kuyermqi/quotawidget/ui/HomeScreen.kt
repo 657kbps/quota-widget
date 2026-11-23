@@ -46,21 +46,21 @@ import com.kuyermqi.quotawidget.ui.components.isIgnoringBatteryOptimizations
 import com.kuyermqi.quotawidget.ui.components.providerLogo
 import com.kuyermqi.quotawidget.ui.components.requestIgnoreBatteryOptimizations
 import com.kuyermqi.quotawidget.ui.home.CodexHomeContent
-import com.kuyermqi.quotawidget.ui.home.CodexHomeEffects
+import com.kuyermqi.quotawidget.ui.home.codexHomeEffects
 import com.kuyermqi.quotawidget.ui.home.DeepSeekHomeContent
-import com.kuyermqi.quotawidget.ui.home.DeepSeekHomeEffects
+import com.kuyermqi.quotawidget.ui.home.deepSeekHomeEffects
 import com.kuyermqi.quotawidget.ui.home.KimiCodeHomeContent
-import com.kuyermqi.quotawidget.ui.home.KimiCodeHomeEffects
+import com.kuyermqi.quotawidget.ui.home.kimiCodeHomeEffects
 import com.kuyermqi.quotawidget.ui.home.MagpieHomeContent
-import com.kuyermqi.quotawidget.ui.home.MagpieHomeEffects
+import com.kuyermqi.quotawidget.ui.home.magpieHomeEffects
 import com.kuyermqi.quotawidget.ui.home.NewApiHomeContent
-import com.kuyermqi.quotawidget.ui.home.NewApiHomeEffects
+import com.kuyermqi.quotawidget.ui.home.newApiHomeEffects
 import com.kuyermqi.quotawidget.ui.home.OpenCodeGoHomeContent
-import com.kuyermqi.quotawidget.ui.home.OpenCodeGoHomeEffects
+import com.kuyermqi.quotawidget.ui.home.openCodeGoHomeEffects
 import com.kuyermqi.quotawidget.ui.home.SessionPlatformHomeContent
-import com.kuyermqi.quotawidget.ui.home.SessionPlatformHomeEffects
+import com.kuyermqi.quotawidget.ui.home.sessionPlatformHomeEffects
 import com.kuyermqi.quotawidget.ui.home.ZhipuHomeContent
-import com.kuyermqi.quotawidget.ui.home.ZhipuHomeEffects
+import com.kuyermqi.quotawidget.ui.home.zhipuHomeEffects
 import com.kuyermqi.quotawidget.ui.home.rememberCodexHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberDeepSeekHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberKimiCodeHomeState
@@ -123,21 +123,21 @@ fun HomeScreen(
     val commandCode = rememberSessionPlatformHomeState(settingsRepository, PlatformIds.COMMAND_CODE)
     val antigravity = rememberSessionPlatformHomeState(settingsRepository, PlatformIds.ANTIGRAVITY)
 
-    val deepSeekWidgetState = DeepSeekHomeEffects(deepSeek)
-    val openCodeBindings = OpenCodeGoHomeEffects(openCode, onRefreshPlatform)
-    val codexBindings = CodexHomeEffects(codex, onRefreshPlatform)
-    val newApiWidgetState = NewApiHomeEffects(newApi)
-    val magpieWidgetState = MagpieHomeEffects(magpie)
-    val kimiCodeWidgetState = KimiCodeHomeEffects(kimiCode)
-    val zhipuWidgetState = ZhipuHomeEffects(zhipu)
-    val workBuddyBindings = SessionPlatformHomeEffects(workBuddy, settingsRepository, onRefreshPlatform)
+    val deepSeekWidgetState = deepSeekHomeEffects(deepSeek)
+    val openCodeBindings = openCodeGoHomeEffects(openCode, onRefreshPlatform)
+    val codexBindings = codexHomeEffects(codex, onRefreshPlatform)
+    val newApiWidgetState = newApiHomeEffects(newApi)
+    val magpieWidgetState = magpieHomeEffects(magpie)
+    val kimiCodeWidgetState = kimiCodeHomeEffects(kimiCode)
+    val zhipuWidgetState = zhipuHomeEffects(zhipu)
+    val workBuddyBindings = sessionPlatformHomeEffects(workBuddy, settingsRepository, onRefreshPlatform)
     val workBuddyAiBindings =
-        SessionPlatformHomeEffects(workBuddyAi, settingsRepository, onRefreshPlatform)
-    val clineBindings = SessionPlatformHomeEffects(cline, settingsRepository, onRefreshPlatform)
+        sessionPlatformHomeEffects(workBuddyAi, settingsRepository, onRefreshPlatform)
+    val clineBindings = sessionPlatformHomeEffects(cline, settingsRepository, onRefreshPlatform)
     val commandCodeBindings =
-        SessionPlatformHomeEffects(commandCode, settingsRepository, onRefreshPlatform)
+        sessionPlatformHomeEffects(commandCode, settingsRepository, onRefreshPlatform)
     val antigravityBindings =
-        SessionPlatformHomeEffects(antigravity, settingsRepository, onRefreshPlatform)
+        sessionPlatformHomeEffects(antigravity, settingsRepository, onRefreshPlatform)
 
     val hasVisibleTips = tipLoaded && (
         showBatteryOptimizationTip || showOemBackgroundTip || showPlatformTip
@@ -390,7 +390,7 @@ fun HomeScreen(
 
                 items(PlatformRegistry.platforms, key = { it.id }) { platform ->
                     PlatformConfigItem(
-                        title = platform.homeListName,
+                        title = platformDisplayName(platform.id, homeList = true),
                         logo = providerLogo(platform.id),
                         expanded = expandedPlatformId == platform.id,
                         onToggle = {

@@ -4,7 +4,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuyermqi.quotawidget.domain.AppSettings
+import com.kuyermqi.quotawidget.locale.LocaleAwareActivity
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.refresh.displayState
 import com.kuyermqi.quotawidget.ui.FocusPlatformRequest
@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
-class MainActivity : ComponentActivity() {
+class MainActivity : LocaleAwareActivity() {
     private var focusPlatformRequest by mutableStateOf<FocusPlatformRequest?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
