@@ -119,7 +119,6 @@
     <string name="usage_window_weekly">每周</string>
     <string name="usage_window_monthly">每月</string>
     <string name="usage_window_token">令牌</string>
-    <string name="usage_window_label_with_mode">%1$s%2$s</string>
     <string name="widget_preview_window_rolling">滚动用量</string>
     <string name="widget_preview_window_weekly">每周用量</string>
     <string name="widget_preview_window_monthly">每月用量</string>

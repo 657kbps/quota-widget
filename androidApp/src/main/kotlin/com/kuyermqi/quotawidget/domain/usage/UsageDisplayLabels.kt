@@ -1,8 +1,8 @@
 package com.kuyermqi.quotawidget.domain.usage
 
+import android.content.res.Resources
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
-import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 
 /** Base window label shared by the overview widget and the settings preview. */
 fun usageWindowLabelRes(kind: QuotaWindowKind): Int = when (kind) {
@@ -14,10 +14,10 @@ fun usageWindowLabelRes(kind: QuotaWindowKind): Int = when (kind) {
 }
 
 /**
- * Suffix that tells which number the bar shows, e.g. "滚动用量" / "滚动余量".
- * Compose it with [R.string.usage_window_label_with_mode].
+ * Row label shared by the overview widget and its settings preview. The used/remaining
+ * mode is intentionally omitted so the narrow widget rows do not overflow.
  */
-fun usageWindowModeLabelRes(mode: UsageDisplayMode): Int = when (mode) {
-    UsageDisplayMode.USED -> R.string.usage_display_used
-    UsageDisplayMode.REMAINING -> R.string.usage_display_remaining
-}
+fun overviewWindowLabel(
+    resources: Resources,
+    kind: QuotaWindowKind,
+): String = resources.getString(usageWindowLabelRes(kind))

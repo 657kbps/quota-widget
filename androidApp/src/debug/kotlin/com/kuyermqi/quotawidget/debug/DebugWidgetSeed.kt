@@ -14,6 +14,7 @@ import com.kuyermqi.quotawidget.settings.CodexSettings
 import com.kuyermqi.quotawidget.settings.KimiCodeSettings
 import com.kuyermqi.quotawidget.settings.MagpieSettings
 import com.kuyermqi.quotawidget.settings.OpenCodeGoSettings
+import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.settings.ZhipuSettings
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 
@@ -129,6 +130,32 @@ object DebugWidgetSeed {
                 listOf(
                     window(QuotaWindowKind.FIVE_HOUR, 26.0, minutes(2 * 60)),
                     window(QuotaWindowKind.WEEKLY, 41.0, minutes(3 * 24 * 60)),
+                ),
+            ),
+        )
+
+        repo.saveSessionSettings(
+            PlatformIds.COMMAND_CODE,
+            SessionPlatformSettings(
+                apiKey = "debug-fake-key",
+                accountId = "debug-account",
+                email = "dev@example.com",
+                plan = "Pro",
+                widgetWindowKind = UsageWindowKind.MONTHLY,
+                usageDisplayMode = UsageDisplayMode.USED,
+                usageProgressStyle = UsageProgressStyle.BAR,
+                usageResetStyle = UsageResetStyle.PILL,
+            ),
+        )
+        repo.saveWidgetSuccess(
+            PlatformIds.COMMAND_CODE,
+            snapshot(
+                PlatformIds.COMMAND_CODE,
+                now,
+                listOf(
+                    window(QuotaWindowKind.FIVE_HOUR, 42.0, minutes(2 * 60 + 35)),
+                    window(QuotaWindowKind.WEEKLY, 68.0, minutes(4 * 24 * 60 + 6 * 60)),
+                    window(QuotaWindowKind.MONTHLY, 35.0, minutes(18 * 24 * 60)),
                 ),
             ),
         )

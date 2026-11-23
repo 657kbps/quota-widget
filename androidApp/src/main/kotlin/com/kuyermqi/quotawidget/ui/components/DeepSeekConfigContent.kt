@@ -30,6 +30,8 @@ fun ColumnScope.DeepSeekConfigContent(
     onApiKeyChange: (String) -> Unit,
     currency: CurrencyPreference,
     onCurrencyChange: (CurrencyPreference) -> Unit,
+    balance: String,
+    updatedAtEpochMs: Long,
     isDirty: Boolean,
     isSaving: Boolean,
     saveError: String?,
@@ -64,6 +66,12 @@ fun ColumnScope.DeepSeekConfigContent(
         text = stringResource(R.string.deepseek_currency_hint),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(modifier = Modifier.height(12.dp))
+    DeepSeekWidgetPreviewCard(
+        balance = balance,
+        currency = currency,
+        updatedAtEpochMs = updatedAtEpochMs,
     )
     if (!saveError.isNullOrBlank()) {
         Spacer(modifier = Modifier.height(10.dp))

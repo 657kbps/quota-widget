@@ -120,7 +120,6 @@
     <string name="usage_window_weekly">Weekly</string>
     <string name="usage_window_monthly">Monthly</string>
     <string name="usage_window_token">Token</string>
-    <string name="usage_window_label_with_mode">%1$s · %2$s</string>
     <string name="widget_preview_window_rolling">Rolling usage</string>
     <string name="widget_preview_window_weekly">Weekly usage</string>
     <string name="widget_preview_window_monthly">Monthly usage</string>
