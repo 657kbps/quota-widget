@@ -13,7 +13,6 @@ import android.webkit.CookieManager
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,6 +43,7 @@ import com.kuyermqi.quotawidget.domain.codex.CodexLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.commandcode.CommandCodeLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.opencode.OpenCodeLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.workbuddy.WorkBuddyLoginWebViewFlow
+import com.kuyermqi.quotawidget.locale.LocaleAwareActivity
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
@@ -52,7 +52,7 @@ import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
  * Generic in-app browser shell. Platform login / capture logic plugs in via [InAppWebViewFlow]
  * selected by [EXTRA_FLOW_ID].
  */
-class InAppWebViewActivity : ComponentActivity(), InAppWebViewHost {
+class InAppWebViewActivity : LocaleAwareActivity(), InAppWebViewHost {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var flow: InAppWebViewFlow? = null
 

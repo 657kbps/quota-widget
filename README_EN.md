@@ -31,6 +31,7 @@
 - **Background refresh**: WorkManager periodic updates plus tap-to-refresh
 - **Secure storage**: API keys / OAuth tokens encrypted with Tink before DataStore persistence
 - **Customizable theme**: Light / dark / system, plus a custom accent color
+- **Localized interface**: Simplified Chinese, Traditional Chinese, English, Japanese, German, French, and Russian; follows the system by default (English fallback)
 - **Background survival tips**: Battery optimization guidance and [DontKillMyApp](https://dontkillmyapp.com/) OEM references
 - **In-app update checks**: Optionally check GitHub Releases on launch
 

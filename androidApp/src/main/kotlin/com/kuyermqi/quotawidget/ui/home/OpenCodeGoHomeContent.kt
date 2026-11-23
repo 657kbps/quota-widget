@@ -177,7 +177,7 @@ fun rememberOpenCodeGoHomeState(
  * Must be called from HomeScreen (not only when the platform row is expanded).
  */
 @Composable
-fun OpenCodeGoHomeEffects(
+fun openCodeGoHomeEffects(
     state: OpenCodeGoHomeState,
     onRefreshPlatform: suspend (String) -> WidgetDisplayState,
 ): OpenCodeGoHomeBindings {

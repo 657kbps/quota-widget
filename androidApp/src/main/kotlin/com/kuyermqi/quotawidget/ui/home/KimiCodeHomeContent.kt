@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -22,10 +23,10 @@ import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.platform.PlatformIds
-import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.settings.KimiCodeSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.ApiKeyUsageConfigContent
+import com.kuyermqi.quotawidget.ui.platformDisplayName
 import com.kuyermqi.quotawidget.ui.usage.formatUsageWindowSummaryWithFallback
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState
 import kotlinx.coroutines.launch
@@ -49,7 +50,7 @@ class KimiCodeHomeState internal constructor(
         internal set
     var lastWindows by mutableStateOf<List<QuotaWindow>>(emptyList())
         internal set
-    var lastUpdatedAtEpochMs by mutableStateOf(0L)
+    var lastUpdatedAtEpochMs by mutableLongStateOf(0L)
         internal set
     var lastDisplay by mutableStateOf<String?>(null)
         internal set
@@ -122,7 +123,7 @@ fun rememberKimiCodeHomeState(
 
 /** Collects widget state and keeps the home summary in sync. */
 @Composable
-fun KimiCodeHomeEffects(state: KimiCodeHomeState): WidgetDisplayState {
+fun kimiCodeHomeEffects(state: KimiCodeHomeState): WidgetDisplayState {
     val resources = LocalResources.current
     val observed by state.repository().observeWidgetState(PlatformIds.KIMI_CODE)
         .collectAsStateWithLifecycle(initialValue = WidgetDisplayState.NotConfigured)
@@ -225,7 +226,7 @@ fun ColumnScope.KimiCodeHomeContent(
                 }
             }
         },
-        platformName = PlatformRegistry.displayName(PlatformIds.KIMI_CODE),
+        platformName = platformDisplayName(PlatformIds.KIMI_CODE),
         updatedAtEpochMs = state.lastUpdatedAtEpochMs,
     )
 }

@@ -6,6 +6,7 @@ import android.util.Log
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.core.net.toUri
 import com.kuyermqi.quotawidget.domain.session.SessionLoginResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -73,7 +74,7 @@ abstract class CallbackWebLoginFlow(
 
     private fun handle(view: WebView?, url: String): Boolean {
         if (finished || handled || url.isBlank()) return false
-        val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return false
+        val uri = runCatching { url.toUri() }.getOrNull() ?: return false
         if (!callbackMatcher(uri)) return false
         handled = true
         view?.stopLoading()

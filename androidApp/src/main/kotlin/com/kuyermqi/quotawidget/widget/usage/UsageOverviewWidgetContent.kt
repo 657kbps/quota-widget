@@ -42,10 +42,10 @@ import com.kuyermqi.quotawidget.domain.usage.usageWindowLabelRes
 import com.kuyermqi.quotawidget.domain.usage.usageWindowModeLabelRes
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import com.kuyermqi.quotawidget.widget.BalanceBlock
-import com.kuyermqi.quotawidget.widget.WidgetDateFormatter
 import com.kuyermqi.quotawidget.widget.WidgetHeader
 import com.kuyermqi.quotawidget.widget.clickableNoRipple
 import com.kuyermqi.quotawidget.widget.contextString
+import com.kuyermqi.quotawidget.widget.updatedAtLabel
 import com.kuyermqi.quotawidget.widget.systemWidgetBackgroundCornerRadius
 
 val UsageOverviewSizeCompact = DpSize(110.dp, 110.dp)
@@ -241,10 +241,7 @@ private fun UsageOverviewSuccessBlock(
         }
         Spacer(GlanceModifier.height(density.updatedGap))
         Text(
-            text = contextString(
-                R.string.widget_updated_at,
-                WidgetDateFormatter.formatUpdatedAt(snapshot.updatedAtEpochMs),
-            ),
+            text = updatedAtLabel(snapshot.updatedAtEpochMs),
             style = TextStyle(
                 color = GlanceTheme.colors.onSurfaceVariant,
                 fontSize = density.updatedSize,

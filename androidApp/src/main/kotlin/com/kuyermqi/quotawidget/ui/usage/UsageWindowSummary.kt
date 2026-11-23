@@ -1,6 +1,8 @@
 package com.kuyermqi.quotawidget.ui.usage
 
 import android.content.res.Resources
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
@@ -46,6 +48,20 @@ fun formatUsageWindowSummaryWithFallback(
         usageSummaryStringRes(effectiveKind, usageDisplayMode),
         percent,
     )
+}
+
+/** Localized "rolling / weekly / monthly" summary used by provider pickers. */
+@Composable
+fun formatUsageWindowsSummary(
+    windows: List<QuotaWindow>,
+    usageDisplayMode: UsageDisplayMode,
+): String {
+    val parts = mutableListOf<String>()
+    for (kind in listOf(UsageWindowKind.ROLLING, UsageWindowKind.WEEKLY, UsageWindowKind.MONTHLY)) {
+        val percent = formatUsageForWindow(windows, kind, usageDisplayMode) ?: continue
+        parts += stringResource(usageSummaryStringRes(kind, usageDisplayMode), percent)
+    }
+    return parts.joinToString(" · ")
 }
 
 /** Codex-specific name kept for the home list; behavior is [formatUsageWindowSummaryWithFallback]. */

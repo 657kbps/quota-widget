@@ -31,11 +31,11 @@ import com.kuyermqi.quotawidget.domain.commandcode.CommandCodeLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.session.SessionLoginResult
 import com.kuyermqi.quotawidget.domain.workbuddy.WorkBuddyLoginWebViewFlow
 import com.kuyermqi.quotawidget.platform.PlatformIds
-import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.ui.components.SessionAuthPanel
 import com.kuyermqi.quotawidget.ui.components.SessionPlatformConfigContent
+import com.kuyermqi.quotawidget.ui.platformDisplayName
 import com.kuyermqi.quotawidget.ui.usage.formatCodexUsageWindowSummary
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState
 import com.kuyermqi.quotawidget.workbuddy.WorkBuddyClient
@@ -252,7 +252,7 @@ fun rememberSessionPlatformHomeState(
 }
 
 @Composable
-fun SessionPlatformHomeEffects(
+fun sessionPlatformHomeEffects(
     state: SessionPlatformHomeState,
     settingsRepository: PlatformSettingsRepository,
     onRefreshPlatform: suspend (String) -> WidgetDisplayState,
@@ -468,7 +468,7 @@ fun ColumnScope.SessionPlatformHomeContent(
         onLogin = bindings.onLogin,
         onLogout = bindings.onLogout,
         onSave = bindings.onSave,
-        platformName = PlatformRegistry.displayName(state.platformId),
+        platformName = platformDisplayName(state.platformId),
         updatedAtEpochMs =
             (widgetState as? WidgetDisplayState.Success)?.snapshot?.updatedAtEpochMs ?: 0L,
     )

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -22,10 +23,10 @@ import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.platform.PlatformIds
-import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.ZhipuSettings
 import com.kuyermqi.quotawidget.ui.components.ApiKeyUsageConfigContent
+import com.kuyermqi.quotawidget.ui.platformDisplayName
 import com.kuyermqi.quotawidget.ui.usage.formatUsageWindowSummaryWithFallback
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState
 import kotlinx.coroutines.launch
@@ -49,7 +50,7 @@ class ZhipuHomeState internal constructor(
         internal set
     var lastWindows by mutableStateOf<List<QuotaWindow>>(emptyList())
         internal set
-    var lastUpdatedAtEpochMs by mutableStateOf(0L)
+    var lastUpdatedAtEpochMs by mutableLongStateOf(0L)
         internal set
     var lastDisplay by mutableStateOf<String?>(null)
         internal set
@@ -122,7 +123,7 @@ fun rememberZhipuHomeState(
 
 /** Collects widget state and keeps the home summary in sync. */
 @Composable
-fun ZhipuHomeEffects(state: ZhipuHomeState): WidgetDisplayState {
+fun zhipuHomeEffects(state: ZhipuHomeState): WidgetDisplayState {
     val resources = LocalResources.current
     val observed by state.repository().observeWidgetState(PlatformIds.ZHIPU)
         .collectAsStateWithLifecycle(initialValue = WidgetDisplayState.NotConfigured)
@@ -225,7 +226,7 @@ fun ColumnScope.ZhipuHomeContent(
                 }
             }
         },
-        platformName = PlatformRegistry.displayName(PlatformIds.ZHIPU),
+        platformName = platformDisplayName(PlatformIds.ZHIPU),
         updatedAtEpochMs = state.lastUpdatedAtEpochMs,
     )
 }

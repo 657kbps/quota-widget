@@ -16,6 +16,7 @@ import com.google.crypto.tink.KeyTemplates
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import com.kuyermqi.quotawidget.domain.ALLOWED_REFRESH_INTERVAL_MINUTES
+import com.kuyermqi.quotawidget.domain.AppLanguage
 import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.DarkThemeMode
@@ -620,6 +621,7 @@ class AndroidPlatformSettingsRepository(
             prefs[Keys.CUSTOM_SEED_COLOR_ARGB] = settings.customSeedColorArgb
             prefs[Keys.REFRESH_INTERVAL_MINUTES] = settings.refreshIntervalMinutes
             prefs[Keys.CHECK_FOR_UPDATES_ON_LAUNCH] = settings.checkForUpdatesOnLaunch
+            prefs[Keys.APP_LANGUAGE] = settings.appLanguage.name
         }
     }
 
@@ -632,6 +634,7 @@ class AndroidPlatformSettingsRepository(
             refreshIntervalMinutes = interval.takeIf { it in ALLOWED_REFRESH_INTERVAL_MINUTES }
                 ?: DEFAULT_REFRESH_INTERVAL_MINUTES,
             checkForUpdatesOnLaunch = this[Keys.CHECK_FOR_UPDATES_ON_LAUNCH] ?: true,
+            appLanguage = AppLanguage.fromStorage(this[Keys.APP_LANGUAGE]),
         )
     }
 
@@ -1030,6 +1033,7 @@ class AndroidPlatformSettingsRepository(
         val CUSTOM_SEED_COLOR_ARGB = intPreferencesKey("custom_seed_color_argb")
         val REFRESH_INTERVAL_MINUTES = intPreferencesKey("refresh_interval_minutes")
         val CHECK_FOR_UPDATES_ON_LAUNCH = booleanPreferencesKey("check_for_updates_on_launch")
+        val APP_LANGUAGE = stringPreferencesKey("app_language")
         val UPDATE_IGNORED_VERSION = stringPreferencesKey("update_ignored_version")
     }
 

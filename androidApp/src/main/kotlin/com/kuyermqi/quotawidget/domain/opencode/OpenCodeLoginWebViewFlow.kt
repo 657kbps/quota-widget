@@ -3,11 +3,11 @@ package com.kuyermqi.quotawidget.domain.opencode
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.core.net.toUri
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.opencode.OpenCodeGoClient
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
@@ -58,7 +58,7 @@ class OpenCodeLoginWebViewFlow(
     private fun handleNavigation(view: WebView?, finishedUrl: String) {
         if (loginCompleted || view == null) return
         val workspaceId = OpenCodeGoClient.extractWorkspaceId(finishedUrl) ?: return
-        val path = Uri.parse(finishedUrl).path.orEmpty()
+        val path = finishedUrl.toUri().path.orEmpty()
         if (!path.trimEnd('/').endsWith("/go")) {
             if (!goProbeStarted) {
                 goProbeStarted = true

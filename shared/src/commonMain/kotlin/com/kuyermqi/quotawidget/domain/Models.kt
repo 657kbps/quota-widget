@@ -25,12 +25,31 @@ enum class ThemeColorMode {
     }
 }
 
+/** App UI language; [languageTag] is a BCP-47 tag, blank means follow the system. */
+enum class AppLanguage(val languageTag: String) {
+    FollowSystem(""),
+    SimplifiedChinese("zh-Hans"),
+    TraditionalChinese("zh-Hant"),
+    English("en"),
+    Japanese("ja"),
+    German("de"),
+    French("fr"),
+    Russian("ru"),
+    ;
+
+    companion object {
+        fun fromStorage(value: String?): AppLanguage =
+            entries.find { it.name == value } ?: FollowSystem
+    }
+}
+
 data class AppSettings(
     val darkThemeMode: DarkThemeMode = DarkThemeMode.FollowSystem,
     val themeColorMode: ThemeColorMode = ThemeColorMode.FollowSystem,
     val customSeedColorArgb: Int = DEFAULT_CUSTOM_SEED_COLOR_ARGB,
     val refreshIntervalMinutes: Int = DEFAULT_REFRESH_INTERVAL_MINUTES,
     val checkForUpdatesOnLaunch: Boolean = true,
+    val appLanguage: AppLanguage = AppLanguage.FollowSystem,
 ) {
     init {
         require(refreshIntervalMinutes in ALLOWED_REFRESH_INTERVAL_MINUTES) {

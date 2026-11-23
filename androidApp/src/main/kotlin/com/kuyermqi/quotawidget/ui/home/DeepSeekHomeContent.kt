@@ -84,7 +84,7 @@ fun rememberDeepSeekHomeState(
 
 /** Collects widget state and keeps [DeepSeekHomeState.lastDisplay] in sync. */
 @Composable
-fun DeepSeekHomeEffects(state: DeepSeekHomeState): WidgetDisplayState {
+fun deepSeekHomeEffects(state: DeepSeekHomeState): WidgetDisplayState {
     val observed by state.repository().observeWidgetState(PlatformIds.DEEPSEEK)
         .collectAsStateWithLifecycle(initialValue = WidgetDisplayState.NotConfigured)
     LaunchedEffect(observed) {

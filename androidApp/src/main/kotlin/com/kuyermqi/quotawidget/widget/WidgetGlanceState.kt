@@ -15,6 +15,7 @@ import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.kuyermqi.quotawidget.QuotaWidgetApp
+import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.DEFAULT_CUSTOM_SEED_COLOR_ARGB
@@ -440,11 +441,13 @@ object WidgetGlanceState {
     fun Preferences.toSessionUsageResetStyle(platformId: String): UsageResetStyle =
         UsageResetStyle.fromStorage(this[sessionUsageResetStyleKey(platformId)])
 
-    fun Preferences.toDisplayState(): WidgetDisplayState {
+    fun Preferences.toDisplayState(context: Context): WidgetDisplayState {
         return when (this[statusKey]) {
             Status.LOADING -> WidgetDisplayState.Loading
             Status.NEEDS_REAUTH -> WidgetDisplayState.NeedsReauth
-            Status.ERROR -> WidgetDisplayState.Error(this[errorKey] ?: "刷新失败")
+            Status.ERROR -> WidgetDisplayState.Error(
+                this[errorKey] ?: context.getString(R.string.widget_fetch_failed),
+            )
             Status.SUCCESS -> {
                 val platformId = this[platformIdKey] ?: PlatformIds.DEEPSEEK
                 val currency = CurrencyPreference.fromStorage(this[currencyKey])

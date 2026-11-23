@@ -3,12 +3,12 @@ package com.kuyermqi.quotawidget.domain.codex
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.core.net.toUri
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.codex.CodexOAuth
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
@@ -63,7 +63,7 @@ class CodexLoginWebViewFlow(
     private fun handlePossibleCallback(url: String): Boolean {
         if (loginCompleted || exchangeStarted || url.isBlank()) return false
         if (!url.startsWith(CodexOAuth.REDIRECT_URI)) return false
-        val uri = Uri.parse(url)
+        val uri = url.toUri()
         val error = uri.getQueryParameter("error")
         if (!error.isNullOrBlank()) {
             Log.e(TAG, "oauth error=$error desc=${uri.getQueryParameter("error_description")}")

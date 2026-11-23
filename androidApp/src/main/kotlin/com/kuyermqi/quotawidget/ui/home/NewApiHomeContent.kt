@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
@@ -140,7 +141,7 @@ fun rememberNewApiHomeState(
 }
 
 @Composable
-fun NewApiHomeEffects(state: NewApiHomeState): WidgetDisplayState {
+fun newApiHomeEffects(state: NewApiHomeState): WidgetDisplayState {
     val observed by state.repository().observeWidgetState(PlatformIds.NEW_API)
         .collectAsStateWithLifecycle(initialValue = WidgetDisplayState.NotConfigured)
     LaunchedEffect(observed) {
@@ -167,6 +168,7 @@ fun ColumnScope.NewApiHomeContent(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val resources = LocalResources.current
 
     NewApiConfigContent(
         baseUrl = state.draftBaseUrl,
@@ -208,7 +210,7 @@ fun ColumnScope.NewApiHomeContent(
             scope.launch {
                 val quotaPerUsd = state.draftQuotaPerUsd.trim().toLongOrNull()?.takeIf { it > 0L }
                 if (quotaPerUsd == null) {
-                    state.saveError = context.getString(R.string.new_api_quota_per_usd_invalid)
+                    state.saveError = resources.getString(R.string.new_api_quota_per_usd_invalid)
                     return@launch
                 }
                 val next = NewApiSettings(

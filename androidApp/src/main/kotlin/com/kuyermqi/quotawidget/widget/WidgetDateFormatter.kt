@@ -1,5 +1,9 @@
 package com.kuyermqi.quotawidget.widget
 
+import android.content.Context
+import androidx.annotation.StringRes
+import com.kuyermqi.quotawidget.R
+import com.kuyermqi.quotawidget.locale.AppLocale
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -12,30 +16,32 @@ sealed interface ResetMoment {
 }
 
 object WidgetDateFormatter {
-    private val updatedFormatter: DateTimeFormatter =
-        DateTimeFormatter.ofPattern("M 月 d 日 HH:mm")
-    private val timeFormatter: DateTimeFormatter =
-        DateTimeFormatter.ofPattern("HH:mm")
-    private val dateFormatter: DateTimeFormatter =
-        DateTimeFormatter.ofPattern("M 月 d 日")
-
-    fun formatUpdatedAt(epochMs: Long): String {
-        if (epochMs <= 0L) return "尚未更新"
+    fun formatUpdatedAt(context: Context, epochMs: Long): String {
+        if (epochMs <= 0L) return context.getString(R.string.widget_updated_never)
         return Instant.ofEpochMilli(epochMs)
             .atZone(ZoneId.systemDefault())
-            .format(updatedFormatter)
+            .format(formatter(context, R.string.widget_date_time_pattern))
     }
 
     /** Buckets [resetAtEpochMs] by local calendar day relative to [nowEpochMs]. */
-    fun resetMoment(resetAtEpochMs: Long, nowEpochMs: Long): ResetMoment {
+    fun resetMoment(context: Context, resetAtEpochMs: Long, nowEpochMs: Long): ResetMoment {
         val zone = ZoneId.systemDefault()
         val reset = Instant.ofEpochMilli(resetAtEpochMs).atZone(zone)
         val today = Instant.ofEpochMilli(nowEpochMs).atZone(zone).toLocalDate()
-        val time = reset.format(timeFormatter)
+        val time = reset.format(formatter(context, R.string.widget_time_pattern))
         return when (reset.toLocalDate()) {
             today -> ResetMoment.Today(time)
             today.plusDays(1) -> ResetMoment.Tomorrow(time)
-            else -> ResetMoment.Later(date = reset.format(dateFormatter), time = time)
+            else -> ResetMoment.Later(
+                date = reset.format(formatter(context, R.string.widget_date_pattern)),
+                time = time,
+            )
         }
     }
+
+    private fun formatter(context: Context, @StringRes patternRes: Int): DateTimeFormatter =
+        DateTimeFormatter.ofPattern(
+            context.getString(patternRes),
+            AppLocale.localeOf(context),
+        )
 }

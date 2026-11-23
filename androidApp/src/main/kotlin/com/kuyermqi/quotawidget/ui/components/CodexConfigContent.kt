@@ -27,7 +27,7 @@ import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
 import com.kuyermqi.quotawidget.domain.presentCodexOverviewWindowKinds
 import com.kuyermqi.quotawidget.platform.PlatformIds
-import com.kuyermqi.quotawidget.platform.PlatformRegistry
+import com.kuyermqi.quotawidget.ui.platformDisplayName
 
 @Composable
 fun ColumnScope.CodexConfigContent(
@@ -103,7 +103,7 @@ fun ColumnScope.CodexConfigContent(
             windowKindChoices = availableWindowKinds,
             showWindowKindPicker = availableWindowKinds.size >= 2,
             overviewKinds = presentCodexOverviewWindowKinds(windows),
-            platformName = PlatformRegistry.displayName(PlatformIds.CODEX),
+            platformName = platformDisplayName(PlatformIds.CODEX),
             updatedAtEpochMs = updatedAtEpochMs,
         )
     }

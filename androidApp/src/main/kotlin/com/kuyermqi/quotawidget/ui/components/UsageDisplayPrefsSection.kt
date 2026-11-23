@@ -357,6 +357,7 @@ private fun WidgetLayoutsPreviewCard(
     updatedAtEpochMs: Long,
     newApiSnapshot: QuotaSnapshot?,
 ) {
+    val context = LocalContext.current
     var selectedLayout by remember { mutableStateOf(WidgetPreviewLayout.STANDARD) }
     val effectiveLayout = if (supportsCompactAndOverviewPreview) {
         selectedLayout
@@ -419,7 +420,7 @@ private fun WidgetLayoutsPreviewCard(
             val updatedLabel = if (updatedAtEpochMs > 0L) {
                 stringResource(
                     R.string.widget_updated_at,
-                    WidgetDateFormatter.formatUpdatedAt(updatedAtEpochMs),
+                    WidgetDateFormatter.formatUpdatedAt(context, updatedAtEpochMs),
                 )
             } else {
                 stringResource(R.string.usage_preview_updated_sample)
@@ -546,6 +547,7 @@ private fun StandardWidgetPreview(
     updatedLabel: String,
     newApiSnapshot: QuotaSnapshot?,
 ) {
+    val context = LocalContext.current
     val resolvedKind = resolvePreviewWindowKind(windows, widgetWindowKind, allowWindowFallback)
     val window = windows.find { it.kind == resolvedKind.toQuotaWindowKind() }
     val used = if (forceZeroProgressPreview) 0.0 else window?.usedPercent
@@ -582,7 +584,7 @@ private fun StandardWidgetPreview(
         null
     }
     val resetAtLabel = resetAtMs
-        ?.let { WidgetDateFormatter.resetMoment(it, nowMs) }
+        ?.let { WidgetDateFormatter.resetMoment(context, it, nowMs) }
         ?.let { formatResetAtLabel(it) }
     val pillText = resetAtMs
         ?.takeIf { usageResetStyle == UsageResetStyle.PILL }
@@ -724,6 +726,7 @@ private fun CompactWidgetPreview(
     updatedAtEpochMs: Long,
     updatedLabel: String,
 ) {
+    val context = LocalContext.current
     val resolvedKind = resolvePreviewWindowKind(windows, widgetWindowKind, allowWindowFallback)
     val window = windows.find { it.kind == resolvedKind.toQuotaWindowKind() }
     val used = if (forceZeroProgressPreview) 0.0 else window?.usedPercent
@@ -738,7 +741,7 @@ private fun CompactWidgetPreview(
         null
     }
     val resetAtLabel = resetAtMs
-        ?.let { WidgetDateFormatter.resetMoment(it, nowMs) }
+        ?.let { WidgetDateFormatter.resetMoment(context, it, nowMs) }
         ?.let { formatResetAtLabel(it) }
     val footerText = resetAtLabel ?: updatedLabel
     val scheme = MaterialTheme.colorScheme

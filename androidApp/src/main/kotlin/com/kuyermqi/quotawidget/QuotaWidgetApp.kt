@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget
 
 import android.app.Application
+import com.kuyermqi.quotawidget.locale.AppLocale
 import com.kuyermqi.quotawidget.provider.CodexQuotaProvider
 import com.kuyermqi.quotawidget.provider.DeepSeekQuotaProvider
 import com.kuyermqi.quotawidget.provider.KimiCodeQuotaProvider
@@ -15,6 +16,7 @@ import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.update.UpdateCheckInteractor
 import com.kuyermqi.quotawidget.widget.PeriodicRefreshScheduler
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -44,9 +46,11 @@ class QuotaWidgetApp : Application() {
         settingsRepository = AndroidPlatformSettingsRepository(this)
         // One-shot bootstrap so upgrades (prefs empty, DataStore has mode) don't flash.
         runBlocking {
+            val appSettings = settingsRepository.getAppSettings()
+            AppLocale.update(appSettings.appLanguage)
             AppNightMode.apply(
                 this@QuotaWidgetApp,
-                settingsRepository.getAppSettings().darkThemeMode,
+                appSettings.darkThemeMode,
             )
         }
         refreshInteractor = BalanceRefreshInteractor(
@@ -78,6 +82,21 @@ class QuotaWidgetApp : Application() {
                 .collect { mode ->
                     withContext(Dispatchers.Main.immediate) {
                         AppNightMode.apply(this@QuotaWidgetApp, mode)
+                    }
+                }
+        }
+        appScope.launch {
+            settingsRepository.observeAppSettings()
+                .map { it.appLanguage }
+                .distinctUntilChanged()
+                .collect { language ->
+                    val changed = withContext(Dispatchers.Main.immediate) {
+                        AppLocale.update(language).also { changed ->
+                            if (changed) AppLocale.recreateActivities()
+                        }
+                    }
+                    if (changed) {
+                        WidgetGlanceState.syncAndUpdate(this@QuotaWidgetApp, "app_language")
                     }
                 }
         }

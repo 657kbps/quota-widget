@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -53,7 +54,7 @@ class MagpieHomeState internal constructor(
         internal set
     var lastWindows by mutableStateOf<List<QuotaWindow>>(emptyList())
         internal set
-    var lastUpdatedAtEpochMs by mutableStateOf(0L)
+    var lastUpdatedAtEpochMs by mutableLongStateOf(0L)
         internal set
     var isSaving by mutableStateOf(false)
         internal set
@@ -181,7 +182,7 @@ fun rememberMagpieHomeState(
 }
 
 @Composable
-fun MagpieHomeEffects(state: MagpieHomeState): WidgetDisplayState {
+fun magpieHomeEffects(state: MagpieHomeState): WidgetDisplayState {
     val resources = LocalResources.current
     val observed by state.repository().observeWidgetState(PlatformIds.MAGPIE)
         .collectAsStateWithLifecycle(initialValue = WidgetDisplayState.NotConfigured)
@@ -207,6 +208,7 @@ fun ColumnScope.MagpieHomeContent(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val resources = LocalResources.current
 
     MagpieConfigContent(
         baseUrl = state.draftBaseUrl,
@@ -275,7 +277,7 @@ fun ColumnScope.MagpieHomeContent(
                     when (val result = onRefreshPlatform(PlatformIds.MAGPIE)) {
                         is WidgetDisplayState.Error -> state.saveError = result.message
                         WidgetDisplayState.NeedsReauth ->
-                            state.saveError = context.getString(R.string.magpie_key_rejected)
+                            state.saveError = resources.getString(R.string.magpie_key_rejected)
                         is WidgetDisplayState.Success -> {
                             // The provider may clamp the widget window and learn the provider list.
                             state.applyRefreshed(state.repository().getMagpieSettings())

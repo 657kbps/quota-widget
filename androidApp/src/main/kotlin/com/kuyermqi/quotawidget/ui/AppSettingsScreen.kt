@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,6 +45,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -53,6 +55,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -73,6 +76,7 @@ import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.ALLOWED_REFRESH_INTERVAL_MINUTES
+import com.kuyermqi.quotawidget.domain.AppLanguage
 import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.DarkThemeMode
 import com.kuyermqi.quotawidget.domain.ThemeColorMode
@@ -109,7 +113,7 @@ fun AppSettingsScreen(
     val refreshIntervals = ALLOWED_REFRESH_INTERVAL_MINUTES
     val lastRefreshIndex = refreshIntervals.lastIndex
     var refreshIndex by rememberSaveable {
-        mutableStateOf(refreshIntervals.indexOf(appSettings.refreshIntervalMinutes).coerceIn(0, lastRefreshIndex))
+        mutableIntStateOf(refreshIntervals.indexOf(appSettings.refreshIntervalMinutes).coerceIn(0, lastRefreshIndex))
     }
     LaunchedEffect(appSettings.refreshIntervalMinutes) {
         refreshIndex = refreshIntervals.indexOf(appSettings.refreshIntervalMinutes).coerceIn(0, lastRefreshIndex)
@@ -320,6 +324,18 @@ fun AppSettingsScreen(
                 title = stringResource(R.string.app_settings_section_app),
                 cardColor = cardColor,
             ) {
+                SettingsExpandingRow(
+                    title = stringResource(R.string.app_settings_language),
+                    value = appLanguageLabel(appSettings.appLanguage),
+                ) {
+                    AppLanguageOptionsList(
+                        selected = appSettings.appLanguage,
+                        onSelect = { language ->
+                            save(appSettings.copy(appLanguage = language))
+                        },
+                    )
+                }
+                SettingsRowDivider()
                 SettingsRow(
                     title = stringResource(R.string.app_settings_check_updates_on_launch),
                     summary = stringResource(R.string.app_settings_check_updates_supporting),
@@ -654,6 +670,54 @@ private fun CheckUpdateButton(
         )
     }
 }
+
+@Composable
+private fun AppLanguageOptionsList(
+    selected: AppLanguage,
+    onSelect: (AppLanguage) -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        AppLanguage.entries.forEach { language ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .selectable(
+                        selected = language == selected,
+                        role = Role.RadioButton,
+                        onClick = { onSelect(language) },
+                    )
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(
+                    selected = language == selected,
+                    onClick = null,
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = appLanguageLabel(language),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun appLanguageLabel(language: AppLanguage): String = stringResource(
+    when (language) {
+        AppLanguage.FollowSystem -> R.string.app_language_system
+        AppLanguage.SimplifiedChinese -> R.string.app_language_simplified_chinese
+        AppLanguage.TraditionalChinese -> R.string.app_language_traditional_chinese
+        AppLanguage.English -> R.string.app_language_english
+        AppLanguage.Japanese -> R.string.app_language_japanese
+        AppLanguage.German -> R.string.app_language_german
+        AppLanguage.French -> R.string.app_language_french
+        AppLanguage.Russian -> R.string.app_language_russian
+    },
+)
 
 @Composable
 private fun themeColorValue(mode: ThemeColorMode): String = when (mode) {

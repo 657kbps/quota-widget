@@ -31,6 +31,7 @@
 - **后台自动刷新**：WorkManager 按设定间隔更新，支持手动点按刷新
 - **安全存储**：API Key / OAuth Token 经 Tink 加密后写入 DataStore
 - **主题可定制**：浅色 / 深色 / 跟随系统，以及自定义主题色
+- **多语言界面**：简体中文 / 繁体中文 / English / 日本語 / Deutsch / Français / Русский，默认跟随系统（系统语言不支持时使用英语）
 - **后台保活提示**：引导关闭电池优化，并提供 [DontKillMyApp](https://dontkillmyapp.com/) 厂商设置参考
 - **应用内更新检查**：启动时可检查 GitHub Releases 新版本
 

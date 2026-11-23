@@ -2,6 +2,7 @@ package com.kuyermqi.quotawidget.ui.theme
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.edit
 import com.kuyermqi.quotawidget.domain.DarkThemeMode
 
 /**
@@ -22,9 +23,9 @@ object AppNightMode {
     fun apply(context: Context, mode: DarkThemeMode) {
         val appContext = context.applicationContext
         appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putString(KEY_DARK_THEME_MODE, mode.name)
-            .apply()
+            .edit {
+                putString(KEY_DARK_THEME_MODE, mode.name)
+            }
 
         val nightMode = when (mode) {
             DarkThemeMode.FollowSystem -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
