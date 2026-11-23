@@ -16,6 +16,7 @@ import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.R
+import com.kuyermqi.quotawidget.domain.AppLanguage
 import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.DEFAULT_CUSTOM_SEED_COLOR_ARGB
@@ -34,6 +35,7 @@ import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.decodeQuotaWindows
 import com.kuyermqi.quotawidget.domain.encodeQuotaWindows
 import com.kuyermqi.quotawidget.domain.formatBalance
+import com.kuyermqi.quotawidget.locale.AppLocale
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.settings.CodexSettings
@@ -71,6 +73,7 @@ object WidgetGlanceState {
     val darkThemeModeKey = stringPreferencesKey("qw_dark_theme_mode")
     val themeColorModeKey = stringPreferencesKey("qw_theme_color_mode")
     val seedColorKey = intPreferencesKey("qw_seed_color")
+    val appLanguageKey = stringPreferencesKey("qw_app_language")
     val openCodeWindowKindKey = stringPreferencesKey("qw_opencode_window_kind")
     val openCodeUsageDisplayModeKey = stringPreferencesKey("qw_opencode_usage_display")
     val openCodeUsageProgressStyleKey = stringPreferencesKey("qw_opencode_usage_progress_style")
@@ -359,6 +362,9 @@ object WidgetGlanceState {
         refreshIntervalMinutes = DEFAULT_REFRESH_INTERVAL_MINUTES,
     )
 
+    fun Preferences.toAppLanguage(): AppLanguage =
+        this[appLanguageKey]?.let { AppLanguage.fromStorage(it) } ?: AppLocale.current()
+
     fun Preferences.toOpenCodeUsageWindowKind(): UsageWindowKind =
         UsageWindowKind.fromStorage(this[openCodeWindowKindKey])
 
@@ -502,6 +508,7 @@ object WidgetGlanceState {
         this[darkThemeModeKey] = appSettings.darkThemeMode.name
         this[themeColorModeKey] = appSettings.themeColorMode.name
         this[seedColorKey] = appSettings.customSeedColorArgb
+        this[appLanguageKey] = appSettings.appLanguage.name
         if (openCodeSettings != null) {
             this[openCodeWindowKindKey] = openCodeSettings.widgetWindowKind.name
             this[openCodeUsageDisplayModeKey] = openCodeSettings.usageDisplayMode.name

@@ -273,6 +273,7 @@ fun ColumnScope.MagpieHomeContent(
                     if (!next.isConfigured) {
                         state.lastDisplay = null
                         state.lastWindows = emptyList()
+                        state.lastUpdatedAtEpochMs = 0L
                     }
                     when (val result = onRefreshPlatform(PlatformIds.MAGPIE)) {
                         is WidgetDisplayState.Error -> state.saveError = result.message

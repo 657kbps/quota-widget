@@ -80,8 +80,10 @@ import com.kuyermqi.quotawidget.domain.AppLanguage
 import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.DarkThemeMode
 import com.kuyermqi.quotawidget.domain.ThemeColorMode
+import com.kuyermqi.quotawidget.locale.AppLocale
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.ThemeColorPickerDialog
+import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.update.UpdateAvailability
 import com.kuyermqi.quotawidget.update.UpdateCheckOutcome
 import kotlinx.coroutines.launch
@@ -105,9 +107,16 @@ fun AppSettingsScreen(
     onRefreshIntervalChanged: (Int) -> Unit,
     onCheckForUpdates: suspend (String) -> UpdateCheckOutcome,
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val initialSettings = remember(context) {
+        AppSettings(
+            darkThemeMode = AppNightMode.storedMode(context),
+            appLanguage = AppLocale.current(),
+        )
+    }
     val appSettings by settingsRepository.observeAppSettings()
-        .collectAsStateWithLifecycle(initialValue = AppSettings())
+        .collectAsStateWithLifecycle(initialValue = initialSettings)
     var showColorPicker by remember { mutableStateOf(false) }
 
     val refreshIntervals = ALLOWED_REFRESH_INTERVAL_MINUTES
@@ -120,7 +129,6 @@ fun AppSettingsScreen(
     }
     val refreshIntervalMinutes = refreshIntervals[refreshIndex]
 
-    val context = LocalContext.current
     val versionName = remember(context) {
         runCatching {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName

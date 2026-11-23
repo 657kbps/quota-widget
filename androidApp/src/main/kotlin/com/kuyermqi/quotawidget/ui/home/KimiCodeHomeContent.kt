@@ -212,6 +212,7 @@ fun ColumnScope.KimiCodeHomeContent(
                     if (!next.isConfigured) {
                         state.lastWindows = emptyList()
                         state.lastDisplay = null
+                        state.lastUpdatedAtEpochMs = 0L
                     }
                     state.saveError = when (
                         val result = onRefreshPlatform(PlatformIds.KIMI_CODE)

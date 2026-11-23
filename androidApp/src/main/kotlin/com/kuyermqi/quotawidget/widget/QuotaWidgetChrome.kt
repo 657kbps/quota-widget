@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -51,6 +52,7 @@ import com.kuyermqi.quotawidget.locale.AppLocale
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.ui.platformNameRes
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toAppLanguage
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toAppThemeSettings
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toDisplayState
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toRefreshPhase
@@ -84,19 +86,24 @@ internal suspend fun GlanceAppWidget.providePlatformGlance(
         platformTitle: String,
     ) -> Unit,
 ) {
-    val localizedContext = AppLocale.wrap(context)
-    val app = localizedContext.applicationContext as QuotaWidgetApp
+    val app = context.applicationContext as QuotaWidgetApp
     val repoDisplay = WidgetGlanceState.syncFromRepository(
-        localizedContext,
+        context,
         id,
         app.settingsRepository,
         platformId,
     )
-    maybeRefreshIfConfigured(localizedContext, app, platformId)
+    maybeRefreshIfConfigured(context, app, platformId)
     Log.i(TAG, "provideGlance id=$id platform=$platformId repo=${repoDisplay::class.simpleName}")
     provideContent {
+        val prefs = currentState<Preferences>()
+        val appLanguage = prefs.toAppLanguage()
+        val systemLocales = context.resources.configuration.locales
+        val primarySystemLocale = if (systemLocales.isEmpty) null else systemLocales[0]
+        val localizedContext = remember(context, appLanguage, primarySystemLocale) {
+            AppLocale.wrap(context, appLanguage)
+        }
         CompositionLocalProvider(LocalWidgetAndroidContext provides localizedContext) {
-            val prefs = currentState<Preferences>()
             val glanceState = prefs.toDisplayState(localizedContext)
             val state = if (
                 prefs[WidgetGlanceState.statusKey] == null &&

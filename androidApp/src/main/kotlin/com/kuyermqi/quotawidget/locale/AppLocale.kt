@@ -32,13 +32,13 @@ object AppLocale {
     fun localeOf(context: Context): Locale {
         val tag = language.languageTag
         if (tag.isNotBlank()) return Locale.forLanguageTag(tag)
-        return resolveSystemLocale(context.resources.configuration.locales[0])
+        return resolveSystemLocale(primarySystemLocale(context))
     }
 
-    fun wrap(base: Context): Context {
-        val tag = language.languageTag
+    fun wrap(base: Context, targetLanguage: AppLanguage = language): Context {
+        val tag = targetLanguage.languageTag
         if (tag.isNotBlank()) return withLocale(base, tag)
-        val systemLocale = base.resources.configuration.locales[0]
+        val systemLocale = primarySystemLocale(base)
         return when (systemLocale.language) {
             !in supportedLanguages -> withLocale(base, FALLBACK_LANGUAGE_TAG)
             "zh" -> withLocale(base, resolveSystemLocale(systemLocale).toLanguageTag())
@@ -65,11 +65,16 @@ object AppLocale {
         activities.toList().forEach { it.recreate() }
     }
 
+    private fun primarySystemLocale(context: Context): Locale {
+        val locales = context.resources.configuration.locales
+        return if (locales.isEmpty) Locale.getDefault() else locales[0]
+    }
+
     private fun resolveSystemLocale(systemLocale: Locale): Locale {
         if (systemLocale.language !in supportedLanguages) return Locale.forLanguageTag(FALLBACK_LANGUAGE_TAG)
         if (systemLocale.language != "zh") return systemLocale
         val traditional = systemLocale.script == "Hant" ||
-            systemLocale.country in traditionalChineseRegions
+            (systemLocale.script != "Hans" && systemLocale.country in traditionalChineseRegions)
         return Locale.forLanguageTag(if (traditional) "zh-Hant" else "zh-Hans")
     }
 

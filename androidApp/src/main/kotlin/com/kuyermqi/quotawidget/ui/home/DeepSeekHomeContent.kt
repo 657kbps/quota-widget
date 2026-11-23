@@ -120,8 +120,8 @@ fun ColumnScope.DeepSeekHomeContent(
             state.draftCurrency = it
             state.saveError = null
         },
-        balance = state.lastDisplay.orEmpty(),
-        updatedAtEpochMs = state.lastUpdatedAtEpochMs,
+        balance = if (state.draftCurrency == state.saved.currency) state.lastDisplay.orEmpty() else "",
+        updatedAtEpochMs = if (state.draftCurrency == state.saved.currency) state.lastUpdatedAtEpochMs else 0L,
         isDirty = state.isDirty,
         isSaving = state.isSaving,
         saveError = state.saveError,
