@@ -38,11 +38,14 @@ import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
 import com.kuyermqi.quotawidget.domain.formatUsagePrimaryDisplay
 import com.kuyermqi.quotawidget.domain.presentCodexOverviewWindowKinds
 import com.kuyermqi.quotawidget.magpie.MagpieProvider
+import com.kuyermqi.quotawidget.platform.PlatformIds
+import com.kuyermqi.quotawidget.platform.PlatformRegistry
 
 @Composable
 fun ColumnScope.MagpieConfigContent(
@@ -60,10 +63,13 @@ fun ColumnScope.MagpieConfigContent(
     onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
     usageProgressStyle: UsageProgressStyle,
     onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
+    usageResetStyle: UsageResetStyle,
+    onUsageResetStyleChange: (UsageResetStyle) -> Unit,
     isSaving: Boolean,
     isDirty: Boolean,
     saveError: String?,
     onSave: () -> Unit,
+    updatedAtEpochMs: Long = 0L,
 ) {
     Spacer(modifier = Modifier.height(8.dp))
     AuthAccountCard {
@@ -100,7 +106,7 @@ fun ColumnScope.MagpieConfigContent(
             )
         }
     }
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(modifier = Modifier.height(12.dp))
     val windowKindChoices = availableUsageWindowKinds(windows).ifEmpty {
         listOf(UsageWindowKind.ROLLING, UsageWindowKind.WEEKLY, UsageWindowKind.MONTHLY)
     }
@@ -112,10 +118,16 @@ fun ColumnScope.MagpieConfigContent(
         onUsageDisplayModeChange = onUsageDisplayModeChange,
         usageProgressStyle = usageProgressStyle,
         onUsageProgressStyleChange = onUsageProgressStyleChange,
+        usageResetStyle = usageResetStyle,
+        onUsageResetStyleChange = onUsageResetStyleChange,
         enabled = !isSaving,
         windowKindChoices = windowKindChoices,
         showWindowKindPicker = windowKindChoices.size >= 2,
         overviewKinds = presentCodexOverviewWindowKinds(windows),
+        platformName = providers.find { it.id == selectedProviderId }?.displayName
+            ?: PlatformRegistry.displayName(PlatformIds.MAGPIE),
+        allowWindowFallback = false,
+        updatedAtEpochMs = updatedAtEpochMs,
     )
     if (!saveError.isNullOrBlank()) {
         Spacer(modifier = Modifier.height(10.dp))

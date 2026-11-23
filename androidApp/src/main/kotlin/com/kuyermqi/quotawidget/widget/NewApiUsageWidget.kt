@@ -9,6 +9,7 @@ import androidx.glance.appwidget.SizeMode
 import androidx.glance.currentState
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
+import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toNewApiUsageDisplayMode
@@ -31,6 +32,8 @@ class NewApiUsageWidget : GlanceAppWidget() {
                 windowKind = UsageWindowKind.TOKEN,
                 usageDisplayMode = prefs.toNewApiUsageDisplayMode(),
                 usageProgressStyle = prefs.toNewApiUsageProgressStyle(),
+                // The token window carries no reset time; keep the plain footer.
+                usageResetStyle = UsageResetStyle.HIDDEN,
             )
         }
     }

@@ -15,6 +15,7 @@ import com.kuyermqi.quotawidget.domain.presentUsageOverviewWindowKinds
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toZhipuUsageDisplayMode
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toZhipuUsageProgressStyle
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toZhipuUsageResetStyle
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeComfortable
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeCompact
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewWidgetContent
@@ -44,6 +45,7 @@ class ZhipuOverviewWidget : GlanceAppWidget() {
                 openApp = openApp,
                 usageDisplayMode = prefs.toZhipuUsageDisplayMode(),
                 usageProgressStyle = prefs.toZhipuUsageProgressStyle(),
+                usageResetStyle = prefs.toZhipuUsageResetStyle(),
                 overviewKinds = overviewKinds,
             )
         }

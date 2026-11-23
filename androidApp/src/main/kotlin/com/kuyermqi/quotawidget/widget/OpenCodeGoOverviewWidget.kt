@@ -14,6 +14,7 @@ import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toOpenCodeUsageDisplayMode
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toOpenCodeUsageProgressStyle
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toOpenCodeUsageResetStyle
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeComfortable
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewSizeCompact
 import com.kuyermqi.quotawidget.widget.usage.UsageOverviewWidgetContent
@@ -41,6 +42,7 @@ class OpenCodeGoOverviewWidget : GlanceAppWidget() {
                 openApp = openApp,
                 usageDisplayMode = prefs.toOpenCodeUsageDisplayMode(),
                 usageProgressStyle = prefs.toOpenCodeUsageProgressStyle(),
+                usageResetStyle = prefs.toOpenCodeUsageResetStyle(),
                 overviewKinds = listOf(
                     QuotaWindowKind.FIVE_HOUR,
                     QuotaWindowKind.WEEKLY,

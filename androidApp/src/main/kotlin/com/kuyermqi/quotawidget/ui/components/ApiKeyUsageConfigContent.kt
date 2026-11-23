@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -27,6 +26,7 @@ import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.ServiceRegion
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
 import com.kuyermqi.quotawidget.domain.presentUsageOverviewWindowKinds
@@ -49,11 +49,15 @@ fun ColumnScope.ApiKeyUsageConfigContent(
     onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
     usageProgressStyle: UsageProgressStyle,
     onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
+    usageResetStyle: UsageResetStyle,
+    onUsageResetStyleChange: (UsageResetStyle) -> Unit,
     regionHint: String,
     isDirty: Boolean,
     isSaving: Boolean,
     saveError: String?,
     onSave: () -> Unit,
+    platformName: String = "",
+    updatedAtEpochMs: Long = 0L,
 ) {
     Spacer(modifier = Modifier.height(8.dp))
     AuthAccountCard {
@@ -75,24 +79,28 @@ fun ColumnScope.ApiKeyUsageConfigContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.height(6.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ServiceRegion.entries.forEach { option ->
-                FilterChip(
-                    selected = region == option,
-                    onClick = { onRegionChange(option) },
-                    enabled = !isSaving,
-                    label = { Text(stringResource(serviceRegionLabelRes(option))) },
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(4.dp))
+        val labelCn = stringResource(R.string.service_region_cn)
+        val labelGlobal = stringResource(R.string.service_region_global)
+        SegmentedOptionRow(
+            options = ServiceRegion.entries,
+            selectedOption = region,
+            labelOf = { option ->
+                when (option) {
+                    ServiceRegion.CN -> labelCn
+                    ServiceRegion.GLOBAL -> labelGlobal
+                }
+            },
+            onOptionSelected = onRegionChange,
+            enabled = !isSaving,
+        )
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = regionHint,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(modifier = Modifier.height(12.dp))
 
     val availableWindowKinds = availableUsageWindowKinds(windows)
     UsageDisplayPrefsSection(
@@ -103,10 +111,14 @@ fun ColumnScope.ApiKeyUsageConfigContent(
         onUsageDisplayModeChange = onUsageDisplayModeChange,
         usageProgressStyle = usageProgressStyle,
         onUsageProgressStyleChange = onUsageProgressStyleChange,
+        usageResetStyle = usageResetStyle,
+        onUsageResetStyleChange = onUsageResetStyleChange,
         enabled = !isSaving,
         windowKindChoices = availableWindowKinds,
         showWindowKindPicker = availableWindowKinds.size >= 2,
         overviewKinds = presentUsageOverviewWindowKinds(windows),
+        platformName = platformName,
+        updatedAtEpochMs = updatedAtEpochMs,
     )
     if (!saveError.isNullOrBlank()) {
         Spacer(modifier = Modifier.height(10.dp))
@@ -136,9 +148,4 @@ fun ColumnScope.ApiKeyUsageConfigContent(
             Text(stringResource(R.string.action_save))
         }
     }
-}
-
-private fun serviceRegionLabelRes(region: ServiceRegion): Int = when (region) {
-    ServiceRegion.CN -> R.string.service_region_cn
-    ServiceRegion.GLOBAL -> R.string.service_region_global
 }

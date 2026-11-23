@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -50,17 +49,14 @@ fun ColumnScope.DeepSeekConfigContent(
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    Spacer(modifier = Modifier.height(4.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        CurrencyPreference.entries.forEach { option ->
-            FilterChip(
-                selected = currency == option,
-                onClick = { onCurrencyChange(option) },
-                enabled = !isSaving,
-                label = { Text(option.name) },
-            )
-        }
-    }
+    Spacer(modifier = Modifier.height(6.dp))
+    SegmentedOptionRow(
+        options = CurrencyPreference.entries,
+        selectedOption = currency,
+        labelOf = { it.name },
+        onOptionSelected = onCurrencyChange,
+        enabled = !isSaving,
+    )
     Spacer(modifier = Modifier.height(8.dp))
     Text(
         text = "若接口未返回所选货币，将自动回退到另一币种。",

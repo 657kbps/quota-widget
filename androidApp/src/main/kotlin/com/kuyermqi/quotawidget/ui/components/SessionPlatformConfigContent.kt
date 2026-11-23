@@ -23,6 +23,7 @@ import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
@@ -50,6 +51,8 @@ fun ColumnScope.SessionPlatformConfigContent(
     onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
     usageProgressStyle: UsageProgressStyle,
     onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
+    usageResetStyle: UsageResetStyle,
+    onUsageResetStyleChange: (UsageResetStyle) -> Unit,
     overviewKinds: List<QuotaWindowKind>,
     notice: String? = null,
     isConfigured: Boolean,
@@ -59,6 +62,8 @@ fun ColumnScope.SessionPlatformConfigContent(
     onLogin: () -> Unit,
     onLogout: () -> Unit,
     onSave: () -> Unit,
+    platformName: String = "",
+    updatedAtEpochMs: Long = 0L,
 ) {
     Spacer(modifier = Modifier.height(8.dp))
     val showTopError = !error.isNullOrBlank() &&
@@ -83,12 +88,16 @@ fun ColumnScope.SessionPlatformConfigContent(
                 onUsageDisplayModeChange = onUsageDisplayModeChange,
                 usageProgressStyle = usageProgressStyle,
                 onUsageProgressStyleChange = onUsageProgressStyleChange,
+                usageResetStyle = usageResetStyle,
+                onUsageResetStyleChange = onUsageResetStyleChange,
                 overviewKinds = overviewKinds,
                 notice = notice,
                 isBusy = isBusy,
                 isDirty = isDirty,
                 onLogout = onLogout,
                 onSave = onSave,
+                platformName = platformName,
+                updatedAtEpochMs = updatedAtEpochMs,
             )
         } else {
             SessionLoggedOutContent(
@@ -122,6 +131,8 @@ fun ColumnScope.SessionPlatformConfigContent(
                     onUsageDisplayModeChange = onUsageDisplayModeChange,
                     usageProgressStyle = usageProgressStyle,
                     onUsageProgressStyleChange = onUsageProgressStyleChange,
+                    usageResetStyle = usageResetStyle,
+                    onUsageResetStyleChange = onUsageResetStyleChange,
                     overviewKinds = overviewKinds,
                     notice = notice,
                     isBusy = isBusy,
@@ -129,6 +140,8 @@ fun ColumnScope.SessionPlatformConfigContent(
                     onChangeAuthMethod = { onAuthPanelChange(SessionAuthPanel.CHOOSE) },
                     onLogout = onLogout,
                     onSave = onSave,
+                    platformName = platformName,
+                    updatedAtEpochMs = updatedAtEpochMs,
                 )
             } else {
                 SessionAuthChoice(
@@ -261,6 +274,8 @@ private fun ColumnScope.SessionConfiguredContent(
     onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
     usageProgressStyle: UsageProgressStyle,
     onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
+    usageResetStyle: UsageResetStyle,
+    onUsageResetStyleChange: (UsageResetStyle) -> Unit,
     overviewKinds: List<QuotaWindowKind>,
     notice: String? = null,
     isBusy: Boolean,
@@ -268,6 +283,8 @@ private fun ColumnScope.SessionConfiguredContent(
     onChangeAuthMethod: (() -> Unit)? = null,
     onLogout: () -> Unit,
     onSave: () -> Unit,
+    platformName: String = "",
+    updatedAtEpochMs: Long = 0L,
 ) {
     val usingApiKey = settings.apiKey.isNotBlank() && settings.accountLabel.isBlank()
     val title = if (usingApiKey) {
@@ -301,6 +318,8 @@ private fun ColumnScope.SessionConfiguredContent(
         onUsageDisplayModeChange = onUsageDisplayModeChange,
         usageProgressStyle = usageProgressStyle,
         onUsageProgressStyleChange = onUsageProgressStyleChange,
+        usageResetStyle = usageResetStyle,
+        onUsageResetStyleChange = onUsageResetStyleChange,
         windowKindChoices = availableUsageWindowKinds(windows),
         overviewKinds = overviewKinds,
         isBusy = isBusy,
@@ -309,6 +328,8 @@ private fun ColumnScope.SessionConfiguredContent(
         saveLabel = stringResource(R.string.session_save_prefs),
         onLogout = onLogout,
         onSave = onSave,
+        platformName = platformName,
+        updatedAtEpochMs = updatedAtEpochMs,
     )
 }
 

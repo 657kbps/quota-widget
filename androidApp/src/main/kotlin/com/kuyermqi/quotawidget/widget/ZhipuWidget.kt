@@ -12,6 +12,7 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toZhipuUsageDisplayMode
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toZhipuUsageProgressStyle
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toZhipuUsageResetStyle
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toZhipuUsageWindowKind
 import com.kuyermqi.quotawidget.widget.usage.UsagePercentCompactContent
 import com.kuyermqi.quotawidget.widget.usage.UsagePercentWidgetContent
@@ -32,6 +33,7 @@ class ZhipuWidget : GlanceAppWidget() {
                 windowKind = prefs.toZhipuUsageWindowKind(),
                 usageDisplayMode = prefs.toZhipuUsageDisplayMode(),
                 usageProgressStyle = prefs.toZhipuUsageProgressStyle(),
+                usageResetStyle = prefs.toZhipuUsageResetStyle(),
             )
         }
     }
@@ -52,6 +54,7 @@ class ZhipuCompactWidget : GlanceAppWidget() {
                 windowKind = prefs.toZhipuUsageWindowKind(),
                 usageDisplayMode = prefs.toZhipuUsageDisplayMode(),
                 usageProgressStyle = prefs.toZhipuUsageProgressStyle(),
+                usageResetStyle = prefs.toZhipuUsageResetStyle(),
             )
         }
     }

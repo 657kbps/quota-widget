@@ -12,6 +12,7 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toKimiCodeUsageDisplayMode
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toKimiCodeUsageProgressStyle
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toKimiCodeUsageResetStyle
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toKimiCodeUsageWindowKind
 import com.kuyermqi.quotawidget.widget.usage.UsagePercentCompactContent
 import com.kuyermqi.quotawidget.widget.usage.UsagePercentWidgetContent
@@ -32,6 +33,7 @@ class KimiCodeWidget : GlanceAppWidget() {
                 windowKind = prefs.toKimiCodeUsageWindowKind(),
                 usageDisplayMode = prefs.toKimiCodeUsageDisplayMode(),
                 usageProgressStyle = prefs.toKimiCodeUsageProgressStyle(),
+                usageResetStyle = prefs.toKimiCodeUsageResetStyle(),
             )
         }
     }
@@ -52,6 +54,7 @@ class KimiCodeCompactWidget : GlanceAppWidget() {
                 windowKind = prefs.toKimiCodeUsageWindowKind(),
                 usageDisplayMode = prefs.toKimiCodeUsageDisplayMode(),
                 usageProgressStyle = prefs.toKimiCodeUsageProgressStyle(),
+                usageResetStyle = prefs.toKimiCodeUsageResetStyle(),
             )
         }
     }
