@@ -1,57 +1,75 @@
 package com.kuyermqi.quotawidget.ui
 
-import android.graphics.Color as AndroidColor
-import androidx.compose.foundation.Canvas
+import android.content.Intent
+import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ButtonGroup
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FilledTonalToggleButton
+import androidx.compose.material3.FilledTonalToggleButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.ALLOWED_REFRESH_INTERVAL_MINUTES
@@ -59,210 +77,598 @@ import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.DarkThemeMode
 import com.kuyermqi.quotawidget.domain.ThemeColorMode
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
-import com.kuyermqi.quotawidget.ui.components.FlowOptionGroup
-import com.kuyermqi.quotawidget.ui.components.SegmentedOptionRow
+import com.kuyermqi.quotawidget.ui.components.ThemeColorPickerDialog
+import com.kuyermqi.quotawidget.update.UpdateAvailability
+import com.kuyermqi.quotawidget.update.UpdateCheckOutcome
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class)
+private val DarkModeOptions = listOf(
+    DarkThemeMode.FollowSystem,
+    DarkThemeMode.Light,
+    DarkThemeMode.Dark,
+)
+
+private val ThemeColorOptions = listOf(
+    ThemeColorMode.FollowSystem,
+    ThemeColorMode.Custom,
+)
+
 @Composable
 fun AppSettingsScreen(
     settingsRepository: PlatformSettingsRepository,
     onBack: () -> Unit,
     onRefreshIntervalChanged: (Int) -> Unit,
+    onCheckForUpdates: suspend (String) -> UpdateCheckOutcome,
 ) {
     val scope = rememberCoroutineScope()
     val appSettings by settingsRepository.observeAppSettings()
         .collectAsStateWithLifecycle(initialValue = AppSettings())
     var showColorPicker by remember { mutableStateOf(false) }
 
+    val refreshIntervals = ALLOWED_REFRESH_INTERVAL_MINUTES
+    val lastRefreshIndex = refreshIntervals.lastIndex
+    var refreshIndex by rememberSaveable {
+        mutableStateOf(refreshIntervals.indexOf(appSettings.refreshIntervalMinutes).coerceIn(0, lastRefreshIndex))
+    }
+    LaunchedEffect(appSettings.refreshIntervalMinutes) {
+        refreshIndex = refreshIntervals.indexOf(appSettings.refreshIntervalMinutes).coerceIn(0, lastRefreshIndex)
+    }
+    val refreshIntervalMinutes = refreshIntervals[refreshIndex]
+
+    val context = LocalContext.current
+    val versionName = remember(context) {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrNull().orEmpty()
+    }
+
+    var isCheckingUpdate by remember { mutableStateOf(false) }
+    var availableUpdate by remember { mutableStateOf<UpdateAvailability?>(null) }
+    val upToDateMessage = stringResource(R.string.app_settings_check_updates_latest)
+    val checkFailedMessage = stringResource(R.string.app_settings_check_updates_failed)
+
+    fun save(updated: AppSettings) {
+        scope.launch { settingsRepository.saveAppSettings(updated) }
+    }
+
     if (showColorPicker) {
-        HsvColorPickerDialog(
+        ThemeColorPickerDialog(
             initialColorArgb = appSettings.customSeedColorArgb,
             onDismiss = { showColorPicker = false },
             onConfirm = { argb ->
                 showColorPicker = false
-                scope.launch {
-                    settingsRepository.saveAppSettings(
-                        appSettings.copy(
-                            themeColorMode = ThemeColorMode.Custom,
-                            customSeedColorArgb = argb,
-                        ),
-                    )
-                }
+                save(
+                    appSettings.copy(
+                        themeColorMode = ThemeColorMode.Custom,
+                        customSeedColorArgb = argb,
+                    ),
+                )
             },
         )
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.app_settings_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_expand_more),
-                            contentDescription = stringResource(R.string.app_settings_back),
-                            modifier = Modifier
-                                .size(24.dp)
-                                .rotate(90f),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        LazyColumn(
+    availableUpdate?.let { update ->
+        UpdateAvailableDialog(
+            versionName = update.versionName,
+            onIgnoreVersion = {
+                scope.launch { settingsRepository.setUpdateIgnoredVersion(update.versionName) }
+                availableUpdate = null
+            },
+            onDownload = {
+                runCatching {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, update.releaseUrl.toUri()))
+                }
+                availableUpdate = null
+            },
+            onDismiss = { availableUpdate = null },
+        )
+    }
+
+    val scheme = MaterialTheme.colorScheme
+    val pageColor = scheme.surfaceContainerLow
+    val isDarkTheme = scheme.surface.luminance() < 0.5f
+    val cardColor = if (isDarkTheme) {
+        scheme.surfaceContainer
+    } else {
+        scheme.surfaceContainerLowest
+    }
+    val chooseColorRowColor = if (isDarkTheme) {
+        scheme.surfaceContainerHigh
+    } else {
+        scheme.surfaceContainer
+    }
+
+    Scaffold(containerColor = pageColor) { padding ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp)
-                .imePadding(),
-            contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+                .verticalScroll(rememberScrollState()),
         ) {
-            item(key = "dark_mode") {
-                val labelOn = stringResource(R.string.app_settings_dark_mode_on)
-                val labelOff = stringResource(R.string.app_settings_dark_mode_off)
-                val labelSystem = stringResource(R.string.app_settings_dark_mode_system)
-                SettingsSection(title = stringResource(R.string.app_settings_dark_mode)) {
-                    SegmentedOptionRow(
-                        options = listOf(
-                            DarkThemeMode.Dark,
-                            DarkThemeMode.Light,
-                            DarkThemeMode.FollowSystem,
-                        ),
-                        selectedOption = appSettings.darkThemeMode,
-                        labelOf = { mode ->
-                            when (mode) {
-                                DarkThemeMode.Dark -> labelOn
-                                DarkThemeMode.Light -> labelOff
-                                DarkThemeMode.FollowSystem -> labelSystem
-                            }
-                        },
-                        onOptionSelected = { mode ->
-                            scope.launch {
-                                settingsRepository.saveAppSettings(
-                                    appSettings.copy(darkThemeMode = mode),
-                                )
-                            }
+            SettingsHeader(
+                title = stringResource(R.string.app_settings_title),
+                onBack = onBack,
+            )
+
+            SettingsSection(
+                title = stringResource(R.string.app_settings_section_appearance),
+                cardColor = cardColor,
+            ) {
+                SettingsExpandingRow(
+                    title = stringResource(R.string.app_settings_dark_mode),
+                    value = darkModeLabel(appSettings.darkThemeMode),
+                ) {
+                    ButtonGroupChoice(
+                        options = DarkModeOptions,
+                        selected = appSettings.darkThemeMode,
+                        labelOf = { mode -> darkModeLabel(mode) },
+                        onSelect = { mode ->
+                            save(appSettings.copy(darkThemeMode = mode))
                         },
                     )
                 }
-            }
-
-            item(key = "theme_color") {
-                val labelSystem = stringResource(R.string.app_settings_theme_color_system)
-                val labelCustom = stringResource(R.string.app_settings_theme_color_custom)
-                SettingsSection(title = stringResource(R.string.app_settings_theme_color)) {
-                    SegmentedOptionRow(
-                        options = listOf(
-                            ThemeColorMode.FollowSystem,
-                            ThemeColorMode.Custom,
-                        ),
-                        selectedOption = appSettings.themeColorMode,
-                        labelOf = { mode ->
-                            when (mode) {
-                                ThemeColorMode.FollowSystem -> labelSystem
-                                ThemeColorMode.Custom -> labelCustom
-                            }
-                        },
-                        onOptionSelected = { mode ->
-                            scope.launch {
-                                settingsRepository.saveAppSettings(
-                                    appSettings.copy(themeColorMode = mode),
-                                )
-                            }
+                SettingsRowDivider()
+                SettingsExpandingRow(
+                    title = stringResource(R.string.app_settings_theme_color),
+                    value = themeColorValue(appSettings.themeColorMode),
+                    valueDotColor = if (appSettings.themeColorMode == ThemeColorMode.Custom) {
+                        Color(appSettings.customSeedColorArgb)
+                    } else {
+                        null
+                    },
+                ) {
+                    ButtonGroupChoice(
+                        options = ThemeColorOptions,
+                        selected = appSettings.themeColorMode,
+                        labelOf = { mode -> themeColorValue(mode) },
+                        onSelect = { mode ->
+                            save(appSettings.copy(themeColorMode = mode))
                         },
                     )
-                    if (appSettings.themeColorMode == ThemeColorMode.Custom) {
-                        Spacer(modifier = Modifier.height(12.dp))
+                    AnimatedVisibility(
+                        visible = appSettings.themeColorMode == ThemeColorMode.Custom,
+                        enter = expandVertically(animationSpec = tween(200)) + fadeIn(tween(160)),
+                        exit = shrinkVertically(animationSpec = tween(180)) + fadeOut(tween(120)),
+                    ) {
+                        Column {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 48.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(chooseColorRowColor)
+                                    .clickable { showColorPicker = true }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(appSettings.customSeedColorArgb))
+                                        .border(
+                                            width = 1.dp,
+                                            color = MaterialTheme.colorScheme.outlineVariant,
+                                            shape = CircleShape,
+                                        ),
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = stringResource(R.string.app_settings_theme_color_choose),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                                Spacer(modifier = Modifier.weight(1f))
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_chevron_right),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            SettingsSection(
+                title = stringResource(R.string.app_settings_section_widget),
+                cardColor = cardColor,
+            ) {
+                SettingsExpandingRow(
+                    title = stringResource(R.string.app_settings_refresh_interval),
+                    value = refreshIntervalLabel(refreshIntervalMinutes),
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Slider(
+                            value = refreshIndex.toFloat(),
+                            onValueChange = { value ->
+                                refreshIndex = value.roundToInt().coerceIn(0, lastRefreshIndex)
+                            },
+                            valueRange = 0f..lastRefreshIndex.toFloat(),
+                            steps = (lastRefreshIndex - 1).coerceAtLeast(0),
+                            onValueChangeFinished = {
+                                val minutes = refreshIntervals[refreshIndex]
+                                if (minutes != appSettings.refreshIntervalMinutes) {
+                                    save(appSettings.copy(refreshIntervalMinutes = minutes))
+                                    onRefreshIntervalChanged(minutes)
+                                }
+                            },
+                        )
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             Text(
-                                text = stringResource(R.string.app_settings_theme_color_preview),
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = refreshIntervalLabel(refreshIntervals.first()),
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(appSettings.customSeedColorArgb))
-                                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
-                                    .pointerInput(Unit) {
-                                        detectTapGestures { showColorPicker = true }
-                                    },
+                            Spacer(modifier = Modifier.weight(1f))
+                            Text(
+                                text = refreshIntervalLabel(refreshIntervals.last()),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
                 }
             }
 
-            item(key = "refresh_interval") {
-                val intervalLabels = ALLOWED_REFRESH_INTERVAL_MINUTES.associateWith { minutes ->
-                    refreshIntervalLabel(minutes)
-                }
-                SettingsSection(title = stringResource(R.string.app_settings_refresh_interval)) {
-                    FlowOptionGroup(
-                        options = ALLOWED_REFRESH_INTERVAL_MINUTES,
-                        selectedOption = appSettings.refreshIntervalMinutes,
-                        labelOf = { minutes -> intervalLabels[minutes] ?: "" },
-                        onOptionSelected = { minutes ->
-                            scope.launch {
-                                settingsRepository.saveAppSettings(
-                                    appSettings.copy(refreshIntervalMinutes = minutes),
-                                )
-                                onRefreshIntervalChanged(minutes)
-                            }
+            SettingsSection(
+                title = stringResource(R.string.app_settings_section_app),
+                cardColor = cardColor,
+            ) {
+                SettingsRow(
+                    title = stringResource(R.string.app_settings_check_updates_on_launch),
+                    summary = stringResource(R.string.app_settings_check_updates_supporting),
+                    trailing = {
+                        Switch(
+                            checked = appSettings.checkForUpdatesOnLaunch,
+                            onCheckedChange = null,
+                        )
+                    },
+                    modifier = Modifier.toggleable(
+                        value = appSettings.checkForUpdatesOnLaunch,
+                        role = Role.Switch,
+                        onValueChange = { enabled ->
+                            save(appSettings.copy(checkForUpdatesOnLaunch = enabled))
                         },
-                    )
-                }
+                    ),
+                )
+                SettingsRowDivider()
+                SettingsRow(
+                    title = stringResource(R.string.app_settings_version),
+                    summary = versionName,
+                    trailing = {
+                        CheckUpdateButton(
+                            isChecking = isCheckingUpdate,
+                            onClick = {
+                                if (!isCheckingUpdate) {
+                                    isCheckingUpdate = true
+                                    scope.launch {
+                                        val outcome = onCheckForUpdates(versionName)
+                                        isCheckingUpdate = false
+                                        when (outcome) {
+                                            is UpdateCheckOutcome.Available -> {
+                                                availableUpdate = outcome.availability
+                                            }
+                                            UpdateCheckOutcome.UpToDate -> {
+                                                Toast.makeText(context, upToDateMessage, Toast.LENGTH_SHORT)
+                                                    .show()
+                                            }
+                                            UpdateCheckOutcome.Failed -> {
+                                                Toast.makeText(context, checkFailedMessage, Toast.LENGTH_SHORT)
+                                                    .show()
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                        )
+                    },
+                )
             }
 
-            item(key = "check_updates_on_launch") {
-                val labelOn = stringResource(R.string.app_settings_check_updates_on)
-                val labelOff = stringResource(R.string.app_settings_check_updates_off)
-                SettingsSection(title = stringResource(R.string.app_settings_check_updates_on_launch)) {
-                    SegmentedOptionRow(
-                        options = listOf(true, false),
-                        selectedOption = appSettings.checkForUpdatesOnLaunch,
-                        labelOf = { enabled -> if (enabled) labelOn else labelOff },
-                        onOptionSelected = { enabled ->
-                            scope.launch {
-                                settingsRepository.saveAppSettings(
-                                    appSettings.copy(checkForUpdatesOnLaunch = enabled),
-                                )
-                            }
-                        },
-                    )
-                }
-            }
+            Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+}
+
+@Composable
+private fun SettingsHeader(
+    title: String,
+    onBack: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        FilledTonalIconButton(
+            onClick = onBack,
+            modifier = Modifier.size(48.dp),
+            colors = IconButtonDefaults.filledTonalIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_arrow_back),
+                contentDescription = stringResource(R.string.app_settings_back),
+            )
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }
 
 @Composable
 private fun SettingsSection(
     title: String,
-    content: @Composable () -> Unit,
+    cardColor: Color,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 24.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
+    )
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(28.dp),
+        color = cardColor,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            content = content,
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        content()
     }
 }
+
+@Composable
+private fun SettingsExpandingRow(
+    title: String,
+    value: String,
+    valueDotColor: Color? = null,
+    content: @Composable () -> Unit,
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (expanded) 90f else 0f,
+        animationSpec = tween(durationMillis = 200),
+        label = "settingsChevron",
+    )
+
+    Column {
+        SettingsRow(
+            title = title,
+            value = value,
+            valueDotColor = valueDotColor,
+            showChevron = true,
+            chevronRotation = chevronRotation,
+            modifier = Modifier.clickable { expanded = !expanded },
+        )
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(animationSpec = tween(220)) + fadeIn(tween(160)),
+            exit = shrinkVertically(animationSpec = tween(200)) + fadeOut(tween(120)),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 16.dp),
+            ) {
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsRow(
+    title: String,
+    modifier: Modifier = Modifier,
+    summary: String? = null,
+    value: String? = null,
+    valueDotColor: Color? = null,
+    showChevron: Boolean = false,
+    chevronRotation: Float = 0f,
+    trailing: @Composable (() -> Unit)? = null,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            if (summary != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (value != null) {
+            if (valueDotColor != null) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(valueDotColor)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+            }
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (showChevron) {
+            Spacer(modifier = Modifier.width(6.dp))
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .size(20.dp)
+                    .rotate(chevronRotation),
+            )
+        }
+        if (trailing != null) {
+            Spacer(modifier = Modifier.width(12.dp))
+            trailing()
+        }
+    }
+}
+
+@Composable
+private fun SettingsRowDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(horizontal = 20.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+    )
+}
+
+@Composable
+private fun <T> ButtonGroupChoice(
+    options: List<T>,
+    selected: T,
+    labelOf: @Composable (T) -> String,
+    onSelect: (T) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ButtonGroup(
+        overflowIndicator = { menuState ->
+            ButtonGroupDefaults.OverflowIndicator(menuState = menuState)
+        },
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+    ) {
+        options.forEachIndexed { index, option ->
+            customItem(
+                buttonGroupContent = {
+                    val isSelected = option == selected
+                    val shapes = when (index) {
+                        0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                        options.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                        else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                    }
+                    FilledTonalToggleButton(
+                        checked = isSelected,
+                        onCheckedChange = { onSelect(option) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 40.dp),
+                        shapes = shapes,
+                        colors = FilledTonalToggleButtonDefaults.colors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            checkedContainerColor = MaterialTheme.colorScheme.primary,
+                            checkedContentColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        icon = if (isSelected) {
+                            {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_check),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
+                        } else {
+                            null
+                        },
+                    ) {
+                        Text(
+                            text = labelOf(option),
+                            maxLines = 1,
+                        )
+                    }
+                },
+                menuContent = { menuState ->
+                    DropdownMenuItem(
+                        text = { Text(text = labelOf(option)) },
+                        onClick = {
+                            onSelect(option)
+                            menuState.dismiss()
+                        },
+                    )
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun CheckUpdateButton(
+    isChecking: Boolean,
+    onClick: () -> Unit,
+) {
+    val rotation = remember { Animatable(0f) }
+    LaunchedEffect(isChecking) {
+        if (isChecking) {
+            rotation.snapTo(0f)
+            rotation.animateTo(
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(tween(durationMillis = 900, easing = LinearEasing)),
+            )
+        }
+    }
+
+    TextButton(
+        onClick = onClick,
+        enabled = !isChecking,
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_refresh),
+            contentDescription = null,
+            modifier = Modifier
+                .size(18.dp)
+                .rotate(rotation.value),
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = stringResource(R.string.app_settings_check_updates_action),
+            style = MaterialTheme.typography.labelLarge,
+        )
+    }
+}
+
+@Composable
+private fun themeColorValue(mode: ThemeColorMode): String = when (mode) {
+    ThemeColorMode.FollowSystem -> stringResource(R.string.app_settings_theme_color_system)
+    ThemeColorMode.Custom -> stringResource(R.string.app_settings_theme_color_custom)
+}
+
+@Composable
+private fun darkModeLabel(mode: DarkThemeMode): String = stringResource(
+    when (mode) {
+        DarkThemeMode.FollowSystem -> R.string.app_settings_dark_mode_system
+        DarkThemeMode.Light -> R.string.app_settings_dark_mode_light
+        DarkThemeMode.Dark -> R.string.app_settings_dark_mode_dark
+    },
+)
 
 @Composable
 private fun refreshIntervalLabel(minutes: Int): String {
@@ -271,130 +677,4 @@ private fun refreshIntervalLabel(minutes: Int): String {
         minutes % 60 == 0 -> stringResource(R.string.app_settings_refresh_interval_hours, minutes / 60)
         else -> stringResource(R.string.app_settings_refresh_interval_minutes, minutes)
     }
-}
-
-@Composable
-private fun HsvColorPickerDialog(
-    initialColorArgb: Int,
-    onDismiss: () -> Unit,
-    onConfirm: (Int) -> Unit,
-) {
-    val initialHsv = remember(initialColorArgb) {
-        FloatArray(3).also { AndroidColor.colorToHSV(initialColorArgb, it) }
-    }
-    var hue by remember(initialColorArgb) { mutableFloatStateOf(initialHsv[0]) }
-    var saturation by remember(initialColorArgb) { mutableFloatStateOf(initialHsv[1]) }
-    var value by remember(initialColorArgb) { mutableFloatStateOf(initialHsv[2]) }
-
-    val previewColor = remember(hue, saturation, value) {
-        Color(AndroidColor.HSVToColor(floatArrayOf(hue, saturation, value)))
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.app_settings_color_picker_title)) },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .pointerInput(hue) {
-                            detectTapGestures { offset ->
-                                updateSaturationValue(offset, size.width.toFloat(), size.height.toFloat()) { s, v ->
-                                    saturation = s
-                                    value = v
-                                }
-                            }
-                        }
-                        .pointerInput(hue) {
-                            detectDragGestures { change, _ ->
-                                change.consume()
-                                updateSaturationValue(
-                                    change.position,
-                                    size.width.toFloat(),
-                                    size.height.toFloat(),
-                                ) { s, v ->
-                                    saturation = s
-                                    value = v
-                                }
-                            }
-                        },
-                ) {
-                    Canvas(modifier = Modifier.matchParentSize()) {
-                        val pureHue = Color(AndroidColor.HSVToColor(floatArrayOf(hue, 1f, 1f)))
-                        drawRect(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(Color.White, pureHue),
-                            ),
-                        )
-                        drawRect(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Color.Black),
-                            ),
-                        )
-                        val markerX = saturation * size.width
-                        val markerY = (1f - value) * size.height
-                        drawCircle(
-                            color = Color.White,
-                            radius = 8.dp.toPx(),
-                            center = Offset(markerX, markerY),
-                        )
-                        drawCircle(
-                            color = Color.Black,
-                            radius = 6.dp.toPx(),
-                            center = Offset(markerX, markerY),
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = stringResource(R.string.app_settings_color_picker_hue),
-                    style = MaterialTheme.typography.labelLarge,
-                )
-                Slider(
-                    value = hue,
-                    onValueChange = { hue = it },
-                    valueRange = 0f..360f,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(previewColor)
-                        .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onConfirm(AndroidColor.HSVToColor(floatArrayOf(hue, saturation, value))) },
-            ) {
-                Text(stringResource(R.string.app_settings_color_picker_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.app_settings_color_picker_cancel))
-            }
-        },
-    )
-}
-
-private fun updateSaturationValue(
-    offset: Offset,
-    width: Float,
-    height: Float,
-    onUpdate: (saturation: Float, value: Float) -> Unit,
-) {
-    if (width <= 0f || height <= 0f) return
-    val s = (offset.x / width).coerceIn(0f, 1f)
-    val v = (1f - offset.y / height).coerceIn(0f, 1f)
-    onUpdate(s, v)
 }

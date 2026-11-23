@@ -49,6 +49,9 @@ class AppSettingsActivity : ComponentActivity() {
                     onRefreshIntervalChanged = { minutes ->
                         PeriodicRefreshScheduler.schedule(this@AppSettingsActivity, minutes)
                     },
+                    onCheckForUpdates = { versionName ->
+                        app.updateCheckInteractor.checkManually(versionName)
+                    },
                 )
             }
         }

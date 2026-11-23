@@ -16,9 +16,9 @@ import com.kuyermqi.quotawidget.R
 fun UpdateAvailableDialog(
     versionName: String,
     onIgnoreVersion: () -> Unit,
-    onNeverPrompt: () -> Unit,
     onDownload: () -> Unit,
     onDismiss: () -> Unit,
+    onNeverPrompt: (() -> Unit)? = null,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -38,8 +38,10 @@ fun UpdateAvailableDialog(
                 TextButton(onClick = onIgnoreVersion) {
                     Text(stringResource(R.string.update_ignore_version))
                 }
-                TextButton(onClick = onNeverPrompt) {
-                    Text(stringResource(R.string.update_never_prompt))
+                if (onNeverPrompt != null) {
+                    TextButton(onClick = onNeverPrompt) {
+                        Text(stringResource(R.string.update_never_prompt))
+                    }
                 }
             }
         },
