@@ -1,11 +1,17 @@
-<h1 align="center">配额监控 · Quota Widget</h1>
+<h1 align="center">Quota Widget</h1>
 
 <p align="center">
-  <a href="README.md">中文</a> · <a href="README_EN.md">English</a>
+  <strong>English</strong> ·
+  <a href="README.zh-Hans.md">简体中文</a> ·
+  <a href="README.zh-Hant.md">繁體中文</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.de.md">Deutsch</a> ·
+  <a href="README.fr.md">Français</a> ·
+  <a href="README.ru.md">Русский</a>
 </p>
 
 <p align="center">
-  在 Android 桌面一眼查看 API 余额与用量的开源小组件
+  An open-source Android app and home-screen widget suite for monitoring AI API balances and subscription quotas at a glance.
 </p>
 
 <p align="center">
@@ -17,111 +23,215 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/app-home.png" alt="应用主页" width="30%" />
+  <img src="docs/screenshots/app-home.png" alt="App home screen" width="30%" />
   &nbsp;
-  <img src="docs/screenshots/widgets-dark.png" alt="深色小组件" width="30%" />
+  <img src="docs/screenshots/widgets-dark.png" alt="Widgets in dark theme" width="30%" />
   &nbsp;
-  <img src="docs/screenshots/widgets-light.png" alt="浅色小组件" width="30%" />
+  <img src="docs/screenshots/widgets-light.png" alt="Widgets in light theme" width="30%" />
 </p>
 
-## 功能亮点
+## Features
 
-- **多平台监控**：DeepSeek 账户余额、OpenCode Go 用量、Codex 订阅用量（每周 / 每月）、NewAPI 令牌余额与用量、Magpie 网关订阅额度、Kimi Code 与 Zhipu Coding Plan 订阅配额，以及 WorkBuddy / WorkBuddy 国际版、Cline Pass、Command Code、Antigravity
-- **多种小组件尺寸**：标准、紧凑、用量总览，适配不同桌面布局
-- **后台自动刷新**：WorkManager 按设定间隔更新，支持手动点按刷新
-- **安全存储**：API Key / OAuth Token 经 Tink 加密后写入 DataStore
-- **主题可定制**：浅色 / 深色 / 跟随系统，以及自定义主题色
-- **多语言界面**：简体中文 / 繁体中文 / English / 日本語 / Deutsch / Français / Русский，默认跟随系统（系统语言不支持时使用英语）
-- **后台保活提示**：引导关闭电池优化，并提供 [DontKillMyApp](https://dontkillmyapp.com/) 厂商设置参考
-- **应用内更新检查**：启动时可检查 GitHub Releases 新版本
+- **Multi-Provider Monitoring**: Track account balances and subscription usage windows across DeepSeek, OpenCode Go, Codex, NewAPI, Magpie, Kimi Code, Zhipu Coding Plan, WorkBuddy, WorkBuddy International, Cline Pass, Command Code, and Antigravity.
+- **Flexible Widget Layouts**: Choose from Standard, Compact, and Overview layouts with customizable used/remaining values, progress bar styles, reset time indicators, and live in-app previews.
+- **Reliable Background Refresh**: Automatically updates via WorkManager at configurable intervals (15 minutes to 24 hours), alongside one-tap manual refresh directly from any widget.
+- **Encrypted Credential Storage**: API keys and session tokens are encrypted with Google Tink before being persisted in DataStore Preferences.
+- **Customizable Appearance**: Supports Light, Dark, and Follow System themes, with dynamic system colors or a custom accent color.
+- **Localized Interface**: Available in English, Simplified Chinese, Traditional Chinese, Japanese, German, French, and Russian. Follows the system locale by default (falling back to English) or can be set manually in Settings.
+- **Background Execution Guidance**: Includes battery optimization prompts and OEM-specific guidance via [DontKillMyApp](https://dontkillmyapp.com/).
+- **Update Notifications**: Optional check against GitHub Releases on app launch, plus manual update checks in Settings.
 
-## 支持的平台
+## Supported Providers
 
+<details>
+<summary><strong>Antigravity</strong></summary>
 
-| 平台 | 展示内容 | 小组件 |
-|------|----------|--------|
-| **DeepSeek** | API 账户余额 | 标准 · 紧凑 |
-| **OpenCode Go** | 滚动 / 每周 / 每月用量或余量（可配置） | 标准 · 紧凑 · 总览 |
-| **Codex** | 每周 / 每月用量或余量（可配置；应用内 OAuth 登录） | 标准 · 紧凑 · 总览 |
-| **NewAPI** | 令牌余额（USD）与用量/余量百分比（可配置 Base URL + API Key） | 余额标准 · 余额紧凑 · 用量 |
-| **Magpie** | 自部署网关各供应商的订阅额度（同供应商的多个账号合并展示；5 小时 / 每周 / 每月；可选择展示哪个供应商，默认取网关返回的第一个；可配置网关地址 + 网关密钥） | 标准 · 紧凑 · 总览 |
-| **Kimi Code** | 5H / 每周 / 每月用量或余量（视套餐返回；可配置国内 / 海外站点） | 标准 · 紧凑 · 总览 |
-| **Zhipu Coding Plan** | 5H / 每周用量或余量（可配置国内 / 海外站点） | 标准 · 紧凑 · 总览 |
-| **WorkBuddy** | 每月积分额度 | 标准 · 紧凑 · 总览 |
-| **WorkBuddy 国际版** | 每月积分额度（国际版） | 标准 · 紧凑 · 总览 |
-| **Cline Pass** | 5 小时 / 每周 / 每月用量（应用内 WorkOS 登录，或 API Key） | 标准 · 紧凑 · 总览 |
-| **Command Code** | 5 小时 / 每周 / 每月额度与月度积分（应用内 Studio 登录，或 API Key） | 标准 · 紧凑 · 总览 |
-| **Antigravity** | 5 小时 / 每周模型额度（应用内 Google OAuth；非官方接入） | 标准 · 紧凑 · 总览 |
+- **Displays**: 5-hour and weekly model quotas
+- **Authentication**: In-app Google OAuth (unofficial integration)
+- **Widgets**: Standard · Compact · Overview
 
-> WorkBuddy、Cline、Command Code、Antigravity 的浏览器登录会在应用内 WebView 完成，登录后的回调会自动回填，无需手动复制 callback URL。
->
-> Antigravity 使用非官方 API 接入，Google 可能对相关账号做风控；建议先在官方 Antigravity 桌面端登录账号并完成项目初始化，再在此应用登录。
+</details>
 
-## 下载
+<details>
+<summary><strong>Cline Pass</strong></summary>
 
-前往 [Releases](https://github.com/657kbps/quota-widget/releases/latest) 下载最新 APK 安装即可。
+- **Displays**: 5-hour, weekly, and monthly usage
+- **Authentication**: In-app WorkOS sign-in or API key
+- **Widgets**: Standard · Compact · Overview
 
-> 包名：`com.kuyermqi.quotawidget`
+</details>
 
-## 快速开始
+<details>
+<summary><strong>Codex</strong></summary>
 
-1. 安装并打开应用，按提示关闭电池优化（强烈建议）
-2. 在主页点按平台进入配置页，配置 API Key 或登录账号后保存
-3. 长按桌面空白处 → 小组件 → 添加「配额监控」相关组件
-4. 点按小组件上的刷新按钮即可立即更新
+- **Displays**: Weekly and monthly subscription quota (used or remaining; 5-hour, weekly, and monthly in Overview)
+- **Authentication**: In-app OAuth sign-in
+- **Widgets**: Standard · Compact · Overview
 
-部分国产 ROM 即使关闭电池优化仍可能限制后台；可参考 [DontKillMyApp](https://dontkillmyapp.com/) 为应用放行自启动 / 后台运行。
+</details>
 
-## 从源码构建
+<details>
+<summary><strong>Command Code</strong></summary>
+
+- **Displays**: 5-hour, weekly, and monthly limits plus monthly credits
+- **Authentication**: In-app Studio sign-in or API key
+- **Widgets**: Standard · Compact · Overview
+
+</details>
+
+<details>
+<summary><strong>DeepSeek</strong></summary>
+
+- **Displays**: API account balance (configurable CNY / USD display currency)
+- **Widgets**: Standard · Compact
+
+</details>
+
+<details>
+<summary><strong>Kimi Code</strong></summary>
+
+- **Displays**: 5-hour, weekly, and monthly quota (used or remaining, depending on plan)
+- **Configuration**: API key and China / Global region selection
+- **Widgets**: Standard · Compact · Overview
+
+</details>
+
+<details>
+<summary><strong>Magpie</strong></summary>
+
+- **Displays**: Per-provider subscription allowances on a self-hosted Magpie gateway (5-hour, weekly, and monthly; aggregates multiple accounts per provider; selectable provider, defaulting to the first returned)
+- **Configuration**: Gateway URL and gateway API key
+- **Widgets**: Standard · Compact · Overview
+
+</details>
+
+<details>
+<summary><strong>NewAPI</strong></summary>
+
+- **Displays**: Token balance (USD) and usage/remaining percentage
+- **Configuration**: Base URL, API key, and quota conversion rate
+- **Widgets**: Balance Standard · Balance Compact · Usage
+
+</details>
+
+<details>
+<summary><strong>OpenCode Go</strong></summary>
+
+- **Displays**: Rolling, weekly, and monthly quota (used or remaining)
+- **Authentication**: In-app web sign-in (with workspace selection) or API key
+- **Widgets**: Standard · Compact · Overview
+
+</details>
+
+<details>
+<summary><strong>WorkBuddy</strong></summary>
+
+- **Displays**: Monthly credit allowance
+- **Authentication**: In-app browser sign-in
+- **Widgets**: Standard · Compact · Overview
+
+</details>
+
+<details>
+<summary><strong>WorkBuddy International</strong></summary>
+
+- **Displays**: Monthly credit allowance (international edition)
+- **Authentication**: In-app browser sign-in
+- **Widgets**: Standard · Compact · Overview
+
+</details>
+
+<details>
+<summary><strong>Zhipu Coding Plan</strong></summary>
+
+- **Displays**: 5-hour and weekly quota (used or remaining)
+- **Configuration**: API key and China / Global region selection
+- **Widgets**: Standard · Compact · Overview
+
+</details>
+
+> **In-App Authentication**
+> Browser-based sign-in flows (OpenCode Go, Codex, WorkBuddy, WorkBuddy International, Cline Pass, Command Code, and Antigravity) run inside an embedded WebView and capture authorization callbacks automatically, removing the need to copy callback URLs manually.
+
+> **Antigravity Notice**
+> Antigravity relies on an unofficial integration, and Google may flag or restrict associated accounts. To reduce risk, sign in to the official Antigravity desktop client and initialize a project before authenticating in this app, and evaluate the risk at your own discretion.
+
+## Installation & Quick Start
+
+### Download
+
+Download the latest signed APK from [GitHub Releases](https://github.com/657kbps/quota-widget/releases/latest).
+
+- **Release Package ID**: `com.kuyermqi.quotawidget`
+- **Minimum Android Version**: Android 8.0 (API level 26)
+
+### Setup
+
+1. Install and open **Quota Widget**, then disable battery optimization when prompted so background refreshes can run reliably.
+2. Select a provider on the home screen, enter your credentials or complete sign-in, adjust display preferences if needed, and save.
+3. Long-press an empty area on your home screen, open **Widgets**, and place the desired Quota Widget layout.
+4. Tap the refresh button on any widget to fetch updated data immediately.
+
+> Some OEM Android distributions restrict background execution even after standard battery optimization is disabled. Consult [DontKillMyApp](https://dontkillmyapp.com/) for device-specific autostart and background allowlist instructions.
+
+## Building from Source
+
+### Debug Build
 
 ```bash
 ./gradlew :androidApp:assembleDebug
 ```
 
-产物位于 `androidApp/build/outputs/apk/debug/`。
+The generated APK is written to `androidApp/build/outputs/apk/debug/`.
 
-Debug 包名为 `com.kuyermqi.quotawidget.debug`，可与正式包（`com.kuyermqi.quotawidget`）同时安装；桌面显示为「配额监控 Debug」。
+The debug variant uses the package ID `com.kuyermqi.quotawidget.debug` (launcher label: **Quota Widget Debug**), allowing it to be installed side by side with the release build.
 
-本地验证 Release（R8）可用调试签名（勿用于正式分发）：
+### Local Release Verification (R8)
+
+To verify R8 minification and resource shrinking locally using the debug keystore (for testing only; do not distribute):
 
 ```bash
 ./gradlew :androidApp:assembleRelease -PallowDebugReleaseSigning=true
 ```
 
-### 模块结构
+### Architecture & Tech Stack
 
-| 模块 | 说明 |
-|------|------|
-| `shared` | KMP 共享领域模型、网络客户端、加密设置 |
-| `androidApp` | Compose 设置页、Glance 小组件、WorkManager、Manifest |
+| Module | Responsibility |
+|--------|----------------|
+| `shared` | Kotlin Multiplatform (KMP) domain models, provider API clients, refresh interactor, and encrypted settings repository |
+| `androidApp` | Jetpack Compose UI, in-app WebView sign-in flows, Glance AppWidgets, WorkManager workers, and Android resources |
 
-技术栈：Kotlin · Jetpack Compose · Glance AppWidget · Ktor · DataStore · Tink · WorkManager
+**Core Technologies**: Kotlin (KMP) · Jetpack Compose · Glance AppWidget · Ktor · kotlinx.serialization · DataStore · Tink · WorkManager · Material Kolor
 
-## Release 签名
+## Release Signing & Publishing
 
-正式发布的 APK 使用独立 keystore 签名（切勿使用 debug keystore）。
+Production APKs must be signed with a dedicated release keystore rather than the debug keystore.
 
-1. 一次性创建 keystore 并妥善备份：
+1. **Generate a keystore** (one-time setup; store the file and credentials securely):
 
-```bash
-keytool -genkeypair -v \
-  -keystore release.keystore \
-  -alias quota-widget \
-  -keyalg RSA -keysize 2048 -validity 10000
-```
+   ```bash
+   keytool -genkeypair -v \
+     -keystore release.keystore \
+     -alias quota-widget \
+     -keyalg RSA -keysize 2048 -validity 10000
+   ```
 
-2. 在 GitHub 仓库配置 Secrets（Settings → Secrets and variables → Actions）：
+2. **Configure GitHub Actions secrets** (*Settings → Secrets and variables → Actions*):
 
-| Secret | 值 |
-|--------|-----|
-| `RELEASE_KEYSTORE_BASE64` | `base64 -w0 release.keystore`（macOS/Linux）或 PowerShell：`[Convert]::ToBase64String([IO.File]::ReadAllBytes("release.keystore"))` |
-| `RELEASE_STORE_PASSWORD` | keystore 密码 |
-| `RELEASE_KEY_ALIAS` | 例如 `quota-widget` |
-| `RELEASE_KEY_PASSWORD` | key 密码 |
+   | Secret | Description |
+   |--------|-------------|
+   | `RELEASE_KEYSTORE_BASE64` | Base64-encoded keystore: `base64 -w0 release.keystore` (Linux/macOS) or `[Convert]::ToBase64String([IO.File]::ReadAllBytes("release.keystore"))` (PowerShell) |
+   | `RELEASE_STORE_PASSWORD` | Keystore password |
+   | `RELEASE_KEY_ALIAS` | Key alias (e.g., `quota-widget`) |
+   | `RELEASE_KEY_PASSWORD` | Key password |
 
-3. 打 tag 发布：`git tag v1.0.0 && git push origin v1.0.0`
+3. **Publish a release** by pushing a version tag:
 
-本地 Release 构建需设置相同环境变量：
+   ```bash
+   git tag v1.0.0 && git push origin v1.0.0
+   ```
+
+To build a signed release APK locally, export the following environment variables:
 
 ```bash
 export RELEASE_STORE_FILE=/path/to/release.keystore
@@ -131,24 +241,25 @@ export RELEASE_KEY_PASSWORD=...
 ./gradlew :androidApp:assembleRelease
 ```
 
-## 贡献
+## Contributing
 
-欢迎 Issue 与 Pull Request。编码约定与模块边界见 [AGENTS.md](AGENTS.md)。
+Issues and pull requests are welcome. Before contributing, please review [AGENTS.md](AGENTS.md) for coding conventions, architecture guidelines, and module boundaries.
 
-提交信息请遵循 [Conventional Commits](https://www.conventionalcommits.org/)，例如：
+Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/), for example:
 
-```
+```text
 feat: add 2x1 compact DeepSeek balance widget
 fix: keep WorkManager Room constructors under R8 full mode
 ```
 
-## 致谢
+## Acknowledgements
 
-- [DontKillMyApp](https://dontkillmyapp.com/) — 各厂商后台保活设置指南
-- DeepSeek、OpenCode 等平台提供的开放接口
+- [DontKillMyApp](https://dontkillmyapp.com/) — OEM background execution guidance
+- [LINUX DO](https://linux.do/) — Community feedback and discussion
+- Open APIs and services provided by DeepSeek, OpenCode, and other supported platforms
 
 ---
 
 <p align="center">
-  如果这个项目对你有帮助，欢迎 Star ⭐
+  If you find this project useful, please consider giving it a star ⭐
 </p>
