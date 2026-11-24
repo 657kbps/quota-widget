@@ -1,0 +1,74 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme {
+  --font-sans:
+    'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+:root {
+  color-scheme: light;
+  --bg-canvas: #fafafa;
+  --bg-surface: #ffffff;
+  --bg-surface-muted: #f2f3f6;
+  --fg-primary: #111318;
+  --fg-secondary: #525866;
+  --fg-muted: #868c98;
+  --border-subtle: rgba(17, 19, 24, 0.07);
+  --border-strong: rgba(17, 19, 24, 0.14);
+  --accent: #4e5d94;
+  --accent-hover: #3f4d80;
+  --accent-fg: #ffffff;
+  --glow: rgba(78, 93, 148, 0.08);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg-canvas: #090b10;
+  --bg-surface: #121621;
+  --bg-surface-muted: #191f2e;
+  --fg-primary: #f3f5f9;
+  --fg-secondary: #a8b1c4;
+  --fg-muted: #6c768a;
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --accent: #b9c3ff;
+  --accent-hover: #cdd4ff;
+  --accent-fg: #101424;
+  --glow: rgba(185, 195, 255, 0.09);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--bg-canvas);
+  color: var(--fg-primary);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
