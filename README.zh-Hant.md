@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://657kbps.github.io/quota-widget/"><strong>專案首頁 · 657kbps.github.io/quota-widget</strong></a>
+  <a href="https://657kbps.github.io/quota-widget/"><strong>657kbps.github.io/quota-widget</strong></a>
 </p>
 
 <p align="center">
