@@ -15,6 +15,10 @@
 </p>
 
 <p align="center">
+  <a href="https://657kbps.github.io/quota-widget/"><strong>Website · 657kbps.github.io/quota-widget</strong></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/657kbps/quota-widget/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/657kbps/quota-widget?style=flat-square"></a>
   <a href="https://github.com/657kbps/quota-widget/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/657kbps/quota-widget/total?style=flat-square"></a>
   <img alt="Platform" src="https://img.shields.io/badge/platform-Android-3DDC84?style=flat-square&logo=android&logoColor=white">
