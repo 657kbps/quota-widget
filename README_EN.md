@@ -65,7 +65,7 @@ Grab the latest APK from [Releases](https://github.com/657kbps/quota-widget/rele
 ## Quick start
 
 1. Install the app and disable battery optimization when prompted (strongly recommended)
-2. Expand a platform on the home screen, configure an API key or sign in, then save
+2. Tap a platform on the home screen, configure an API key or sign in, then save
 3. Long-press the home screen → Widgets → add a Quota Widget
 4. Tap the refresh icon on a widget for an immediate update
 

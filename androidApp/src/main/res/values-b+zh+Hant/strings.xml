@@ -56,7 +56,6 @@
     <string name="widget_preview_sample_percent_monthly">32%</string>
     <string name="widget_preview_sample_updated">更新於 8 月 5 日 12:30</string>
     <string name="app_settings_title">設定</string>
-    <string name="app_settings_back">返回</string>
     <string name="app_settings_open">開啟應用程式設定</string>
     <string name="app_settings_section_appearance">外觀</string>
     <string name="app_settings_section_widget">小工具</string>
@@ -65,6 +64,7 @@
     <string name="app_settings_dark_mode_dark">深色</string>
     <string name="app_settings_dark_mode_light">淺色</string>
     <string name="app_settings_dark_mode_system">跟隨系統</string>
+    <string name="app_settings_system_short">系統</string>
     <string name="app_settings_theme_color">主題顏色</string>
     <string name="app_settings_theme_color_system">跟隨系統</string>
     <string name="app_settings_theme_color_custom">自訂</string>
@@ -91,13 +91,11 @@
     <string name="oem_background_tip">若關閉電池最佳化後仍無法正常更新，請參考 DontKillMyApp 的設定方式，確保應用程式可在背景正常運作</string>
     <string name="oem_background_tip_link">https://dontkillmyapp.com/</string>
     <string name="oem_background_tip_url">https://dontkillmyapp.com/</string>
-    <string name="platform_tip">在下方修改對應平台的設定</string>
+    <string name="platform_tip">點按供應商進行設定</string>
     <string name="tip_dismiss">關閉提示</string>
     <string name="in_app_webview_back">返回</string>
     <string name="opencode_login_title">登入 OpenCode</string>
-    <string name="opencode_login">登入帳號</string>
     <string name="opencode_logout">登出</string>
-    <string name="opencode_status_logged_out">未登入</string>
     <string name="opencode_login_failed">登入未完成，請重試</string>
     <string name="opencode_api_key_label">API Key</string>
     <string name="opencode_api_key_hint">在 OpenCode Console 建立 API Key</string>
@@ -105,11 +103,7 @@
     <string name="opencode_auth_web_hint">使用瀏覽器登入 OpenCode</string>
     <string name="opencode_auth_api_title">API Key 登入</string>
     <string name="opencode_auth_configured">已設定</string>
-    <string name="opencode_auth_logged_in">已登入</string>
-    <string name="opencode_auth_logged_in_account">已登入帳號：%1$s</string>
     <string name="opencode_auth_change">更換登入方式</string>
-    <string name="opencode_auth_switch_account">用另一個帳號登入</string>
-    <string name="opencode_auth_use_account">使用此帳號</string>
     <string name="opencode_auth_back">返回</string>
     <string name="opencode_auth_save_and_use">儲存並使用</string>
     <string name="opencode_reauth_hint">登入已過期，請重新登入</string>
@@ -160,6 +154,9 @@
     <string name="codex_status_logged_out">未登入</string>
     <string name="codex_login_failed">登入未完成，請重試</string>
     <string name="action_save">儲存</string>
+    <string name="unsaved_changes_title">儲存變更？</string>
+    <string name="unsaved_changes_message">目前修改尚未儲存。</string>
+    <string name="unsaved_changes_dont_save">不儲存</string>
     <string name="auth_current_method">目前登入方式：%1$s</string>
     <string name="widget_needs_reauth">需登入</string>
     <string name="widget_not_configured">未設定</string>
@@ -196,6 +193,12 @@
     <string name="zhipu_invalid_key">Zhipu API Key 無效或已失效，請檢查設定</string>
     <string name="widget_fetch_failed">取得失敗</string>
     <string name="home_title">配額監控</string>
+    <string name="home_section_configured">已設定</string>
+    <string name="home_section_unconfigured">未設定</string>
+    <string name="home_provider_add_hint">點按即可設定</string>
+    <string name="home_search_placeholder">搜尋供應商</string>
+    <string name="home_search_clear">清除搜尋</string>
+    <string name="home_search_no_results">沒有符合的供應商</string>
     <string name="platform_name_workbuddy">WorkBuddy</string>
     <string name="platform_name_workbuddy_ai">WorkBuddy 國際版</string>
     <string name="platform_name_cline">Cline Pass</string>
@@ -203,7 +206,6 @@
     <string name="platform_name_antigravity">Antigravity</string>
     <string name="session_login_title">登入 %1$s</string>
     <string name="session_login">登入帳號</string>
-    <string name="session_relogin">重新登入</string>
     <string name="session_logout">登出</string>
     <string name="session_not_logged_in">未登入</string>
     <string name="session_account_logged_in">已登入：%1$s</string>
@@ -218,7 +220,6 @@
     <string name="session_auth_change">更換登入方式</string>
     <string name="session_auth_back">返回</string>
     <string name="session_auth_save_and_use">儲存並使用</string>
-    <string name="session_auth_web_relogin">使用瀏覽器重新登入</string>
     <string name="session_login_failed">登入未完成，請重試</string>
     <string name="session_reauth_hint">登入已過期，請重新登入</string>
     <string name="session_save_prefs">儲存</string>
@@ -264,8 +265,7 @@
     <string name="app_language_russian">Русский</string>
     <string name="deepseek_currency_label">顯示貨幣</string>
     <string name="deepseek_currency_hint">若介面未傳回所選貨幣，將自動改用另一種貨幣。</string>
-    <string name="action_expand">展開</string>
-    <string name="action_collapse">收合</string>
+    <string name="action_back">返回</string>
     <string name="widget_refresh_action">重新整理</string>
     <string name="widget_updated_never">尚未更新</string>
     <string name="widget_date_time_pattern">M月d日 HH:mm</string>

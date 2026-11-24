@@ -80,6 +80,11 @@ class NewApiHomeState internal constructor(
                 draftUsageProgressStyle != saved.usageProgressStyle
             )
 
+    fun discardDrafts() {
+        applyLoaded(saved)
+        saveError = null
+    }
+
     fun applyLoaded(settings: NewApiSettings) {
         saved = settings
         draftBaseUrl = settings.baseUrl

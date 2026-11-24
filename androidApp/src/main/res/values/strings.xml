@@ -57,7 +57,6 @@
     <string name="widget_preview_sample_percent_monthly">32%</string>
     <string name="widget_preview_sample_updated">Updated Aug 5, 12:30</string>
     <string name="app_settings_title">Settings</string>
-    <string name="app_settings_back">Back</string>
     <string name="app_settings_open">Open app settings</string>
     <string name="app_settings_section_appearance">Appearance</string>
     <string name="app_settings_section_widget">Widget</string>
@@ -66,6 +65,7 @@
     <string name="app_settings_dark_mode_dark">Dark</string>
     <string name="app_settings_dark_mode_light">Light</string>
     <string name="app_settings_dark_mode_system">Follow system</string>
+    <string name="app_settings_system_short">System</string>
     <string name="app_settings_theme_color">Theme color</string>
     <string name="app_settings_theme_color_system">Follow system</string>
     <string name="app_settings_theme_color_custom">Custom</string>
@@ -92,13 +92,11 @@
     <string name="oem_background_tip">If refreshes still fail after disabling battery optimization, follow the DontKillMyApp guidance for your device to keep the app running in the background</string>
     <string name="oem_background_tip_link">https://dontkillmyapp.com/</string>
     <string name="oem_background_tip_url">https://dontkillmyapp.com/</string>
-    <string name="platform_tip">Edit each platform\'s configuration below</string>
+    <string name="platform_tip">Tap a provider to configure it</string>
     <string name="tip_dismiss">Dismiss</string>
     <string name="in_app_webview_back">Back</string>
     <string name="opencode_login_title">Sign in to OpenCode</string>
-    <string name="opencode_login">Sign in</string>
     <string name="opencode_logout">Sign out</string>
-    <string name="opencode_status_logged_out">Not signed in</string>
     <string name="opencode_login_failed">Sign-in incomplete. Please try again.</string>
     <string name="opencode_api_key_label">API Key</string>
     <string name="opencode_api_key_hint">Create an API key in the OpenCode Console</string>
@@ -106,11 +104,7 @@
     <string name="opencode_auth_web_hint">Sign in to OpenCode with your browser</string>
     <string name="opencode_auth_api_title">API key sign-in</string>
     <string name="opencode_auth_configured">Configured</string>
-    <string name="opencode_auth_logged_in">Signed in</string>
-    <string name="opencode_auth_logged_in_account">Signed in as %1$s</string>
     <string name="opencode_auth_change">Change sign-in method</string>
-    <string name="opencode_auth_switch_account">Sign in with another account</string>
-    <string name="opencode_auth_use_account">Use this account</string>
     <string name="opencode_auth_back">Back</string>
     <string name="opencode_auth_save_and_use">Save and use</string>
     <string name="opencode_reauth_hint">Your session has expired. Please sign in again.</string>
@@ -161,6 +155,9 @@
     <string name="codex_status_logged_out">Not signed in</string>
     <string name="codex_login_failed">Sign-in incomplete. Please try again.</string>
     <string name="action_save">Save</string>
+    <string name="unsaved_changes_title">Save changes?</string>
+    <string name="unsaved_changes_message">You have unsaved changes.</string>
+    <string name="unsaved_changes_dont_save">Don\'t save</string>
     <string name="auth_current_method">Current sign-in method: %1$s</string>
     <string name="widget_needs_reauth">Sign-in required</string>
     <string name="widget_not_configured">Not configured</string>
@@ -197,6 +194,12 @@
     <string name="zhipu_invalid_key">The Zhipu API key is invalid or expired. Check your configuration.</string>
     <string name="widget_fetch_failed">Fetch failed</string>
     <string name="home_title">Quota Widget</string>
+    <string name="home_section_configured">Configured</string>
+    <string name="home_section_unconfigured">Not configured</string>
+    <string name="home_provider_add_hint">Tap to configure</string>
+    <string name="home_search_placeholder">Search providers</string>
+    <string name="home_search_clear">Clear search</string>
+    <string name="home_search_no_results">No matching providers</string>
     <string name="platform_name_workbuddy">WorkBuddy</string>
     <string name="platform_name_workbuddy_ai">WorkBuddy International</string>
     <string name="platform_name_cline">Cline Pass</string>
@@ -204,7 +207,6 @@
     <string name="platform_name_antigravity">Antigravity</string>
     <string name="session_login_title">Sign in to %1$s</string>
     <string name="session_login">Sign in</string>
-    <string name="session_relogin">Sign in again</string>
     <string name="session_logout">Sign out</string>
     <string name="session_not_logged_in">Not signed in</string>
     <string name="session_account_logged_in">Signed in: %1$s</string>
@@ -219,7 +221,6 @@
     <string name="session_auth_change">Change sign-in method</string>
     <string name="session_auth_back">Back</string>
     <string name="session_auth_save_and_use">Save and use</string>
-    <string name="session_auth_web_relogin">Sign in again with the browser</string>
     <string name="session_login_failed">Sign-in incomplete. Please try again.</string>
     <string name="session_reauth_hint">Your session has expired. Please sign in again.</string>
     <string name="session_save_prefs">Save</string>
@@ -265,8 +266,7 @@
     <string name="app_language_russian">Русский</string>
     <string name="deepseek_currency_label">Display currency</string>
     <string name="deepseek_currency_hint">If the API doesn\'t return the selected currency, the other currency is used automatically.</string>
-    <string name="action_expand">Expand</string>
-    <string name="action_collapse">Collapse</string>
+    <string name="action_back">Back</string>
     <string name="widget_refresh_action">Refresh</string>
     <string name="widget_updated_never">Never updated</string>
     <string name="widget_date_time_pattern">MMM d, HH:mm</string>

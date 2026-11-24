@@ -12,7 +12,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +32,7 @@ import com.kuyermqi.quotawidget.ui.platformDisplayName
 fun ColumnScope.CodexConfigContent(
     isLoggedIn: Boolean,
     isBusy: Boolean,
+    isSaving: Boolean,
     isDirty: Boolean,
     errorMessage: String?,
     email: String,
@@ -51,43 +51,34 @@ fun ColumnScope.CodexConfigContent(
     onSave: () -> Unit,
     updatedAtEpochMs: Long = 0L,
 ) {
-    Spacer(modifier = Modifier.height(if (isLoggedIn) 4.dp else 8.dp))
     if (!isLoggedIn) {
-        Text(
-            text = stringResource(R.string.codex_status_logged_out),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-    }
-    if (!errorMessage.isNullOrBlank()) {
-        if (!isLoggedIn) {
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-        Text(
-            text = errorMessage,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error,
-        )
-    }
-    if (isLoggedIn) {
-        if (!errorMessage.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-        val accountLine = buildString {
-            if (email.isNotBlank()) append(email)
-            if (planType.isNotBlank()) {
-                if (isNotEmpty()) append(" · ")
-                append(planType)
+        AuthAccountCard {
+            AuthStatusLine(
+                status = stringResource(R.string.codex_status_logged_out),
+                error = errorMessage,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (isBusy) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+                Button(
+                    onClick = onLogin,
+                    enabled = !isBusy,
+                ) {
+                    Text(stringResource(R.string.codex_login))
+                }
             }
         }
-        if (accountLine.isNotBlank()) {
-            Text(
-                text = accountLine,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-        }
+        Spacer(modifier = Modifier.height(12.dp))
         val availableWindowKinds = availableUsageWindowKinds(windows)
         UsageDisplayPrefsSection(
             windows = windows,
@@ -106,40 +97,56 @@ fun ColumnScope.CodexConfigContent(
             platformName = platformDisplayName(PlatformIds.CODEX),
             updatedAtEpochMs = updatedAtEpochMs,
         )
+        Spacer(modifier = Modifier.height(12.dp))
+        SaveAction(
+            label = stringResource(R.string.action_save),
+            enabled = isDirty,
+            busy = isSaving,
+            onClick = onSave,
+        )
+        return
     }
-    Spacer(modifier = Modifier.height(12.dp))
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (isBusy) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp,
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-        }
-        if (isLoggedIn) {
-            TextButton(
-                onClick = onLogout,
-                enabled = !isBusy,
-            ) {
-                Text(stringResource(R.string.codex_logout))
-            }
-            Button(
-                onClick = onSave,
-                enabled = isDirty && !isBusy,
-            ) {
-                Text(stringResource(R.string.action_save))
-            }
-        } else {
-            Button(
-                onClick = onLogin,
-                enabled = !isBusy,
-            ) {
-                Text(stringResource(R.string.codex_login))
-            }
+
+    val accountLine = buildString {
+        if (email.isNotBlank()) append(email)
+        if (planType.isNotBlank()) {
+            if (isNotEmpty()) append(" · ")
+            append(planType)
         }
     }
+    val availableWindowKinds = availableUsageWindowKinds(windows)
+    AuthConfiguredPanel(
+        title = accountLine,
+        extraContent = {
+            if (!errorMessage.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = errorMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+        windows = windows,
+        widgetWindowKind = widgetWindowKind,
+        onWidgetWindowKindChange = onWidgetWindowKindChange,
+        usageDisplayMode = usageDisplayMode,
+        onUsageDisplayModeChange = onUsageDisplayModeChange,
+        usageProgressStyle = usageProgressStyle,
+        onUsageProgressStyleChange = onUsageProgressStyleChange,
+        usageResetStyle = usageResetStyle,
+        onUsageResetStyleChange = onUsageResetStyleChange,
+        windowKindChoices = availableWindowKinds,
+        showWindowKindPicker = availableWindowKinds.size >= 2,
+        overviewKinds = presentCodexOverviewWindowKinds(windows),
+        isBusy = isBusy,
+        isDirty = isDirty,
+        saveBusy = isSaving,
+        logoutLabel = stringResource(R.string.codex_logout),
+        saveLabel = stringResource(R.string.action_save),
+        onLogout = onLogout,
+        onSave = onSave,
+        platformName = platformDisplayName(PlatformIds.CODEX),
+        updatedAtEpochMs = updatedAtEpochMs,
+    )
 }

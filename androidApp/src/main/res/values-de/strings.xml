@@ -56,7 +56,6 @@
     <string name="widget_preview_sample_percent_monthly">32%</string>
     <string name="widget_preview_sample_updated">Aktualisiert am 5. Aug., 12:30</string>
     <string name="app_settings_title">Einstellungen</string>
-    <string name="app_settings_back">Zurück</string>
     <string name="app_settings_open">App-Einstellungen öffnen</string>
     <string name="app_settings_section_appearance">Darstellung</string>
     <string name="app_settings_section_widget">Widget</string>
@@ -65,6 +64,7 @@
     <string name="app_settings_dark_mode_dark">Dunkel</string>
     <string name="app_settings_dark_mode_light">Hell</string>
     <string name="app_settings_dark_mode_system">Systemeinstellung folgen</string>
+    <string name="app_settings_system_short">System</string>
     <string name="app_settings_theme_color">Designfarbe</string>
     <string name="app_settings_theme_color_system">Systemeinstellung folgen</string>
     <string name="app_settings_theme_color_custom">Benutzerdefiniert</string>
@@ -91,13 +91,11 @@
     <string name="oem_background_tip">Falls Aktualisierungen nach dem Deaktivieren der Akku-Optimierung weiterhin fehlschlagen, folgen Sie den DontKillMyApp-Hinweisen für Ihr Gerät, damit die App im Hintergrund weiterläuft</string>
     <string name="oem_background_tip_link">https://dontkillmyapp.com/</string>
     <string name="oem_background_tip_url">https://dontkillmyapp.com/</string>
-    <string name="platform_tip">Bearbeiten Sie unten die Konfiguration der einzelnen Plattformen</string>
+    <string name="platform_tip">Tippen Sie auf einen Anbieter, um ihn zu konfigurieren</string>
     <string name="tip_dismiss">Schließen</string>
     <string name="in_app_webview_back">Zurück</string>
     <string name="opencode_login_title">Bei OpenCode anmelden</string>
-    <string name="opencode_login">Anmelden</string>
     <string name="opencode_logout">Abmelden</string>
-    <string name="opencode_status_logged_out">Nicht angemeldet</string>
     <string name="opencode_login_failed">Anmeldung nicht abgeschlossen. Bitte erneut versuchen.</string>
     <string name="opencode_api_key_label">API-Schlüssel</string>
     <string name="opencode_api_key_hint">Erstellen Sie einen API-Schlüssel in der OpenCode Console</string>
@@ -105,11 +103,7 @@
     <string name="opencode_auth_web_hint">Mit dem Browser bei OpenCode anmelden</string>
     <string name="opencode_auth_api_title">API-Schlüssel-Anmeldung</string>
     <string name="opencode_auth_configured">Konfiguriert</string>
-    <string name="opencode_auth_logged_in">Angemeldet</string>
-    <string name="opencode_auth_logged_in_account">Angemeldet als %1$s</string>
     <string name="opencode_auth_change">Anmeldemethode ändern</string>
-    <string name="opencode_auth_switch_account">Mit einem anderen Konto anmelden</string>
-    <string name="opencode_auth_use_account">Dieses Konto verwenden</string>
     <string name="opencode_auth_back">Zurück</string>
     <string name="opencode_auth_save_and_use">Speichern und verwenden</string>
     <string name="opencode_reauth_hint">Ihre Sitzung ist abgelaufen. Bitte erneut anmelden.</string>
@@ -160,6 +154,9 @@
     <string name="codex_status_logged_out">Nicht angemeldet</string>
     <string name="codex_login_failed">Anmeldung nicht abgeschlossen. Bitte erneut versuchen.</string>
     <string name="action_save">Speichern</string>
+    <string name="unsaved_changes_title">Änderungen speichern?</string>
+    <string name="unsaved_changes_message">Ihre Änderungen wurden noch nicht gespeichert.</string>
+    <string name="unsaved_changes_dont_save">Nicht speichern</string>
     <string name="auth_current_method">Aktuelle Anmeldemethode: %1$s</string>
     <string name="widget_needs_reauth">Anmeldung erforderlich</string>
     <string name="widget_not_configured">Nicht konfiguriert</string>
@@ -196,6 +193,12 @@
     <string name="zhipu_invalid_key">Der Zhipu API-Schlüssel ist ungültig oder abgelaufen. Prüfen Sie die Konfiguration.</string>
     <string name="widget_fetch_failed">Abruf fehlgeschlagen</string>
     <string name="home_title">Quota Widget</string>
+    <string name="home_section_configured">Konfiguriert</string>
+    <string name="home_section_unconfigured">Nicht konfiguriert</string>
+    <string name="home_provider_add_hint">Zum Konfigurieren tippen</string>
+    <string name="home_search_placeholder">Anbieter suchen</string>
+    <string name="home_search_clear">Suche löschen</string>
+    <string name="home_search_no_results">Keine passenden Anbieter</string>
     <string name="platform_name_workbuddy">WorkBuddy</string>
     <string name="platform_name_workbuddy_ai">WorkBuddy International</string>
     <string name="platform_name_cline">Cline Pass</string>
@@ -203,7 +206,6 @@
     <string name="platform_name_antigravity">Antigravity</string>
     <string name="session_login_title">Bei %1$s anmelden</string>
     <string name="session_login">Anmelden</string>
-    <string name="session_relogin">Erneut anmelden</string>
     <string name="session_logout">Abmelden</string>
     <string name="session_not_logged_in">Nicht angemeldet</string>
     <string name="session_account_logged_in">Angemeldet: %1$s</string>
@@ -218,7 +220,6 @@
     <string name="session_auth_change">Anmeldemethode ändern</string>
     <string name="session_auth_back">Zurück</string>
     <string name="session_auth_save_and_use">Speichern und verwenden</string>
-    <string name="session_auth_web_relogin">Erneut mit dem Browser anmelden</string>
     <string name="session_login_failed">Anmeldung nicht abgeschlossen. Bitte erneut versuchen.</string>
     <string name="session_reauth_hint">Ihre Sitzung ist abgelaufen. Bitte erneut anmelden.</string>
     <string name="session_save_prefs">Speichern</string>
@@ -264,8 +265,7 @@
     <string name="app_language_russian">Русский</string>
     <string name="deepseek_currency_label">Angezeigte Währung</string>
     <string name="deepseek_currency_hint">Wenn die API die ausgewählte Währung nicht zurückgibt, wird automatisch die andere Währung verwendet.</string>
-    <string name="action_expand">Erweitern</string>
-    <string name="action_collapse">Einklappen</string>
+    <string name="action_back">Zurück</string>
     <string name="widget_refresh_action">Aktualisieren</string>
     <string name="widget_updated_never">Nie aktualisiert</string>
     <string name="widget_date_time_pattern">d. MMM HH:mm</string>

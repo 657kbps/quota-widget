@@ -81,6 +81,8 @@ class SessionPlatformHomeState internal constructor(
         internal set
     var isBusy by mutableStateOf(false)
         internal set
+    var isSaving by mutableStateOf(false)
+        internal set
     var error by mutableStateOf<String?>(null)
         internal set
     var loaded by mutableStateOf(false)
@@ -97,12 +99,10 @@ class SessionPlatformHomeState internal constructor(
             if (!loaded) return false
             val keyChanged = supportsApiKey &&
                 draftApiKey.isNotBlank() && draftApiKey != settings.apiKey
-            val prefsChanged = isConfigured && (
-                draftWindowKind != settings.widgetWindowKind ||
-                    draftUsageDisplayMode != settings.usageDisplayMode ||
-                    draftUsageProgressStyle != settings.usageProgressStyle ||
-                    draftUsageResetStyle != settings.usageResetStyle
-                )
+            val prefsChanged = draftWindowKind != settings.widgetWindowKind ||
+                draftUsageDisplayMode != settings.usageDisplayMode ||
+                draftUsageProgressStyle != settings.usageProgressStyle ||
+                draftUsageResetStyle != settings.usageResetStyle
             return keyChanged || prefsChanged
         }
 
@@ -112,6 +112,17 @@ class SessionPlatformHomeState internal constructor(
         draftUsageDisplayMode = next.usageDisplayMode
         draftUsageProgressStyle = next.usageProgressStyle
         draftUsageResetStyle = next.usageResetStyle
+    }
+
+    fun discardDrafts() {
+        applyDraft()
+        authPanel = if (!supportsApiKey || isConfigured) {
+            SessionAuthPanel.SUMMARY
+        } else {
+            SessionAuthPanel.CHOOSE
+        }
+        error = null
+        isSaving = false
     }
 
     fun applyPersisted(next: SessionPlatformSettings) {
@@ -154,7 +165,12 @@ class SessionPlatformHomeState internal constructor(
     }
 
     fun applyLoginResult(result: SessionLoginResult): SessionPlatformSettings {
-        var next = result.applyTo(settings)
+        var next = result.applyTo(settings).copy(
+            widgetWindowKind = draftWindowKind,
+            usageDisplayMode = draftUsageDisplayMode,
+            usageProgressStyle = draftUsageProgressStyle,
+            usageResetStyle = draftUsageResetStyle,
+        )
         if (platformId == PlatformIds.CLINE) {
             // Cline uses the API key when present; clear the other auth method
             // and its account metadata when switching between WorkOS login and
@@ -361,21 +377,25 @@ fun sessionPlatformHomeEffects(
     val onSave: () -> Unit = {
         scope.launch {
             state.isBusy = true
+            state.isSaving = true
             try {
                 state.error = null
                 state.savePrefs(settingsRepository)
-                settingsRepository.saveWidgetLoading(state.platformId)
-                val refreshed = withContext(Dispatchers.IO) {
-                    onRefreshPlatform(state.platformId)
-                }
-                handleRefreshResult(state, settingsRepository, refreshed, reauthMessage)
-                if (state.supportsApiKey && state.isConfigured && state.error == null) {
-                    state.authPanel = SessionAuthPanel.SUMMARY
+                if (state.isConfigured) {
+                    settingsRepository.saveWidgetLoading(state.platformId)
+                    val refreshed = withContext(Dispatchers.IO) {
+                        onRefreshPlatform(state.platformId)
+                    }
+                    handleRefreshResult(state, settingsRepository, refreshed, reauthMessage)
+                    if (state.supportsApiKey && state.error == null) {
+                        state.authPanel = SessionAuthPanel.SUMMARY
+                    }
                 }
                 WidgetGlanceState.syncAndUpdate(context, "session_save")
             } catch (e: Exception) {
                 state.error = e.message
             } finally {
+                state.isSaving = false
                 state.isBusy = false
             }
         }
@@ -463,6 +483,7 @@ fun ColumnScope.SessionPlatformHomeContent(
         },
         isConfigured = state.isConfigured,
         isBusy = state.isBusy,
+        isSaving = state.isSaving,
         isDirty = state.isDirty,
         error = state.error,
         onLogin = bindings.onLogin,

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,12 +39,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilledTonalToggleButton
 import androidx.compose.material3.FilledTonalToggleButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -82,6 +81,8 @@ import com.kuyermqi.quotawidget.domain.DarkThemeMode
 import com.kuyermqi.quotawidget.domain.ThemeColorMode
 import com.kuyermqi.quotawidget.locale.AppLocale
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
+import com.kuyermqi.quotawidget.ui.components.PageHeader
+import com.kuyermqi.quotawidget.ui.components.appCardColor
 import com.kuyermqi.quotawidget.ui.components.ThemeColorPickerDialog
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.update.UpdateAvailability
@@ -180,11 +181,7 @@ fun AppSettingsScreen(
     val scheme = MaterialTheme.colorScheme
     val pageColor = scheme.surfaceContainerLow
     val isDarkTheme = scheme.surface.luminance() < 0.5f
-    val cardColor = if (isDarkTheme) {
-        scheme.surfaceContainer
-    } else {
-        scheme.surfaceContainerLowest
-    }
+    val cardColor = appCardColor()
     val chooseColorRowColor = if (isDarkTheme) {
         scheme.surfaceContainerHigh
     } else {
@@ -196,240 +193,226 @@ fun AppSettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .verticalScroll(rememberScrollState()),
+                .consumeWindowInsets(padding),
         ) {
-            SettingsHeader(
+            PageHeader(
                 title = stringResource(R.string.app_settings_title),
                 onBack = onBack,
             )
 
-            SettingsSection(
-                title = stringResource(R.string.app_settings_section_appearance),
-                cardColor = cardColor,
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
             ) {
-                SettingsExpandingRow(
-                    title = stringResource(R.string.app_settings_dark_mode),
-                    value = darkModeLabel(appSettings.darkThemeMode),
+                SettingsSection(
+                    title = stringResource(R.string.app_settings_section_appearance),
+                    cardColor = cardColor,
                 ) {
-                    ButtonGroupChoice(
-                        options = DarkModeOptions,
-                        selected = appSettings.darkThemeMode,
-                        labelOf = { mode -> darkModeLabel(mode) },
-                        onSelect = { mode ->
-                            save(appSettings.copy(darkThemeMode = mode))
-                        },
-                    )
-                }
-                SettingsRowDivider()
-                SettingsExpandingRow(
-                    title = stringResource(R.string.app_settings_theme_color),
-                    value = themeColorValue(appSettings.themeColorMode),
-                    valueDotColor = if (appSettings.themeColorMode == ThemeColorMode.Custom) {
-                        Color(appSettings.customSeedColorArgb)
-                    } else {
-                        null
-                    },
-                ) {
-                    ButtonGroupChoice(
-                        options = ThemeColorOptions,
-                        selected = appSettings.themeColorMode,
-                        labelOf = { mode -> themeColorValue(mode) },
-                        onSelect = { mode ->
-                            save(appSettings.copy(themeColorMode = mode))
-                        },
-                    )
-                    AnimatedVisibility(
-                        visible = appSettings.themeColorMode == ThemeColorMode.Custom,
-                        enter = expandVertically(animationSpec = tween(200)) + fadeIn(tween(160)),
-                        exit = shrinkVertically(animationSpec = tween(180)) + fadeOut(tween(120)),
+                    SettingsExpandingRow(
+                        title = stringResource(R.string.app_settings_dark_mode),
+                        value = darkModeLabel(appSettings.darkThemeMode),
                     ) {
-                        Column {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(min = 48.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(chooseColorRowColor)
-                                    .clickable { showColorPicker = true }
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Box(
+                        ButtonGroupChoice(
+                            options = DarkModeOptions,
+                            selected = appSettings.darkThemeMode,
+                            labelOf = { mode ->
+                                if (mode == DarkThemeMode.FollowSystem) {
+                                    stringResource(R.string.app_settings_system_short)
+                                } else {
+                                    darkModeLabel(mode)
+                                }
+                            },
+                            onSelect = { mode ->
+                                save(appSettings.copy(darkThemeMode = mode))
+                            },
+                        )
+                    }
+                    SettingsRowDivider()
+                    SettingsExpandingRow(
+                        title = stringResource(R.string.app_settings_theme_color),
+                        value = themeColorValue(appSettings.themeColorMode),
+                        valueDotColor = if (appSettings.themeColorMode == ThemeColorMode.Custom) {
+                            Color(appSettings.customSeedColorArgb)
+                        } else {
+                            null
+                        },
+                    ) {
+                        ButtonGroupChoice(
+                            options = ThemeColorOptions,
+                            selected = appSettings.themeColorMode,
+                            labelOf = { mode ->
+                                if (mode == ThemeColorMode.FollowSystem) {
+                                    stringResource(R.string.app_settings_system_short)
+                                } else {
+                                    themeColorValue(mode)
+                                }
+                            },
+                            onSelect = { mode ->
+                                save(appSettings.copy(themeColorMode = mode))
+                            },
+                        )
+                        AnimatedVisibility(
+                            visible = appSettings.themeColorMode == ThemeColorMode.Custom,
+                            enter = expandVertically(animationSpec = tween(200)) + fadeIn(tween(160)),
+                            exit = shrinkVertically(animationSpec = tween(180)) + fadeOut(tween(120)),
+                        ) {
+                            Column {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
                                     modifier = Modifier
-                                        .size(20.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(appSettings.customSeedColorArgb))
-                                        .border(
-                                            width = 1.dp,
-                                            color = MaterialTheme.colorScheme.outlineVariant,
-                                            shape = CircleShape,
-                                        ),
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
+                                        .fillMaxWidth()
+                                        .heightIn(min = 48.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(chooseColorRowColor)
+                                        .clickable { showColorPicker = true }
+                                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(appSettings.customSeedColorArgb))
+                                            .border(
+                                                width = 1.dp,
+                                                color = MaterialTheme.colorScheme.outlineVariant,
+                                                shape = CircleShape,
+                                            ),
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = stringResource(R.string.app_settings_theme_color_choose),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                    Spacer(modifier = Modifier.weight(1f))
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_chevron_right),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                SettingsSection(
+                    title = stringResource(R.string.app_settings_section_widget),
+                    cardColor = cardColor,
+                ) {
+                    SettingsExpandingRow(
+                        title = stringResource(R.string.app_settings_refresh_interval),
+                        value = refreshIntervalLabel(refreshIntervalMinutes),
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Slider(
+                                value = refreshIndex.toFloat(),
+                                onValueChange = { value ->
+                                    refreshIndex = value.roundToInt().coerceIn(0, lastRefreshIndex)
+                                },
+                                valueRange = 0f..lastRefreshIndex.toFloat(),
+                                steps = (lastRefreshIndex - 1).coerceAtLeast(0),
+                                onValueChangeFinished = {
+                                    val minutes = refreshIntervals[refreshIndex]
+                                    if (minutes != appSettings.refreshIntervalMinutes) {
+                                        save(appSettings.copy(refreshIntervalMinutes = minutes))
+                                        onRefreshIntervalChanged(minutes)
+                                    }
+                                },
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
                                 Text(
-                                    text = stringResource(R.string.app_settings_theme_color_choose),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurface,
+                                    text = refreshIntervalLabel(refreshIntervals.first()),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Spacer(modifier = Modifier.weight(1f))
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_chevron_right),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp),
+                                Text(
+                                    text = refreshIntervalLabel(refreshIntervals.last()),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
                     }
                 }
-            }
 
-            SettingsSection(
-                title = stringResource(R.string.app_settings_section_widget),
-                cardColor = cardColor,
-            ) {
-                SettingsExpandingRow(
-                    title = stringResource(R.string.app_settings_refresh_interval),
-                    value = refreshIntervalLabel(refreshIntervalMinutes),
+                SettingsSection(
+                    title = stringResource(R.string.app_settings_section_app),
+                    cardColor = cardColor,
                 ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Slider(
-                            value = refreshIndex.toFloat(),
-                            onValueChange = { value ->
-                                refreshIndex = value.roundToInt().coerceIn(0, lastRefreshIndex)
-                            },
-                            valueRange = 0f..lastRefreshIndex.toFloat(),
-                            steps = (lastRefreshIndex - 1).coerceAtLeast(0),
-                            onValueChangeFinished = {
-                                val minutes = refreshIntervals[refreshIndex]
-                                if (minutes != appSettings.refreshIntervalMinutes) {
-                                    save(appSettings.copy(refreshIntervalMinutes = minutes))
-                                    onRefreshIntervalChanged(minutes)
-                                }
+                    SettingsExpandingRow(
+                        title = stringResource(R.string.app_settings_language),
+                        value = appLanguageLabel(appSettings.appLanguage),
+                    ) {
+                        AppLanguageOptionsList(
+                            selected = appSettings.appLanguage,
+                            onSelect = { language ->
+                                save(appSettings.copy(appLanguage = language))
                             },
                         )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(
-                                text = refreshIntervalLabel(refreshIntervals.first()),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(modifier = Modifier.weight(1f))
-                            Text(
-                                text = refreshIntervalLabel(refreshIntervals.last()),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
                     }
-                }
-            }
-
-            SettingsSection(
-                title = stringResource(R.string.app_settings_section_app),
-                cardColor = cardColor,
-            ) {
-                SettingsExpandingRow(
-                    title = stringResource(R.string.app_settings_language),
-                    value = appLanguageLabel(appSettings.appLanguage),
-                ) {
-                    AppLanguageOptionsList(
-                        selected = appSettings.appLanguage,
-                        onSelect = { language ->
-                            save(appSettings.copy(appLanguage = language))
+                    SettingsRowDivider()
+                    SettingsRow(
+                        title = stringResource(R.string.app_settings_check_updates_on_launch),
+                        summary = stringResource(R.string.app_settings_check_updates_supporting),
+                        trailing = {
+                            Switch(
+                                checked = appSettings.checkForUpdatesOnLaunch,
+                                onCheckedChange = null,
+                            )
                         },
+                        modifier = Modifier.toggleable(
+                            value = appSettings.checkForUpdatesOnLaunch,
+                            role = Role.Switch,
+                            onValueChange = { enabled ->
+                                save(appSettings.copy(checkForUpdatesOnLaunch = enabled))
+                            },
+                        ),
                     )
-                }
-                SettingsRowDivider()
-                SettingsRow(
-                    title = stringResource(R.string.app_settings_check_updates_on_launch),
-                    summary = stringResource(R.string.app_settings_check_updates_supporting),
-                    trailing = {
-                        Switch(
-                            checked = appSettings.checkForUpdatesOnLaunch,
-                            onCheckedChange = null,
-                        )
-                    },
-                    modifier = Modifier.toggleable(
-                        value = appSettings.checkForUpdatesOnLaunch,
-                        role = Role.Switch,
-                        onValueChange = { enabled ->
-                            save(appSettings.copy(checkForUpdatesOnLaunch = enabled))
-                        },
-                    ),
-                )
-                SettingsRowDivider()
-                SettingsRow(
-                    title = stringResource(R.string.app_settings_version),
-                    summary = versionName,
-                    trailing = {
-                        CheckUpdateButton(
-                            isChecking = isCheckingUpdate,
-                            onClick = {
-                                if (!isCheckingUpdate) {
-                                    isCheckingUpdate = true
-                                    scope.launch {
-                                        val outcome = onCheckForUpdates(versionName)
-                                        isCheckingUpdate = false
-                                        when (outcome) {
-                                            is UpdateCheckOutcome.Available -> {
-                                                availableUpdate = outcome.availability
-                                            }
-                                            UpdateCheckOutcome.UpToDate -> {
-                                                Toast.makeText(context, upToDateMessage, Toast.LENGTH_SHORT)
-                                                    .show()
-                                            }
-                                            UpdateCheckOutcome.Failed -> {
-                                                Toast.makeText(context, checkFailedMessage, Toast.LENGTH_SHORT)
-                                                    .show()
+                    SettingsRowDivider()
+                    SettingsRow(
+                        title = stringResource(R.string.app_settings_version),
+                        summary = versionName,
+                        trailing = {
+                            CheckUpdateButton(
+                                isChecking = isCheckingUpdate,
+                                onClick = {
+                                    if (!isCheckingUpdate) {
+                                        isCheckingUpdate = true
+                                        scope.launch {
+                                            val outcome = onCheckForUpdates(versionName)
+                                            isCheckingUpdate = false
+                                            when (outcome) {
+                                                is UpdateCheckOutcome.Available -> {
+                                                    availableUpdate = outcome.availability
+                                                }
+                                                UpdateCheckOutcome.UpToDate -> {
+                                                    Toast.makeText(context, upToDateMessage, Toast.LENGTH_SHORT)
+                                                        .show()
+                                                }
+                                                UpdateCheckOutcome.Failed -> {
+                                                    Toast.makeText(context, checkFailedMessage, Toast.LENGTH_SHORT)
+                                                        .show()
+                                                }
                                             }
                                         }
                                     }
-                                }
-                            },
-                        )
-                    },
-                )
+                                },
+                            )
+                        },
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
             }
-
-            Spacer(modifier = Modifier.height(32.dp))
         }
-    }
-}
-
-@Composable
-private fun SettingsHeader(
-    title: String,
-    onBack: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        FilledTonalIconButton(
-            onClick = onBack,
-            modifier = Modifier.size(48.dp),
-            colors = IconButtonDefaults.filledTonalIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            ),
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_arrow_back),
-                contentDescription = stringResource(R.string.app_settings_back),
-            )
-        }
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
     }
 }
 

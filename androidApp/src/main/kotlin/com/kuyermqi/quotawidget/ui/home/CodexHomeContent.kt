@@ -51,6 +51,8 @@ class CodexHomeState internal constructor(
         internal set
     var isBusy by mutableStateOf(false)
         internal set
+    var isSaving by mutableStateOf(false)
+        internal set
     var error by mutableStateOf<String?>(null)
         internal set
     var loaded by mutableStateOf(false)
@@ -60,7 +62,7 @@ class CodexHomeState internal constructor(
         get() = settings.isConfigured
 
     val isDirty: Boolean
-        get() = loaded && settings.isConfigured && (
+        get() = loaded && (
             draftWindowKind != settings.widgetWindowKind ||
                 draftUsageDisplayMode != settings.usageDisplayMode ||
                 draftUsageProgressStyle != settings.usageProgressStyle ||
@@ -72,6 +74,12 @@ class CodexHomeState internal constructor(
         draftUsageDisplayMode = next.usageDisplayMode
         draftUsageProgressStyle = next.usageProgressStyle
         draftUsageResetStyle = next.usageResetStyle
+    }
+
+    fun discardDrafts() {
+        applyDraft()
+        error = null
+        isSaving = false
     }
 
     fun applyLoaded(next: CodexSettings) {
@@ -309,6 +317,7 @@ fun ColumnScope.CodexHomeContent(
         isLoggedIn = state.settings.isConfigured &&
             bindings.widgetState !is WidgetDisplayState.NeedsReauth,
         isBusy = state.isBusy,
+        isSaving = state.isSaving,
         isDirty = state.isDirty,
         errorMessage = state.error,
         email = state.settings.email,
@@ -356,6 +365,7 @@ fun ColumnScope.CodexHomeContent(
         onSave = {
             scope.launch {
                 state.isBusy = true
+                state.isSaving = true
                 state.error = null
                 try {
                     // Base on latest persisted tokens/settings so a background clamp
@@ -393,6 +403,7 @@ fun ColumnScope.CodexHomeContent(
                     }
                     WidgetGlanceState.syncAndUpdate(context, "codex_save")
                 } finally {
+                    state.isSaving = false
                     state.isBusy = false
                 }
             }
