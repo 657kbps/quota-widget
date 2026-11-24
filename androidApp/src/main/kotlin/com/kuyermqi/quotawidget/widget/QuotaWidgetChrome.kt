@@ -19,6 +19,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalSize
 import androidx.glance.action.Action
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
@@ -193,6 +194,7 @@ internal fun updatedAtLabel(epochMs: Long): String = contextString(
     WidgetDateFormatter.formatUpdatedAt(widgetContext(), epochMs),
 )
 
+/** Fixed size used by the in-app widget previews; live widgets use [balanceTitleSize]. */
 internal fun balanceTitleFontSize(formattedBalance: String): TextUnit =
     when {
         formattedBalance.length <= 6 -> 32.sp
@@ -212,6 +214,20 @@ internal fun compactBalanceTitleFontSize(formattedBalance: String): TextUnit =
         formattedBalance.length <= 12 -> 18.sp
         else -> 16.sp
     }
+
+@Composable
+internal fun balanceTitleSize(text: String, compact: Boolean): TextUnit {
+    val size = LocalSize.current
+    val horizontalReserve = if (compact) 64.dp else 28.dp
+    val verticalReserve = if (compact) 20.dp else 80.dp
+    return fittedTitleFontSize(
+        text = text,
+        maxWidth = (size.width - horizontalReserve).coerceAtLeast(40.dp),
+        maxHeight = (size.height - verticalReserve).coerceAtLeast(24.dp),
+        minSp = if (compact) 16f else 18f,
+        maxSp = if (compact) 32f else 40f,
+    )
+}
 
 @Composable
 internal fun BalanceBlock(

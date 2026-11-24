@@ -124,7 +124,7 @@ private fun DeepSeekWidgetContent(
                     BalanceBlock(
                         title = balance,
                         subtitle = updatedAtLabel(state.snapshot.updatedAtEpochMs),
-                        titleSize = balanceTitleFontSize(balance),
+                        titleSize = balanceTitleSize(balance, compact = false),
                         openApp = openApp,
                     )
                 }
@@ -167,21 +167,21 @@ private fun DeepSeekCompactWidgetContent(
         ) {
             val (title, subtitle, titleSize) = when (state) {
                 WidgetDisplayState.NotConfigured ->
-                    Triple(contextString(R.string.widget_not_configured), null, 26.sp)
+Triple(contextString(R.string.widget_not_configured), null, 26.sp)
                 WidgetDisplayState.Loading ->
-                    Triple(contextString(R.string.widget_loading_balance), null, 26.sp)
+Triple(contextString(R.string.widget_loading_balance), null, 26.sp)
                 WidgetDisplayState.NeedsReauth ->
-                    Triple(contextString(R.string.widget_needs_reauth), null, 26.sp)
+Triple(contextString(R.string.widget_needs_reauth), null, 26.sp)
                 is WidgetDisplayState.Success -> {
                     val primary = state.snapshot.primaryDisplay
                     Triple(
                         primary,
                         updatedAtLabel(state.snapshot.updatedAtEpochMs),
-                        compactBalanceTitleFontSize(primary),
+                        balanceTitleSize(primary, compact = true),
                     )
                 }
                 is WidgetDisplayState.Error ->
-                    Triple(contextString(R.string.widget_fetch_failed), null, 26.sp)
+Triple(contextString(R.string.widget_fetch_failed), null, 26.sp)
             }
             Column(
                 modifier = GlanceModifier

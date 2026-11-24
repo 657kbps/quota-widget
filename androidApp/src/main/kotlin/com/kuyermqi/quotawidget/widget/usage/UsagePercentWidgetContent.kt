@@ -1,6 +1,8 @@
 package com.kuyermqi.quotawidget.widget.usage
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
@@ -8,6 +10,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalSize
 import androidx.glance.action.Action
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
@@ -46,10 +49,9 @@ import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import com.kuyermqi.quotawidget.widget.BalanceBlock
 import com.kuyermqi.quotawidget.widget.WidgetHeader
-import com.kuyermqi.quotawidget.widget.balanceTitleFontSize
 import com.kuyermqi.quotawidget.widget.clickableNoRipple
-import com.kuyermqi.quotawidget.widget.compactBalanceTitleFontSize
 import com.kuyermqi.quotawidget.widget.contextString
+import com.kuyermqi.quotawidget.widget.fittedTitleFontSize
 import com.kuyermqi.quotawidget.widget.updatedAtLabel
 import com.kuyermqi.quotawidget.widget.systemWidgetBackgroundCornerRadius
 
@@ -201,16 +203,16 @@ internal fun UsagePercentSuccessBlock(
         compact && usageResetStyle == UsageResetStyle.PILL -> UsageResetStyle.FOOTER
         else -> usageResetStyle
     }
-    val baseTitleSize = if (compact) {
-        compactBalanceTitleFontSize(usageText)
-    } else {
-        balanceTitleFontSize(usageText)
-    }
-    val usageTextSize = if (pillText != null) {
-        minOf(26f, baseTitleSize.value).sp
-    } else {
-        baseTitleSize
-    }
+    val reservedHeight =
+        (if (compact) 0.dp else 60.dp) +
+            (if (showUsageProgress) 30.dp else 4.dp) +
+            (if (resetStyle == UsageResetStyle.FOOTER_STACKED) 28.dp else 16.dp)
+    val usageTextSize = usageTitleSize(
+        text = usageText,
+        compact = compact,
+        reservedHeight = reservedHeight,
+        extraWidth = if (pillText != null) 60.dp else 0.dp,
+    )
     Column(modifier = GlanceModifier.fillMaxWidth()) {
         if (pillText != null) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -335,4 +337,22 @@ private fun UsageResetPill(text: String, openApp: Action) {
             maxLines = 1,
         )
     }
+}
+
+@Composable
+internal fun usageTitleSize(
+    text: String,
+    compact: Boolean,
+    reservedHeight: Dp,
+    extraWidth: Dp = 0.dp,
+): TextUnit {
+    val size = LocalSize.current
+    val horizontalReserve = if (compact) 64.dp else 28.dp
+    return fittedTitleFontSize(
+        text = text,
+        maxWidth = (size.width - horizontalReserve - extraWidth).coerceAtLeast(40.dp),
+        maxHeight = (size.height - reservedHeight).coerceAtLeast(24.dp),
+        minSp = if (compact) 20f else 24f,
+        maxSp = if (compact) 32f else 44f,
+    )
 }
