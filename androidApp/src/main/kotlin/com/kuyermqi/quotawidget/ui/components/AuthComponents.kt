@@ -2,14 +2,14 @@ package com.kuyermqi.quotawidget.ui.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,6 +27,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -36,12 +37,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -86,13 +84,17 @@ fun ColumnScope.AuthSummaryHeader(
     title: String,
     subtitle: String? = null,
 ) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurface,
-    )
+    if (title.isNotBlank()) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
     if (!subtitle.isNullOrBlank()) {
-        Spacer(modifier = Modifier.height(4.dp))
+        if (title.isNotBlank()) {
+            Spacer(modifier = Modifier.height(4.dp))
+        }
         Text(
             text = subtitle,
             style = MaterialTheme.typography.bodySmall,
@@ -146,10 +148,7 @@ internal fun ColumnScope.AuthAccountCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-        ),
+        colors = CardDefaults.cardColors(containerColor = appCardColor()),
     ) {
         Column(
             modifier = Modifier
@@ -185,6 +184,7 @@ fun ColumnScope.AuthConfiguredPanel(
     isDirty: Boolean,
     logoutLabel: String,
     saveLabel: String,
+    saveBusy: Boolean = isBusy,
     onLogout: () -> Unit,
     onSave: () -> Unit,
     platformName: String = "",
@@ -225,14 +225,17 @@ fun ColumnScope.AuthConfiguredPanel(
         updatedAtEpochMs = updatedAtEpochMs,
     )
     AuthSaveAction(
-        isBusy = isBusy,
+        isBusy = saveBusy,
         isDirty = isDirty,
         saveLabel = saveLabel,
         onSave = onSave,
     )
 }
 
-/** Shared animated switcher for auth sub-panels. */
+/**
+ * Shared auth sub-panel switcher: horizontal slide between panels, without animating
+ * the container height.
+ */
 @Composable
 fun <T> AuthPanelSwitcher(
     targetState: T,
@@ -240,52 +243,30 @@ fun <T> AuthPanelSwitcher(
     isForward: (initial: T, target: T) -> Boolean,
     content: @Composable ColumnScope.(T) -> Unit,
 ) {
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        AnimatedContent(
-            targetState = targetState,
-            transitionSpec = {
-                val direction = if (isForward(initialState, targetState)) {
-                    AnimatedContentTransitionScope.SlideDirection.Left
-                } else {
-                    AnimatedContentTransitionScope.SlideDirection.Right
-                }
-                val enter = slideIntoContainer(
-                    towards = direction,
-                    animationSpec = tween(
-                        durationMillis = 280,
-                        easing = FastOutSlowInEasing,
-                    ),
-                )
-                val exit = slideOutOfContainer(
-                    towards = direction,
-                    animationSpec = tween(
-                        durationMillis = 280,
-                        easing = FastOutSlowInEasing,
-                    ),
-                )
-                val transition = (enter + fadeIn(tween(180))) togetherWith
-                    (exit + fadeOut(tween(180)))
-                transition.using(
-                    SizeTransform(
-                        clip = true,
-                        sizeAnimationSpec = { _, _ ->
-                            tween<IntSize>(
-                                durationMillis = 280,
-                                easing = FastOutSlowInEasing,
-                            )
-                        },
-                    ),
-                )
-            },
-            label = label,
-            contentAlignment = Alignment.TopStart,
-            modifier = Modifier
-                .width(maxWidth)
-                .clipToBounds(),
-        ) { panel ->
-            Column(modifier = Modifier.fillMaxWidth()) {
-                content(panel)
+    AnimatedContent(
+        targetState = targetState,
+        transitionSpec = {
+            val direction = if (isForward(initialState, targetState)) {
+                AnimatedContentTransitionScope.SlideDirection.Left
+            } else {
+                AnimatedContentTransitionScope.SlideDirection.Right
             }
+            val enter = slideIntoContainer(
+                towards = direction,
+                animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
+            )
+            val exit = slideOutOfContainer(
+                towards = direction,
+                animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
+            )
+            ((enter + fadeIn(tween(180))) togetherWith (exit + fadeOut(tween(180)))).using(null)
+        },
+        label = label,
+        contentAlignment = Alignment.TopStart,
+        modifier = Modifier.fillMaxWidth(),
+    ) { panel ->
+        Column(modifier = Modifier.fillMaxWidth()) {
+            content(panel)
         }
     }
 }
@@ -300,41 +281,47 @@ fun ColumnScope.AuthMethodChoiceList(
     configuredLabel: String,
     onBack: () -> Unit,
 ) {
-    if (canCancelEdit) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start,
-        ) {
-            TextButton(
-                onClick = onBack,
-                enabled = !isBusy,
-                contentPadding = PaddingValues(horizontal = 6.dp),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_arrow_back),
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = appCardColor()),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            options.forEachIndexed { index, option ->
+                if (index > 0) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                    )
+                }
+                AuthChoiceRow(
+                    title = option.title,
+                    subtitle = option.subtitle,
+                    configured = option.configured,
+                    configuredLabel = configuredLabel,
+                    enabled = !isBusy,
+                    onClick = option.onClick,
                 )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(backLabel)
+            }
+            if (canCancelEdit) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 14.dp),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    AuthBackButton(
+                        isBusy = isBusy,
+                        onBack = onBack,
+                        backLabel = backLabel,
+                    )
+                }
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
-    }
-    options.forEachIndexed { index, option ->
-        if (index > 0) Spacer(modifier = Modifier.height(8.dp))
-        AuthChoiceCard(
-            title = option.title,
-            subtitle = option.subtitle,
-            configured = option.configured,
-            configuredLabel = configuredLabel,
-            enabled = !isBusy,
-            onClick = option.onClick,
-        )
     }
 }
 
-/** Shared bottom-right save action for a configured account. */
+/** Shared save action for a configured account. */
 @Composable
 private fun ColumnScope.AuthSaveAction(
     isBusy: Boolean,
@@ -343,26 +330,35 @@ private fun ColumnScope.AuthSaveAction(
     onSave: () -> Unit,
 ) {
     Spacer(modifier = Modifier.height(12.dp))
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-        verticalAlignment = Alignment.CenterVertically,
+    SaveAction(
+        label = saveLabel,
+        enabled = isDirty,
+        busy = isBusy,
+        onClick = onSave,
+    )
+}
+
+/** Outlined pill back action used by auth panels. */
+@Composable
+private fun AuthBackButton(
+    isBusy: Boolean,
+    onBack: () -> Unit,
+    backLabel: String,
+) {
+    OutlinedButton(
+        onClick = onBack,
+        enabled = !isBusy,
+        modifier = Modifier.height(40.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp),
     ) {
-        if (isBusy) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp,
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-        }
-        Button(
-            onClick = onSave,
-            enabled = isDirty && !isBusy,
-        ) {
-            Text(saveLabel)
-        }
+        Icon(
+            painter = painterResource(R.drawable.ic_arrow_back),
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(backLabel)
     }
-    Spacer(modifier = Modifier.height(8.dp))
 }
 
 /** Shared bottom-right auth form actions. */
@@ -374,8 +370,6 @@ fun AuthFormActions(
     primaryLabel: String,
     primaryEnabled: Boolean,
     onPrimary: () -> Unit,
-    secondaryLabel: String? = null,
-    onSecondary: (() -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -393,20 +387,11 @@ fun AuthFormActions(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
             }
-            OutlinedButton(
-                onClick = onBack,
-                enabled = !isBusy,
-                modifier = Modifier.height(40.dp),
-                contentPadding = PaddingValues(horizontal = 20.dp),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_arrow_back),
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(backLabel)
-            }
+            AuthBackButton(
+                isBusy = isBusy,
+                onBack = onBack,
+                backLabel = backLabel,
+            )
             Button(
                 onClick = onPrimary,
                 enabled = primaryEnabled && !isBusy,
@@ -416,15 +401,6 @@ fun AuthFormActions(
                 Text(primaryLabel)
             }
         }
-        if (secondaryLabel != null && onSecondary != null) {
-            TextButton(
-                onClick = onSecondary,
-                enabled = !isBusy,
-            ) {
-                Text(secondaryLabel)
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
@@ -445,43 +421,45 @@ fun ColumnScope.ApiKeyAuthEditor(
     onSave: () -> Unit,
     saveEnabled: Boolean = apiKey.isNotBlank(),
 ) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleSmall,
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-    if (hasApiKey) {
+    AuthAccountCard {
         Text(
-            text = configuredLabel,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.primary,
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
         )
         Spacer(modifier = Modifier.height(8.dp))
+        if (hasApiKey) {
+            Text(
+                text = configuredLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+        OutlinedTextField(
+            value = apiKey,
+            onValueChange = onApiKeyChange,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(apiKeyLabel) },
+            supportingText = { Text(apiKeyHint) },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            enabled = !isBusy,
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        AuthFormActions(
+            isBusy = isBusy,
+            onBack = onBack,
+            backLabel = backLabel,
+            primaryLabel = saveLabel,
+            primaryEnabled = saveEnabled,
+            onPrimary = onSave,
+        )
     }
-    OutlinedTextField(
-        value = apiKey,
-        onValueChange = onApiKeyChange,
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(apiKeyLabel) },
-        supportingText = { Text(apiKeyHint) },
-        singleLine = true,
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        enabled = !isBusy,
-    )
-    Spacer(modifier = Modifier.height(12.dp))
-    AuthFormActions(
-        isBusy = isBusy,
-        onBack = onBack,
-        backLabel = backLabel,
-        primaryLabel = saveLabel,
-        primaryEnabled = saveEnabled,
-        onPrimary = onSave,
-    )
 }
 
 @Composable
-private fun AuthChoiceCard(
+private fun AuthChoiceRow(
     title: String,
     subtitle: String,
     configured: Boolean,
@@ -489,53 +467,45 @@ private fun AuthChoiceCard(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    Card(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = onClick)
+            .heightIn(min = 56.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 56.dp)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.padding(start = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            if (configured) {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    text = configuredLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
                 )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Spacer(modifier = Modifier.width(4.dp))
             }
-            Row(
-                modifier = Modifier.padding(start = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (configured) {
-                    Text(
-                        text = configuredLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                }
-                Icon(
-                    painter = painterResource(R.drawable.ic_expand_more),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.rotate(-90f),
-                )
-            }
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }

@@ -64,6 +64,8 @@ class OpenCodeGoHomeState internal constructor(
         internal set
     var isBusy by mutableStateOf(false)
         internal set
+    var isSaving by mutableStateOf(false)
+        internal set
     var error by mutableStateOf<String?>(null)
         internal set
     var workspaces by mutableStateOf<List<OpenCodeWorkspace>>(emptyList())
@@ -90,6 +92,14 @@ class OpenCodeGoHomeState internal constructor(
                 draftUsageProgressStyle != settings.usageProgressStyle ||
                 draftUsageResetStyle != settings.usageResetStyle
             )
+
+    fun discardDrafts() {
+        applyDraft()
+        authPanel = if (isConfigured) OpenCodeAuthPanel.SUMMARY else OpenCodeAuthPanel.CHOOSE
+        error = null
+        workspacesError = null
+        isSaving = false
+    }
 
     fun applyDraft(next: OpenCodeGoSettings = settings) {
         draftApiKey = next.apiKey
@@ -266,7 +276,7 @@ fun openCodeGoHomeEffects(
                     }
                     is WidgetDisplayState.Error -> {
                         state.error = refresh.message
-                        state.authPanel = OpenCodeAuthPanel.COOKIE
+                        state.authPanel = OpenCodeAuthPanel.SUMMARY
                     }
                     WidgetDisplayState.NeedsReauth -> {
                         clearOpenCodeSession(
@@ -326,6 +336,7 @@ fun ColumnScope.OpenCodeGoHomeContent(
             state.error = null
         },
         isBusy = state.isBusy,
+        isSaving = state.isSaving,
         isDirty = state.isDirty,
         errorMessage = state.error,
         windows = bindings.windows,
@@ -391,6 +402,7 @@ fun ColumnScope.OpenCodeGoHomeContent(
         onSave = { authMethod ->
             scope.launch {
                 state.isBusy = true
+                state.isSaving = true
                 state.error = null
                 val editingPanel = state.authPanel
                 try {
@@ -456,6 +468,7 @@ fun ColumnScope.OpenCodeGoHomeContent(
                     }
                     WidgetGlanceState.syncAndUpdate(context, "opencode_save")
                 } finally {
+                    state.isSaving = false
                     state.isBusy = false
                 }
             }

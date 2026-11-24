@@ -50,6 +50,11 @@ class DeepSeekHomeState internal constructor(
             draftApiKey != saved.apiKey || draftCurrency != saved.currency
             )
 
+    fun discardDrafts() {
+        applyLoaded(saved)
+        saveError = null
+    }
+
     fun applyLoaded(settings: DeepSeekSettings) {
         saved = settings
         draftApiKey = settings.apiKey

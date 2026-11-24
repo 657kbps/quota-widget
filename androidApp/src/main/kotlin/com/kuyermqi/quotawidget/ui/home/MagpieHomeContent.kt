@@ -81,6 +81,11 @@ class MagpieHomeState internal constructor(
                 draftUsageResetStyle != saved.usageResetStyle
             )
 
+    fun discardDrafts() {
+        applyLoaded(saved)
+        saveError = null
+    }
+
     fun applyLoaded(settings: MagpieSettings) {
         saved = settings
         draftBaseUrl = settings.baseUrl

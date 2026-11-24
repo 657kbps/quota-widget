@@ -74,6 +74,11 @@ class KimiCodeHomeState internal constructor(
                 draftUsageResetStyle != saved.usageResetStyle
         )
 
+    fun discardDrafts() {
+        applyLoaded(saved)
+        saveError = null
+    }
+
     fun applyLoaded(settings: KimiCodeSettings) {
         saved = settings
         draftApiKey = settings.apiKey

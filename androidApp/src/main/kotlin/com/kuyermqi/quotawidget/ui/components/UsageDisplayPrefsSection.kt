@@ -107,6 +107,35 @@ private val RESET_VISIBLE_STYLES = listOf(
     UsageResetStyle.PILL,
 )
 
+/** Fabricated snapshot shown in previews before an account is configured. */
+internal val SAMPLE_PREVIEW_WINDOWS = listOf(
+    QuotaWindow(
+        kind = QuotaWindowKind.FIVE_HOUR,
+        usedPercent = 42.0,
+        resetInSec = 3L * 3_600 + 12 * 60,
+    ),
+    QuotaWindow(
+        kind = QuotaWindowKind.WEEKLY,
+        usedPercent = 68.0,
+        resetInSec = 2L * 86_400 + 5 * 3_600,
+    ),
+    QuotaWindow(
+        kind = QuotaWindowKind.MONTHLY,
+        usedPercent = 55.0,
+        resetInSec = 12L * 86_400,
+    ),
+    QuotaWindow(
+        kind = QuotaWindowKind.TOKEN,
+        usedPercent = 55.0,
+    ),
+)
+
+private val SAMPLE_PREVIEW_OVERVIEW_KINDS = listOf(
+    QuotaWindowKind.FIVE_HOUR,
+    QuotaWindowKind.WEEKLY,
+    QuotaWindowKind.MONTHLY,
+)
+
 /**
  * Shared usage prefs: segmented Material 3 selectors for window kind, used/remaining mode,
  * progress style, switch + conditional reset-time style, and live multi-layout widget preview.
@@ -167,10 +196,7 @@ fun ColumnScope.UsageDisplayPrefsSection(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-        ),
+        colors = CardDefaults.cardColors(containerColor = appCardColor()),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Column(
@@ -198,60 +224,37 @@ fun ColumnScope.UsageDisplayPrefsSection(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
+                PrefsFieldLabel(stringResource(R.string.usage_display_short_label))
+                Spacer(modifier = Modifier.height(6.dp))
+                SegmentedOptionRow(
+                    options = UsageDisplayMode.entries,
+                    selectedOption = usageDisplayMode,
+                    labelOf = { mode ->
+                        when (mode) {
+                            UsageDisplayMode.USED -> labelUsed
+                            UsageDisplayMode.REMAINING -> labelRemaining
+                        }
+                    },
+                    onOptionSelected = onUsageDisplayModeChange,
+                    enabled = enabled,
+                    showIcon = false,
+                )
                 if (showProgressStyle) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            PrefsFieldLabel(stringResource(R.string.usage_display_short_label))
-                            Spacer(modifier = Modifier.height(6.dp))
-                            SegmentedOptionRow(
-                                options = UsageDisplayMode.entries,
-                                selectedOption = usageDisplayMode,
-                                labelOf = { mode ->
-                                    when (mode) {
-                                        UsageDisplayMode.USED -> labelUsed
-                                        UsageDisplayMode.REMAINING -> labelRemaining
-                                    }
-                                },
-                                onOptionSelected = onUsageDisplayModeChange,
-                                enabled = enabled,
-                                showIcon = false,
-                            )
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            PrefsFieldLabel(stringResource(R.string.usage_progress_style_label))
-                            Spacer(modifier = Modifier.height(6.dp))
-                            SegmentedOptionRow(
-                                options = UsageProgressStyle.entries,
-                                selectedOption = usageProgressStyle,
-                                labelOf = { style ->
-                                    when (style) {
-                                        UsageProgressStyle.BAR -> labelBar
-                                        UsageProgressStyle.CAPSULE -> labelCapsule
-                                    }
-                                },
-                                onOptionSelected = onUsageProgressStyleChange,
-                                enabled = enabled,
-                                showIcon = false,
-                            )
-                        }
-                    }
-                } else {
-                    PrefsFieldLabel(stringResource(R.string.usage_display_short_label))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    PrefsFieldLabel(stringResource(R.string.usage_progress_style_label))
                     Spacer(modifier = Modifier.height(6.dp))
                     SegmentedOptionRow(
-                        options = UsageDisplayMode.entries,
-                        selectedOption = usageDisplayMode,
-                        labelOf = { mode ->
-                            when (mode) {
-                                UsageDisplayMode.USED -> labelUsed
-                                UsageDisplayMode.REMAINING -> labelRemaining
+                        options = UsageProgressStyle.entries,
+                        selectedOption = usageProgressStyle,
+                        labelOf = { style ->
+                            when (style) {
+                                UsageProgressStyle.BAR -> labelBar
+                                UsageProgressStyle.CAPSULE -> labelCapsule
                             }
                         },
-                        onOptionSelected = onUsageDisplayModeChange,
+                        onOptionSelected = onUsageProgressStyleChange,
                         enabled = enabled,
+                        showIcon = false,
                     )
                 }
             }
@@ -314,27 +317,25 @@ fun ColumnScope.UsageDisplayPrefsSection(
         }
     }
 
-    val hasPreviewContent = windows.isNotEmpty() &&
-        (overviewKinds.isNotEmpty() || !supportsCompactAndOverviewPreview)
-    if (hasPreviewContent) {
-        Spacer(modifier = Modifier.height(12.dp))
-        WidgetLayoutsPreviewCard(
-            platformName = platformName,
-            windows = windows,
-            widgetWindowKind = widgetWindowKind,
-            usageDisplayMode = usageDisplayMode,
-            usageProgressStyle = usageProgressStyle,
-            usageResetStyle = usageResetStyle,
-            overviewKinds = overviewKinds,
-            showResetLabels = showResetLabels,
-            showProgressStyle = showProgressStyle,
-            forceZeroProgressPreview = forceZeroProgressPreview,
-            supportsCompactAndOverviewPreview = supportsCompactAndOverviewPreview,
-            allowWindowFallback = allowWindowFallback,
-            updatedAtEpochMs = updatedAtEpochMs,
-            newApiSnapshot = newApiSnapshot,
-        )
-    }
+    val previewWindows = windows.ifEmpty { SAMPLE_PREVIEW_WINDOWS }
+    val previewOverviewKinds = overviewKinds.ifEmpty { SAMPLE_PREVIEW_OVERVIEW_KINDS }
+    Spacer(modifier = Modifier.height(12.dp))
+    WidgetLayoutsPreviewCard(
+        platformName = platformName,
+        windows = previewWindows,
+        widgetWindowKind = widgetWindowKind,
+        usageDisplayMode = usageDisplayMode,
+        usageProgressStyle = usageProgressStyle,
+        usageResetStyle = usageResetStyle,
+        overviewKinds = previewOverviewKinds,
+        showResetLabels = showResetLabels,
+        showProgressStyle = showProgressStyle,
+        forceZeroProgressPreview = forceZeroProgressPreview,
+        supportsCompactAndOverviewPreview = supportsCompactAndOverviewPreview,
+        allowWindowFallback = allowWindowFallback,
+        updatedAtEpochMs = updatedAtEpochMs,
+        newApiSnapshot = newApiSnapshot,
+    )
 }
 
 @Composable
@@ -360,10 +361,7 @@ private fun <T> WidgetPreviewCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-        ),
+        colors = CardDefaults.cardColors(containerColor = appCardColor()),
     ) {
         Column(
             modifier = Modifier

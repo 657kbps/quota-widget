@@ -1,21 +1,14 @@
 package com.kuyermqi.quotawidget.ui.components
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -54,39 +47,41 @@ fun ColumnScope.NewApiConfigContent(
     onSave: () -> Unit,
     newApiSnapshot: QuotaSnapshot? = null,
 ) {
-    OutlinedTextField(
-        value = baseUrl,
-        onValueChange = onBaseUrlChange,
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(stringResource(R.string.new_api_base_url_label)) },
-        placeholder = { Text(stringResource(R.string.new_api_base_url_hint)) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-        enabled = !isSaving,
-    )
-    Spacer(modifier = Modifier.height(12.dp))
-    OutlinedTextField(
-        value = apiKey,
-        onValueChange = onApiKeyChange,
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(stringResource(R.string.new_api_api_key_label)) },
-        supportingText = { Text(stringResource(R.string.new_api_usage_display_hint)) },
-        singleLine = true,
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        enabled = !isSaving,
-    )
-    Spacer(modifier = Modifier.height(12.dp))
-    OutlinedTextField(
-        value = quotaPerUsd,
-        onValueChange = onQuotaPerUsdChange,
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(stringResource(R.string.new_api_quota_per_usd_label)) },
-        supportingText = { Text(stringResource(R.string.new_api_quota_per_usd_hint)) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        enabled = !isSaving,
-    )
+    AuthAccountCard {
+        OutlinedTextField(
+            value = baseUrl,
+            onValueChange = onBaseUrlChange,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.new_api_base_url_label)) },
+            placeholder = { Text(stringResource(R.string.new_api_base_url_hint)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+            enabled = !isSaving,
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedTextField(
+            value = apiKey,
+            onValueChange = onApiKeyChange,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.new_api_api_key_label)) },
+            supportingText = { Text(stringResource(R.string.new_api_usage_display_hint)) },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            enabled = !isSaving,
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedTextField(
+            value = quotaPerUsd,
+            onValueChange = onQuotaPerUsdChange,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.new_api_quota_per_usd_label)) },
+            supportingText = { Text(stringResource(R.string.new_api_quota_per_usd_hint)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            enabled = !isSaving,
+        )
+    }
     Spacer(modifier = Modifier.height(12.dp))
     UsageDisplayPrefsSection(
         windows = windows,
@@ -134,23 +129,10 @@ fun ColumnScope.NewApiConfigContent(
         )
     }
     Spacer(modifier = Modifier.height(12.dp))
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (isSaving) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp,
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-        }
-        Button(
-            onClick = onSave,
-            enabled = isDirty && !isSaving,
-        ) {
-            Text(stringResource(R.string.new_api_save))
-        }
-    }
+    SaveAction(
+        label = stringResource(R.string.new_api_save),
+        enabled = isDirty,
+        busy = isSaving,
+        onClick = onSave,
+    )
 }

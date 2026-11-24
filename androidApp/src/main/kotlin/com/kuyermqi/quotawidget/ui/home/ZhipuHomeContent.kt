@@ -74,6 +74,11 @@ class ZhipuHomeState internal constructor(
                 draftUsageResetStyle != saved.usageResetStyle
         )
 
+    fun discardDrafts() {
+        applyLoaded(saved)
+        saveError = null
+    }
+
     fun applyLoaded(settings: ZhipuSettings) {
         saved = settings
         draftApiKey = settings.apiKey

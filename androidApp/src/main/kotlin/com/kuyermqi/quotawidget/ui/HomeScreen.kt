@@ -1,23 +1,17 @@
 package com.kuyermqi.quotawidget.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -25,11 +19,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -40,7 +34,6 @@ import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
-import com.kuyermqi.quotawidget.ui.components.PlatformConfigItem
 import com.kuyermqi.quotawidget.ui.components.TipBanner
 import com.kuyermqi.quotawidget.ui.components.isIgnoringBatteryOptimizations
 import com.kuyermqi.quotawidget.ui.components.providerLogo
@@ -78,7 +71,6 @@ data class FocusPlatformRequest(
     val nonce: Long,
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     settingsRepository: PlatformSettingsRepository,
@@ -96,7 +88,6 @@ fun HomeScreen(
     val context = LocalContext.current
     val resources = LocalResources.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val listState = rememberLazyListState()
     val msgNeedsReauth = stringResource(R.string.widget_needs_reauth)
     val msgLoadingBalance = stringResource(R.string.widget_loading_balance)
     val msgOpenCodeWorkspaceMissing = stringResource(R.string.opencode_workspace_missing)
@@ -105,10 +96,17 @@ fun HomeScreen(
     var showBatteryOptimizationTip by remember {
         mutableStateOf(!context.isIgnoringBatteryOptimizations())
     }
-    var expandedPlatformId by remember { mutableStateOf<String?>(null) }
-    var highlightPlatformId by remember { mutableStateOf<String?>(null) }
-    var highlightNonce by remember { mutableStateOf<Long?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
+    var activePlatformId by rememberSaveable {
+        mutableStateOf(
+            focusPlatformRequest?.platformId
+                ?.takeIf { PlatformRegistry.find(it) != null }
+                .orEmpty(),
+        )
+    }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var unconfiguredExpanded by rememberSaveable { mutableStateOf(false) }
+    val providerListState = rememberLazyListState()
 
     val deepSeek = rememberDeepSeekHomeState(settingsRepository)
     val openCode = rememberOpenCodeGoHomeState(settingsRepository)
@@ -143,18 +141,38 @@ fun HomeScreen(
         showBatteryOptimizationTip || showOemBackgroundTip || showPlatformTip
         )
 
-    LaunchedEffect(focusPlatformRequest, tipLoaded, hasVisibleTips) {
+    fun discardDrafts(platformId: String) {
+        when (platformId) {
+            PlatformIds.DEEPSEEK -> deepSeek.discardDrafts()
+            PlatformIds.OPENCODE_GO -> openCode.discardDrafts()
+            PlatformIds.CODEX -> codex.discardDrafts()
+            PlatformIds.NEW_API -> newApi.discardDrafts()
+            PlatformIds.MAGPIE -> magpie.discardDrafts()
+            PlatformIds.KIMI_CODE -> kimiCode.discardDrafts()
+            PlatformIds.ZHIPU -> zhipu.discardDrafts()
+            PlatformIds.WORKBUDDY -> workBuddy.discardDrafts()
+            PlatformIds.WORKBUDDY_AI -> workBuddyAi.discardDrafts()
+            PlatformIds.CLINE -> cline.discardDrafts()
+            PlatformIds.COMMAND_CODE -> commandCode.discardDrafts()
+            PlatformIds.ANTIGRAVITY -> antigravity.discardDrafts()
+        }
+    }
+
+    LaunchedEffect(activePlatformId) {
+        if (activePlatformId.isNotEmpty() &&
+            PlatformRegistry.find(activePlatformId) == null
+        ) {
+            activePlatformId = ""
+        }
+    }
+
+    LaunchedEffect(focusPlatformRequest) {
         val request = focusPlatformRequest ?: return@LaunchedEffect
-        if (!tipLoaded) return@LaunchedEffect
-        val platformIndex = PlatformRegistry.platforms.indexOfFirst { it.id == request.platformId }
-        if (platformIndex < 0) return@LaunchedEffect
-
-        expandedPlatformId = request.platformId
-        highlightPlatformId = request.platformId
-        highlightNonce = request.nonce
-
-        val tipItemOffset = if (hasVisibleTips) 1 else 0
-        listState.animateScrollToItem(tipItemOffset + platformIndex)
+        if (PlatformRegistry.find(request.platformId) == null) return@LaunchedEffect
+        if (activePlatformId.isNotEmpty() && activePlatformId != request.platformId) {
+            discardDrafts(activePlatformId)
+        }
+        activePlatformId = request.platformId
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -165,6 +183,22 @@ fun HomeScreen(
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    fun isConfiguredFor(platformId: String): Boolean = when (platformId) {
+        PlatformIds.DEEPSEEK -> deepSeek.isConfigured
+        PlatformIds.OPENCODE_GO -> openCode.isConfigured
+        PlatformIds.CODEX -> codex.isConfigured
+        PlatformIds.NEW_API -> newApi.isConfigured
+        PlatformIds.MAGPIE -> magpie.isConfigured
+        PlatformIds.KIMI_CODE -> kimiCode.isConfigured
+        PlatformIds.ZHIPU -> zhipu.isConfigured
+        PlatformIds.WORKBUDDY -> workBuddy.isConfigured
+        PlatformIds.WORKBUDDY_AI -> workBuddyAi.isConfigured
+        PlatformIds.CLINE -> cline.isConfigured
+        PlatformIds.COMMAND_CODE -> commandCode.isConfigured
+        PlatformIds.ANTIGRAVITY -> antigravity.isConfigured
+        else -> false
     }
 
     fun summaryLabelFor(platformId: String): String? = when (platformId) {
@@ -244,13 +278,7 @@ fun HomeScreen(
     }
 
     suspend fun refreshAll(showPullIndicator: Boolean = false) {
-        val anyConfigured =
-            deepSeek.isConfigured || openCode.isConfigured ||
-                codex.isConfigured || newApi.isConfigured || magpie.isConfigured ||
-                kimiCode.isConfigured || zhipu.isConfigured ||
-                workBuddy.isConfigured || workBuddyAi.isConfigured ||
-                cline.isConfigured || commandCode.isConfigured ||
-                antigravity.isConfigured
+        val anyConfigured = PlatformRegistry.platforms.any { isConfiguredFor(it.id) }
         if (!anyConfigured) return
         if (showPullIndicator) isRefreshing = true
         try {
@@ -280,192 +308,198 @@ fun HomeScreen(
         cline.applyPersisted(settingsRepository.getSessionSettings(PlatformIds.CLINE))
         commandCode.applyPersisted(settingsRepository.getSessionSettings(PlatformIds.COMMAND_CODE))
         antigravity.applyPersisted(settingsRepository.getSessionSettings(PlatformIds.ANTIGRAVITY))
-        if (deepSeek.isConfigured || openCode.isConfigured ||
-            codex.isConfigured || newApi.isConfigured || magpie.isConfigured ||
-            kimiCode.isConfigured || zhipu.isConfigured ||
-            workBuddy.isConfigured || workBuddyAi.isConfigured ||
-            cline.isConfigured || commandCode.isConfigured ||
-            antigravity.isConfigured
-        ) {
+        if (PlatformRegistry.platforms.any { isConfiguredFor(it.id) }) {
             refreshAll(showPullIndicator = false)
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.home_title)) },
-                actions = {
-                    IconButton(onClick = onOpenAppSettings) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_settings),
-                            contentDescription = stringResource(R.string.app_settings_open),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = { scope.launch { refreshAll(showPullIndicator = true) } },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
-                .imePadding(),
-        ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                if (hasVisibleTips) {
-                    item(key = "tips") {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            if (showBatteryOptimizationTip) {
-                                TipBanner(
-                                    visible = true,
-                                    iconRes = R.drawable.ic_battery,
-                                    message = stringResource(R.string.battery_optimization_tip),
-                                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                                    onCardClick = { context.requestIgnoreBatteryOptimizations() },
-                                    actionText = stringResource(R.string.battery_optimization_tip_action),
-                                    onActionClick = { context.requestIgnoreBatteryOptimizations() },
-                                )
-                            }
-                            if (showOemBackgroundTip) {
-                                val oemGuideUrl = stringResource(R.string.oem_background_tip_url)
-                                val oemGuideTitle = stringResource(R.string.oem_background_tip_link)
-                                TipBanner(
-                                    visible = true,
-                                    iconRes = R.drawable.ic_internet,
-                                    message = stringResource(R.string.oem_background_tip),
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    onDismiss = {
-                                        onDismissOemBackgroundTip()
-                                        scope.launch {
-                                            settingsRepository.setOemBackgroundTipDismissed(true)
-                                        }
-                                    },
-                                    linkText = oemGuideTitle,
-                                    onLinkClick = {
-                                        context.startActivity(
-                                            InAppWebViewActivity.createIntent(
-                                                context = context,
-                                                url = oemGuideUrl,
-                                                title = "Don‘t Kill My App",
-                                            ),
-                                        )
-                                    },
-                                )
-                            }
-                            if (showPlatformTip) {
-                                TipBanner(
-                                    visible = true,
-                                    iconRes = R.drawable.ic_tip_lightbulb,
-                                    message = stringResource(R.string.platform_tip),
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    onDismiss = {
-                                        onDismissPlatformTip()
-                                        scope.launch {
-                                            settingsRepository.setPlatformTipDismissed(true)
-                                        }
-                                    },
-                                )
-                            }
-                        }
-                    }
-                }
+    val providerEntries = PlatformRegistry.platforms.map { platform ->
+        val displayName = platformDisplayName(platform.id, homeList = true)
+        ProviderEntry(
+            platformId = platform.id,
+            name = displayName,
+            summary = summaryLabelFor(platform.id),
+            configured = isConfiguredFor(platform.id),
+            searchText = listOf(
+                displayName,
+                PlatformRegistry.displayName(platform.id),
+                platform.id,
+            ).joinToString(" "),
+        )
+    }
 
-                items(PlatformRegistry.platforms, key = { it.id }) { platform ->
-                    PlatformConfigItem(
-                        title = platformDisplayName(platform.id, homeList = true),
-                        logo = providerLogo(platform.id),
-                        expanded = expandedPlatformId == platform.id,
-                        onToggle = {
-                            expandedPlatformId =
-                                if (expandedPlatformId == platform.id) null else platform.id
-                        },
-                        balanceText = summaryLabelFor(platform.id),
-                        highlightNonce = highlightNonce.takeIf { highlightPlatformId == platform.id },
-                        onHighlightFinished = {
-                            if (highlightPlatformId == platform.id) {
-                                highlightPlatformId = null
-                                highlightNonce = null
-                            }
-                        },
-                    ) {
-                        when (platform.id) {
-                            PlatformIds.DEEPSEEK -> DeepSeekHomeContent(
-                                state = deepSeek,
-                                onRefreshPlatform = onRefreshPlatform,
-                            )
-                            PlatformIds.OPENCODE_GO -> OpenCodeGoHomeContent(
-                                state = openCode,
-                                bindings = openCodeBindings,
-                                onRefreshPlatform = onRefreshPlatform,
-                            )
-                            PlatformIds.CODEX -> CodexHomeContent(
-                                state = codex,
-                                bindings = codexBindings,
-                                onRefreshPlatform = onRefreshPlatform,
-                            )
-                            PlatformIds.NEW_API -> NewApiHomeContent(
-                                state = newApi,
-                                onRefreshPlatform = onRefreshPlatform,
-                            )
-                            PlatformIds.MAGPIE -> MagpieHomeContent(
-                                state = magpie,
-                                onRefreshPlatform = onRefreshPlatform,
-                            )
-                            PlatformIds.KIMI_CODE -> KimiCodeHomeContent(
-                                state = kimiCode,
-                                onRefreshPlatform = onRefreshPlatform,
-                            )
-                            PlatformIds.ZHIPU -> ZhipuHomeContent(
-                                state = zhipu,
-                                onRefreshPlatform = onRefreshPlatform,
-                            )
-                            PlatformIds.WORKBUDDY -> SessionPlatformHomeContent(
-                                state = workBuddy,
-                                bindings = workBuddyBindings,
-                                widgetState = workBuddy.widgetState,
-                            )
-                            PlatformIds.WORKBUDDY_AI -> SessionPlatformHomeContent(
-                                state = workBuddyAi,
-                                bindings = workBuddyAiBindings,
-                                widgetState = workBuddyAi.widgetState,
-                            )
-                            PlatformIds.CLINE -> SessionPlatformHomeContent(
-                                state = cline,
-                                bindings = clineBindings,
-                                widgetState = cline.widgetState,
-                            )
-                            PlatformIds.COMMAND_CODE -> SessionPlatformHomeContent(
-                                state = commandCode,
-                                bindings = commandCodeBindings,
-                                widgetState = commandCode.widgetState,
-                            )
-                            PlatformIds.ANTIGRAVITY -> SessionPlatformHomeContent(
-                                state = antigravity,
-                                bindings = antigravityBindings,
-                                widgetState = antigravity.widgetState,
-                            )
-                        }
-                    }
+    val tips: (@Composable () -> Unit)? = if (hasVisibleTips) {
+        {
+            HomeTips(
+                showBatteryOptimizationTip = showBatteryOptimizationTip,
+                showOemBackgroundTip = showOemBackgroundTip,
+                showPlatformTip = showPlatformTip,
+                onDismissOemBackgroundTip = {
+                    onDismissOemBackgroundTip()
+                    scope.launch { settingsRepository.setOemBackgroundTipDismissed(true) }
+                },
+                onDismissPlatformTip = {
+                    onDismissPlatformTip()
+                    scope.launch { settingsRepository.setPlatformTipDismissed(true) }
+                },
+            )
+        }
+    } else {
+        null
+    }
+
+    AnimatedContent(
+        targetState = activePlatformId.ifEmpty { null },
+        modifier = Modifier.fillMaxSize(),
+        transitionSpec = {
+            if (targetState != null) {
+                (slideInHorizontally(tween(300)) { it / 6 } + fadeIn(tween(220))) togetherWith
+                    (slideOutHorizontally(tween(300)) { -it / 12 } + fadeOut(tween(160)))
+            } else {
+                (slideInHorizontally(tween(300)) { -it / 12 } + fadeIn(tween(220))) togetherWith
+                    (slideOutHorizontally(tween(300)) { it / 6 } + fadeOut(tween(160)))
+            }
+        },
+        label = "homeDestination",
+    ) { platformId ->
+        if (platformId == null) {
+            ProviderListScreen(
+                entries = providerEntries,
+                query = searchQuery,
+                onQueryChange = { searchQuery = it },
+                unconfiguredExpanded = unconfiguredExpanded,
+                onUnconfiguredExpandedChange = { unconfiguredExpanded = it },
+                isRefreshing = isRefreshing,
+                onRefresh = { scope.launch { refreshAll(showPullIndicator = true) } },
+                onOpenProvider = { activePlatformId = it },
+                onOpenAppSettings = onOpenAppSettings,
+                listState = providerListState,
+                tips = tips,
+            )
+        } else {
+            ProviderDetailScreen(
+                title = platformDisplayName(platformId, homeList = true),
+                logo = providerLogo(platformId),
+                onBack = {
+                    discardDrafts(platformId)
+                    activePlatformId = ""
+                },
+            ) {
+                when (platformId) {
+                    PlatformIds.DEEPSEEK -> DeepSeekHomeContent(
+                        state = deepSeek,
+                        onRefreshPlatform = onRefreshPlatform,
+                    )
+                    PlatformIds.OPENCODE_GO -> OpenCodeGoHomeContent(
+                        state = openCode,
+                        bindings = openCodeBindings,
+                        onRefreshPlatform = onRefreshPlatform,
+                    )
+                    PlatformIds.CODEX -> CodexHomeContent(
+                        state = codex,
+                        bindings = codexBindings,
+                        onRefreshPlatform = onRefreshPlatform,
+                    )
+                    PlatformIds.NEW_API -> NewApiHomeContent(
+                        state = newApi,
+                        onRefreshPlatform = onRefreshPlatform,
+                    )
+                    PlatformIds.MAGPIE -> MagpieHomeContent(
+                        state = magpie,
+                        onRefreshPlatform = onRefreshPlatform,
+                    )
+                    PlatformIds.KIMI_CODE -> KimiCodeHomeContent(
+                        state = kimiCode,
+                        onRefreshPlatform = onRefreshPlatform,
+                    )
+                    PlatformIds.ZHIPU -> ZhipuHomeContent(
+                        state = zhipu,
+                        onRefreshPlatform = onRefreshPlatform,
+                    )
+                    PlatformIds.WORKBUDDY -> SessionPlatformHomeContent(
+                        state = workBuddy,
+                        bindings = workBuddyBindings,
+                        widgetState = workBuddy.widgetState,
+                    )
+                    PlatformIds.WORKBUDDY_AI -> SessionPlatformHomeContent(
+                        state = workBuddyAi,
+                        bindings = workBuddyAiBindings,
+                        widgetState = workBuddyAi.widgetState,
+                    )
+                    PlatformIds.CLINE -> SessionPlatformHomeContent(
+                        state = cline,
+                        bindings = clineBindings,
+                        widgetState = cline.widgetState,
+                    )
+                    PlatformIds.COMMAND_CODE -> SessionPlatformHomeContent(
+                        state = commandCode,
+                        bindings = commandCodeBindings,
+                        widgetState = commandCode.widgetState,
+                    )
+                    PlatformIds.ANTIGRAVITY -> SessionPlatformHomeContent(
+                        state = antigravity,
+                        bindings = antigravityBindings,
+                        widgetState = antigravity.widgetState,
+                    )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun HomeTips(
+    showBatteryOptimizationTip: Boolean,
+    showOemBackgroundTip: Boolean,
+    showPlatformTip: Boolean,
+    onDismissOemBackgroundTip: () -> Unit,
+    onDismissPlatformTip: () -> Unit,
+) {
+    val context = LocalContext.current
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (showBatteryOptimizationTip) {
+            TipBanner(
+                visible = true,
+                iconRes = R.drawable.ic_battery,
+                message = stringResource(R.string.battery_optimization_tip),
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                onCardClick = { context.requestIgnoreBatteryOptimizations() },
+                actionText = stringResource(R.string.battery_optimization_tip_action),
+                onActionClick = { context.requestIgnoreBatteryOptimizations() },
+            )
+        }
+        if (showOemBackgroundTip) {
+            val oemGuideUrl = stringResource(R.string.oem_background_tip_url)
+            val oemGuideTitle = stringResource(R.string.oem_background_tip_link)
+            TipBanner(
+                visible = true,
+                iconRes = R.drawable.ic_internet,
+                message = stringResource(R.string.oem_background_tip),
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                onDismiss = onDismissOemBackgroundTip,
+                linkText = oemGuideTitle,
+                onLinkClick = {
+                    context.startActivity(
+                        InAppWebViewActivity.createIntent(
+                            context = context,
+                            url = oemGuideUrl,
+                            title = "Don‘t Kill My App",
+                        ),
+                    )
+                },
+            )
+        }
+        if (showPlatformTip) {
+            TipBanner(
+                visible = true,
+                iconRes = R.drawable.ic_tip_lightbulb,
+                message = stringResource(R.string.platform_tip),
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                onDismiss = onDismissPlatformTip,
+            )
         }
     }
 }

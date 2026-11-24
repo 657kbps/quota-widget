@@ -1,5 +1,6 @@
 package com.kuyermqi.quotawidget.ui.components
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -43,7 +44,6 @@ import com.kuyermqi.quotawidget.settings.OpenCodeAuthMethod
 enum class OpenCodeAuthPanel {
     SUMMARY,
     CHOOSE,
-    COOKIE,
     API_KEY,
 }
 
@@ -59,6 +59,7 @@ fun ColumnScope.OpenCodeGoConfigContent(
     apiKey: String,
     onApiKeyChange: (String) -> Unit,
     isBusy: Boolean,
+    isSaving: Boolean,
     isDirty: Boolean,
     errorMessage: String?,
     windows: List<QuotaWindow>,
@@ -83,12 +84,23 @@ fun ColumnScope.OpenCodeGoConfigContent(
     onSave: (OpenCodeAuthMethod?) -> Unit,
     updatedAtEpochMs: Long = 0L,
 ) {
+    BackHandler(
+        enabled = authPanel == OpenCodeAuthPanel.API_KEY ||
+            (authPanel == OpenCodeAuthPanel.CHOOSE && isConfigured),
+    ) {
+        onAuthPanelChange(
+            if (authPanel == OpenCodeAuthPanel.API_KEY) {
+                OpenCodeAuthPanel.CHOOSE
+            } else {
+                OpenCodeAuthPanel.SUMMARY
+            },
+        )
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Spacer(modifier = Modifier.height(8.dp))
-        val showTopError = !errorMessage.isNullOrBlank() &&
-            authPanel != OpenCodeAuthPanel.COOKIE
+        val showTopError = !errorMessage.isNullOrBlank()
         if (showTopError) {
             Text(
                 text = errorMessage,
@@ -101,10 +113,8 @@ fun ColumnScope.OpenCodeGoConfigContent(
             targetState = authPanel,
             label = "opencodeAuthPanel",
             isForward = { initial, target ->
-                target == OpenCodeAuthPanel.COOKIE ||
-                    target == OpenCodeAuthPanel.API_KEY ||
-                    (initial == OpenCodeAuthPanel.SUMMARY &&
-                        target == OpenCodeAuthPanel.CHOOSE)
+                target == OpenCodeAuthPanel.API_KEY ||
+                    (initial == OpenCodeAuthPanel.SUMMARY && target == OpenCodeAuthPanel.CHOOSE)
             },
         ) { panel ->
             when (panel) {
@@ -113,6 +123,7 @@ fun ColumnScope.OpenCodeGoConfigContent(
                     needsReauth = needsReauth,
                     hasCookieSession = hasCookieSession,
                     isBusy = isBusy,
+                    isSaving = isSaving,
                     isDirty = isDirty,
                     windows = windows,
                     workspaces = workspaces,
@@ -135,25 +146,29 @@ fun ColumnScope.OpenCodeGoConfigContent(
                     onSave = onSave,
                     updatedAtEpochMs = updatedAtEpochMs,
                 )
-                OpenCodeAuthPanel.CHOOSE -> AuthChoiceList(
-                    hasCookieSession = hasCookieSession,
-                    hasApiKey = hasApiKey,
-                    canCancelEdit = isConfigured,
-                    isBusy = isBusy,
-                    onAuthPanelChange = onAuthPanelChange,
-                )
-                OpenCodeAuthPanel.COOKIE -> CookieAuthEditor(
-                    activeAuthMethod = activeAuthMethod,
-                    hasCookieSession = hasCookieSession,
-                    errorMessage = errorMessage,
-                    isBusy = isBusy,
-                    workspaces = workspaces,
-                    selectedWorkspaceId = selectedWorkspaceId,
-                    selectedWorkspaceName = selectedWorkspaceName,
-                    onAuthPanelChange = onAuthPanelChange,
-                    onUseExistingSession = { onSave(OpenCodeAuthMethod.COOKIE) },
-                    onLogin = onLogin,
-                )
+                OpenCodeAuthPanel.CHOOSE -> {
+                    AuthChoiceList(
+                        hasCookieSession = hasCookieSession,
+                        hasApiKey = hasApiKey,
+                        canCancelEdit = isConfigured,
+                        isBusy = isBusy,
+                        onAuthPanelChange = onAuthPanelChange,
+                        onLogin = onLogin,
+                        windows = windows,
+                        widgetWindowKind = widgetWindowKind,
+                        onWidgetWindowKindChange = onWidgetWindowKindChange,
+                        usageDisplayMode = usageDisplayMode,
+                        onUsageDisplayModeChange = onUsageDisplayModeChange,
+                        usageProgressStyle = usageProgressStyle,
+                        onUsageProgressStyleChange = onUsageProgressStyleChange,
+                        usageResetStyle = usageResetStyle,
+                        onUsageResetStyleChange = onUsageResetStyleChange,
+                        isSaving = isSaving,
+                        isDirty = isDirty,
+                        onSavePrefs = { onSave(null) },
+                        updatedAtEpochMs = updatedAtEpochMs,
+                    )
+                }
                 OpenCodeAuthPanel.API_KEY -> OpenCodeApiKeyAuthEditor(
                     apiKey = apiKey,
                     onApiKeyChange = onApiKeyChange,
@@ -173,6 +188,7 @@ private fun ColumnScope.AuthSummary(
     needsReauth: Boolean,
     hasCookieSession: Boolean,
     isBusy: Boolean,
+    isSaving: Boolean,
     isDirty: Boolean,
     windows: List<QuotaWindow>,
     workspaces: List<OpenCodeWorkspace>,
@@ -258,6 +274,7 @@ private fun ColumnScope.AuthSummary(
         ),
         isBusy = isBusy,
         isDirty = isDirty,
+        saveBusy = isSaving,
         logoutLabel = stringResource(R.string.opencode_logout),
         saveLabel = stringResource(R.string.action_save),
         onLogout = onLogout,
@@ -275,6 +292,20 @@ private fun ColumnScope.AuthChoiceList(
     canCancelEdit: Boolean,
     isBusy: Boolean,
     onAuthPanelChange: (OpenCodeAuthPanel) -> Unit,
+    onLogin: () -> Unit,
+    windows: List<QuotaWindow>,
+    widgetWindowKind: UsageWindowKind,
+    onWidgetWindowKindChange: (UsageWindowKind) -> Unit,
+    usageDisplayMode: UsageDisplayMode,
+    onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
+    usageProgressStyle: UsageProgressStyle,
+    onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
+    usageResetStyle: UsageResetStyle,
+    onUsageResetStyleChange: (UsageResetStyle) -> Unit,
+    isSaving: Boolean,
+    isDirty: Boolean,
+    onSavePrefs: () -> Unit,
+    updatedAtEpochMs: Long,
 ) {
     AuthMethodChoiceList(
         options = listOf(
@@ -282,7 +313,7 @@ private fun ColumnScope.AuthChoiceList(
                 title = stringResource(R.string.opencode_auth_web_title),
                 subtitle = stringResource(R.string.opencode_auth_web_hint),
                 configured = hasCookieSession,
-                onClick = { onAuthPanelChange(OpenCodeAuthPanel.COOKIE) },
+                onClick = onLogin,
             ),
             AuthMethodOption(
                 title = stringResource(R.string.opencode_auth_api_title),
@@ -297,82 +328,40 @@ private fun ColumnScope.AuthChoiceList(
         configuredLabel = stringResource(R.string.opencode_auth_configured),
         onBack = { onAuthPanelChange(OpenCodeAuthPanel.SUMMARY) },
     )
-}
-
-@Composable
-private fun ColumnScope.CookieAuthEditor(
-    activeAuthMethod: OpenCodeAuthMethod,
-    hasCookieSession: Boolean,
-    errorMessage: String?,
-    isBusy: Boolean,
-    workspaces: List<OpenCodeWorkspace>,
-    selectedWorkspaceId: String,
-    selectedWorkspaceName: String,
-    onAuthPanelChange: (OpenCodeAuthPanel) -> Unit,
-    onUseExistingSession: () -> Unit,
-    onLogin: () -> Unit,
-) {
-    if (hasCookieSession) {
-        val accountName = workspaces
-            .find { it.id == selectedWorkspaceId }
-            ?.displayName
-            ?: selectedWorkspaceName.ifBlank { selectedWorkspaceId }
-        Text(
-            text = if (accountName.isNotBlank()) {
-                stringResource(R.string.opencode_auth_logged_in_account, accountName)
-            } else {
-                stringResource(R.string.opencode_auth_logged_in)
-            },
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        if (!errorMessage.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = errorMessage,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
+    if (!canCancelEdit) {
         Spacer(modifier = Modifier.height(12.dp))
-        if (activeAuthMethod == OpenCodeAuthMethod.COOKIE) {
-            AuthFormActions(
-                isBusy = isBusy,
-                onBack = { onAuthPanelChange(OpenCodeAuthPanel.CHOOSE) },
-                backLabel = stringResource(R.string.opencode_auth_back),
-                primaryLabel = stringResource(R.string.opencode_auth_switch_account),
-                primaryEnabled = true,
-                onPrimary = onLogin,
-            )
-        } else {
-            AuthFormActions(
-                isBusy = isBusy,
-                onBack = { onAuthPanelChange(OpenCodeAuthPanel.CHOOSE) },
-                backLabel = stringResource(R.string.opencode_auth_back),
-                primaryLabel = stringResource(R.string.opencode_auth_use_account),
-                primaryEnabled = true,
-                onPrimary = onUseExistingSession,
-                secondaryLabel = stringResource(R.string.opencode_auth_switch_account),
-                onSecondary = onLogin,
-            )
-        }
-    } else {
-        Text(
-            text = stringResource(R.string.opencode_auth_web_title),
-            style = MaterialTheme.typography.titleSmall,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        AuthStatusLine(
-            status = stringResource(R.string.opencode_status_logged_out),
-            error = errorMessage,
+        UsageDisplayPrefsSection(
+            windows = windows,
+            widgetWindowKind = widgetWindowKind,
+            onWidgetWindowKindChange = onWidgetWindowKindChange,
+            usageDisplayMode = usageDisplayMode,
+            onUsageDisplayModeChange = onUsageDisplayModeChange,
+            usageProgressStyle = usageProgressStyle,
+            onUsageProgressStyleChange = onUsageProgressStyleChange,
+            usageResetStyle = usageResetStyle,
+            onUsageResetStyleChange = onUsageResetStyleChange,
+            enabled = !isBusy,
+            windowKindChoices = listOf(
+                UsageWindowKind.ROLLING,
+                UsageWindowKind.WEEKLY,
+                UsageWindowKind.MONTHLY,
+            ),
+            showWindowKindPicker = true,
+            overviewKinds = listOf(
+                QuotaWindowKind.FIVE_HOUR,
+                QuotaWindowKind.WEEKLY,
+                QuotaWindowKind.MONTHLY,
+            ),
+            platformName = stringResource(R.string.platform_name_opencode_go),
+            allowWindowFallback = false,
+            updatedAtEpochMs = updatedAtEpochMs,
         )
         Spacer(modifier = Modifier.height(12.dp))
-        AuthFormActions(
-            isBusy = isBusy,
-            onBack = { onAuthPanelChange(OpenCodeAuthPanel.CHOOSE) },
-            backLabel = stringResource(R.string.opencode_auth_back),
-            primaryLabel = stringResource(R.string.opencode_login),
-            primaryEnabled = true,
-            onPrimary = onLogin,
+        SaveAction(
+            label = stringResource(R.string.action_save),
+            enabled = isDirty,
+            busy = isSaving,
+            onClick = onSavePrefs,
         )
     }
 }

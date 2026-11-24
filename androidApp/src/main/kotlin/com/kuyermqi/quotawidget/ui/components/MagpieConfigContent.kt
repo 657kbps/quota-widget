@@ -1,17 +1,12 @@
 package com.kuyermqi.quotawidget.ui.components
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -27,7 +22,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -72,7 +66,6 @@ fun ColumnScope.MagpieConfigContent(
     onSave: () -> Unit,
     updatedAtEpochMs: Long = 0L,
 ) {
-    Spacer(modifier = Modifier.height(8.dp))
     AuthAccountCard {
         OutlinedTextField(
             value = baseUrl,
@@ -139,25 +132,12 @@ fun ColumnScope.MagpieConfigContent(
         )
     }
     Spacer(modifier = Modifier.height(12.dp))
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (isSaving) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp,
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-        }
-        Button(
-            onClick = onSave,
-            enabled = isDirty && !isSaving,
-        ) {
-            Text(stringResource(R.string.action_save))
-        }
-    }
+    SaveAction(
+        label = stringResource(R.string.action_save),
+        enabled = isDirty,
+        busy = isSaving,
+        onClick = onSave,
+    )
 }
 
 /**

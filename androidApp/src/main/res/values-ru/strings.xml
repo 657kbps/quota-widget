@@ -56,7 +56,6 @@
     <string name="widget_preview_sample_percent_monthly">32%</string>
     <string name="widget_preview_sample_updated">Обновлено 5 авг., 12:30</string>
     <string name="app_settings_title">Настройки</string>
-    <string name="app_settings_back">Назад</string>
     <string name="app_settings_open">Открыть настройки приложения</string>
     <string name="app_settings_section_appearance">Внешний вид</string>
     <string name="app_settings_section_widget">Виджет</string>
@@ -65,6 +64,7 @@
     <string name="app_settings_dark_mode_dark">Тёмная</string>
     <string name="app_settings_dark_mode_light">Светлая</string>
     <string name="app_settings_dark_mode_system">Как в системе</string>
+    <string name="app_settings_system_short">Система</string>
     <string name="app_settings_theme_color">Цвет темы</string>
     <string name="app_settings_theme_color_system">Как в системе</string>
     <string name="app_settings_theme_color_custom">Свой</string>
@@ -91,13 +91,11 @@
     <string name="oem_background_tip">Если обновления не работают и после отключения оптимизации батареи, воспользуйтесь рекомендациями DontKillMyApp для вашего устройства, чтобы приложение продолжало работать в фоне</string>
     <string name="oem_background_tip_link">https://dontkillmyapp.com/</string>
     <string name="oem_background_tip_url">https://dontkillmyapp.com/</string>
-    <string name="platform_tip">Измените настройки платформ ниже</string>
+    <string name="platform_tip">Нажмите на провайдера, чтобы настроить его</string>
     <string name="tip_dismiss">Закрыть</string>
     <string name="in_app_webview_back">Назад</string>
     <string name="opencode_login_title">Войти в OpenCode</string>
-    <string name="opencode_login">Войти</string>
     <string name="opencode_logout">Выйти</string>
-    <string name="opencode_status_logged_out">Не выполнен вход</string>
     <string name="opencode_login_failed">Вход не завершён. Повторите попытку.</string>
     <string name="opencode_api_key_label">API-ключ</string>
     <string name="opencode_api_key_hint">Создайте API-ключ в консоли OpenCode</string>
@@ -105,11 +103,7 @@
     <string name="opencode_auth_web_hint">Войдите в OpenCode через браузер</string>
     <string name="opencode_auth_api_title">Вход по API-ключу</string>
     <string name="opencode_auth_configured">Настроено</string>
-    <string name="opencode_auth_logged_in">Выполнен вход</string>
-    <string name="opencode_auth_logged_in_account">Выполнен вход: %1$s</string>
     <string name="opencode_auth_change">Сменить способ входа</string>
-    <string name="opencode_auth_switch_account">Войти с другим аккаунтом</string>
-    <string name="opencode_auth_use_account">Использовать этот аккаунт</string>
     <string name="opencode_auth_back">Назад</string>
     <string name="opencode_auth_save_and_use">Сохранить и использовать</string>
     <string name="opencode_reauth_hint">Сеанс истёк. Войдите снова.</string>
@@ -160,6 +154,9 @@
     <string name="codex_status_logged_out">Не выполнен вход</string>
     <string name="codex_login_failed">Вход не завершён. Повторите попытку.</string>
     <string name="action_save">Сохранить</string>
+    <string name="unsaved_changes_title">Сохранить изменения?</string>
+    <string name="unsaved_changes_message">Изменения ещё не сохранены.</string>
+    <string name="unsaved_changes_dont_save">Не сохранять</string>
     <string name="auth_current_method">Текущий способ входа: %1$s</string>
     <string name="widget_needs_reauth">Требуется вход</string>
     <string name="widget_not_configured">Не настроено</string>
@@ -196,6 +193,12 @@
     <string name="zhipu_invalid_key">API-ключ Zhipu недействителен или истёк. Проверьте настройки.</string>
     <string name="widget_fetch_failed">Ошибка получения</string>
     <string name="home_title">Quota Widget</string>
+    <string name="home_section_configured">Настроено</string>
+    <string name="home_section_unconfigured">Не настроено</string>
+    <string name="home_provider_add_hint">Нажмите, чтобы настроить</string>
+    <string name="home_search_placeholder">Поиск провайдеров</string>
+    <string name="home_search_clear">Очистить поиск</string>
+    <string name="home_search_no_results">Провайдеры не найдены</string>
     <string name="platform_name_workbuddy">WorkBuddy</string>
     <string name="platform_name_workbuddy_ai">WorkBuddy International</string>
     <string name="platform_name_cline">Cline Pass</string>
@@ -203,7 +206,6 @@
     <string name="platform_name_antigravity">Antigravity</string>
     <string name="session_login_title">Войти в %1$s</string>
     <string name="session_login">Войти</string>
-    <string name="session_relogin">Войти снова</string>
     <string name="session_logout">Выйти</string>
     <string name="session_not_logged_in">Не выполнен вход</string>
     <string name="session_account_logged_in">Выполнен вход: %1$s</string>
@@ -218,7 +220,6 @@
     <string name="session_auth_change">Сменить способ входа</string>
     <string name="session_auth_back">Назад</string>
     <string name="session_auth_save_and_use">Сохранить и использовать</string>
-    <string name="session_auth_web_relogin">Войти снова через браузер</string>
     <string name="session_login_failed">Вход не завершён. Повторите попытку.</string>
     <string name="session_reauth_hint">Сеанс истёк. Войдите снова.</string>
     <string name="session_save_prefs">Сохранить</string>
@@ -264,8 +265,7 @@
     <string name="app_language_russian">Русский</string>
     <string name="deepseek_currency_label">Отображаемая валюта</string>
     <string name="deepseek_currency_hint">Если API не возвращает выбранную валюту, автоматически используется другая.</string>
-    <string name="action_expand">Развернуть</string>
-    <string name="action_collapse">Свернуть</string>
+    <string name="action_back">Назад</string>
     <string name="widget_refresh_action">Обновить</string>
     <string name="widget_updated_never">Никогда не обновлялось</string>
     <string name="widget_date_time_pattern">d MMM HH:mm</string>
