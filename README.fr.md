@@ -255,7 +255,6 @@ fix: keep WorkManager Room constructors under R8 full mode
 ## Remerciements
 
 - [DontKillMyApp](https://dontkillmyapp.com/) — Guides de maintien en arrière-plan par constructeur
-- [LINUX DO](https://linux.do/) — Échanges communautaires et retours d'expérience
 - Les API et services ouverts proposés par DeepSeek, OpenCode et les autres plateformes prises en charge
 
 ---

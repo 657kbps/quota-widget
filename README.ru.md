@@ -255,7 +255,6 @@ fix: keep WorkManager Room constructors under R8 full mode
 ## Благодарности
 
 - [DontKillMyApp](https://dontkillmyapp.com/) — руководства по сохранению фоновой работы для различных производителей Android
-- [LINUX DO](https://linux.do/) — обсуждения и обратная связь от сообщества
 - DeepSeek, OpenCode и другие поддерживаемые платформы за предоставленные открытые API и сервисы
 
 ---
