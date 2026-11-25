@@ -120,41 +120,63 @@ class CommandCodeClient(
             }
             throw e
         }
-        val creditDetail = credits.objectOrNull("credits") ?: JsonObject(emptyMap())
         val subscription = runCatching { fetchSubscription(settings.apiKey) }.getOrNull()
-        val planId = creditDetail.stringOrNull("planId")
-            ?: subscription?.second?.stringOrNull("planId")
-            ?: ""
-        val plan = planName(planId).ifBlank { subscription?.first.orEmpty() }
-        val windows = buildWindows(creditDetail, subscription?.second)
-        if (windows.isEmpty()) {
-            val balance = listOf(
-                creditDetail.doubleOrNull("monthlyCredits") ?: 0.0,
-                creditDetail.doubleOrNull("purchasedCredits") ?: 0.0,
-                creditDetail.doubleOrNull("freeCredits") ?: 0.0,
-            ).sum()
-            if (balance <= 0.0) {
+        val parsed = parseCredits(credits, subscription)
+        if (parsed.windows.isEmpty()) {
+            if (parsed.balance <= 0.0) {
                 throw IllegalStateException("Command Code 未返回可用的额度信息")
             }
-            val next = settings.copy(plan = plan)
+            val next = settings.copy(plan = parsed.plan)
             if (next != settings) save(next)
             return QuotaSnapshot(
                 platformId = PlatformIds.COMMAND_CODE,
                 platformName = PlatformRegistry.displayName(PlatformIds.COMMAND_CODE),
                 windows = emptyList(),
-                primaryDisplay = "$${formatMoney(balance)}",
+                primaryDisplay = "$${formatMoney(parsed.balance)}",
                 updatedAtEpochMs = currentTimeMillis(),
             )
         }
-        val next = settings.copy(plan = plan.ifBlank { settings.plan })
+        val next = settings.copy(plan = parsed.plan.ifBlank { settings.plan })
         if (next != settings) save(next)
-        val primary = formatUsagePrimaryDisplay(windows)
+        val primary = formatUsagePrimaryDisplay(parsed.windows)
         return QuotaSnapshot(
             platformId = PlatformIds.COMMAND_CODE,
             platformName = PlatformRegistry.displayName(PlatformIds.COMMAND_CODE),
-            windows = windows,
+            windows = parsed.windows,
             primaryDisplay = primary,
             updatedAtEpochMs = currentTimeMillis(),
+        )
+    }
+
+    internal fun parseCredits(
+        creditsResponse: JsonObject,
+        subscription: Pair<String, JsonObject?>?,
+        nowEpochMs: Long = currentTimeMillis(),
+    ): CommandCodeParsedCredits {
+        val creditDetail = creditsResponse.objectOrNull("credits") ?: JsonObject(emptyMap())
+        val windowLimits = creditsResponse.objectOrNull("windowLimits")
+            ?: creditDetail.objectOrNull("windowLimits")
+        val planId = creditDetail.stringOrNull("planId")
+            ?: creditsResponse.stringOrNull("planId")
+            ?: subscription?.second?.stringOrNull("planId")
+            ?: ""
+        val plan = planName(planId).ifBlank { subscription?.first.orEmpty() }
+        val windows = buildWindows(
+            credits = creditDetail,
+            windowLimits = windowLimits,
+            subscription = subscription?.second,
+            planId = planId,
+            nowEpochMs = nowEpochMs,
+        )
+        val balance = listOf(
+            creditDetail.doubleOrNull("monthlyCredits") ?: 0.0,
+            creditDetail.doubleOrNull("purchasedCredits") ?: 0.0,
+            creditDetail.doubleOrNull("freeCredits") ?: 0.0,
+        ).sum()
+        return CommandCodeParsedCredits(
+            plan = plan,
+            windows = windows,
+            balance = balance,
         )
     }
 
@@ -164,16 +186,21 @@ class CommandCodeClient(
 
     private fun buildWindows(
         credits: JsonObject,
+        windowLimits: JsonObject?,
         subscription: JsonObject?,
+        planId: String,
+        nowEpochMs: Long,
     ): List<QuotaWindow> {
         val windows = mutableListOf<QuotaWindow>()
-        val limits = credits.objectOrNull("windowLimits")
-        limits?.objectOrNull("fiveHour")?.toLimitWindow(QuotaWindowKind.FIVE_HOUR)?.let(windows::add)
-        limits?.objectOrNull("weekly")?.toLimitWindow(QuotaWindowKind.WEEKLY)?.let(windows::add)
+        windowLimits?.objectOrNull("fiveHour")
+            ?.toLimitWindow(QuotaWindowKind.FIVE_HOUR, nowEpochMs)
+            ?.let(windows::add)
+        windowLimits?.objectOrNull("weekly")
+            ?.toLimitWindow(QuotaWindowKind.WEEKLY, nowEpochMs)
+            ?.let(windows::add)
         val monthlyCredits = credits.doubleOrNull("monthlyCredits") ?: 0.0
         val purchased = credits.doubleOrNull("purchasedCredits") ?: 0.0
         val free = credits.doubleOrNull("freeCredits") ?: 0.0
-        val planId = credits.stringOrNull("planId") ?: subscription?.stringOrNull("planId").orEmpty()
         val monthlyPlan = planOf(planId).second
         if (monthlyPlan > 0.0 || monthlyCredits > 0.0 || purchased > 0.0 || free > 0.0) {
             val left = monthlyCredits + purchased + free
@@ -194,8 +221,8 @@ class CommandCodeClient(
                     QuotaWindow(
                         kind = QuotaWindowKind.MONTHLY,
                         usedPercent = (used / pool * 100.0).coerceIn(0.0, 100.0),
-                        resetInSec = resetAt?.takeIf { it > currentTimeMillis() }
-                            ?.let { (it - currentTimeMillis()) / 1000L },
+                        resetInSec = resetAt?.takeIf { it > nowEpochMs }
+                            ?.let { (it - nowEpochMs) / 1000L },
                     ),
                 )
             }
@@ -203,7 +230,10 @@ class CommandCodeClient(
         return windows
     }
 
-    private fun JsonObject.toLimitWindow(kind: QuotaWindowKind): QuotaWindow? {
+    private fun JsonObject.toLimitWindow(
+        kind: QuotaWindowKind,
+        nowEpochMs: Long,
+    ): QuotaWindow? {
         val used = doubleOrNull("used") ?: return null
         val cap = doubleOrNull("cap") ?: return null
         if (cap <= 0.0) return null
@@ -211,8 +241,8 @@ class CommandCodeClient(
         return QuotaWindow(
             kind = kind,
             usedPercent = (used.coerceAtLeast(0.0) / cap * 100.0).coerceIn(0.0, 100.0),
-            resetInSec = resetAt?.takeIf { it > currentTimeMillis() }
-                ?.let { (it - currentTimeMillis()) / 1000L },
+            resetInSec = resetAt?.takeIf { it > nowEpochMs }
+                ?.let { (it - nowEpochMs) / 1000L },
         )
     }
 
@@ -325,5 +355,11 @@ class CommandCodeClient(
         }
     }
 }
+
+internal data class CommandCodeParsedCredits(
+    val plan: String,
+    val windows: List<QuotaWindow>,
+    val balance: Double,
+)
 
 internal class CommandCodeHttpException(val status: Int) : Exception("Command Code HTTP $status")
