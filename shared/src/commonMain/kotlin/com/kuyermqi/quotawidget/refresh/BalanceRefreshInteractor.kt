@@ -9,6 +9,8 @@ import com.kuyermqi.quotawidget.provider.QuotaProvider
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import io.ktor.client.plugins.ResponseException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.io.IOException
 
 /**
@@ -37,6 +39,14 @@ class BalanceRefreshInteractor(
     private val providersById = providers.associateBy { it.platform.id }
 
     /**
+     * One flight per platform: concurrent refreshes of the same platform share a single
+     * network round trip (token rotation is single-use, so parallel fetches would make one
+     * caller report a failure), while different platforms still run independently.
+     */
+    private val flights = mutableMapOf<String, SingleFlight<BalanceRefreshResult>>()
+    private val flightsLock = Mutex()
+
+    /**
      * Refreshes every configured platform. Used by WorkManager and home entry.
      */
     suspend fun refreshAllConfigured(): List<BalanceRefreshResult> {
@@ -60,8 +70,18 @@ class BalanceRefreshInteractor(
      *
      * Session expiry ([SessionExpiredException]) writes [WidgetDisplayState.NeedsReauth]
      * and does not retain a prior Success.
+     *
+     * Concurrent calls for the same platform are coalesced into one fetch.
      */
-    suspend fun refresh(platformId: String): BalanceRefreshResult {
+    suspend fun refresh(platformId: String): BalanceRefreshResult =
+        flightFor(platformId).run { refreshInternal(platformId) }
+
+    private suspend fun flightFor(platformId: String): SingleFlight<BalanceRefreshResult> =
+        flightsLock.withLock {
+            flights.getOrPut(platformId) { SingleFlight() }
+        }
+
+    private suspend fun refreshInternal(platformId: String): BalanceRefreshResult {
         val provider = providersById[platformId]
         if (provider == null) {
             val message = "未知平台: $platformId"

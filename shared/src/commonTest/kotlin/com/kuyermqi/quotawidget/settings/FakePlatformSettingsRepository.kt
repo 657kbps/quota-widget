@@ -118,6 +118,16 @@ class FakePlatformSettingsRepository(
         widgetFlow(PlatformIds.CODEX).value = WidgetDisplayState.NotConfigured
     }
 
+    override suspend fun editCodexSettings(
+        guard: (CodexSettings) -> Boolean,
+        transform: (CodexSettings) -> CodexSettings,
+    ): Boolean {
+        val current = codexFlow.value
+        if (!guard(current)) return false
+        saveCodexSettings(transform(current))
+        return true
+    }
+
     override fun observeNewApiSettings(): Flow<NewApiSettings> = newApiFlow.asStateFlow()
     override suspend fun getNewApiSettings(): NewApiSettings = newApiFlow.value
     override suspend fun saveNewApiSettings(settings: NewApiSettings) {
@@ -155,6 +165,16 @@ class FakePlatformSettingsRepository(
             usageResetStyle = current.usageResetStyle,
         )
         widgetFlow(PlatformIds.MAGPIE).value = WidgetDisplayState.NotConfigured
+    }
+
+    override suspend fun editMagpieSettings(
+        guard: (MagpieSettings) -> Boolean,
+        transform: (MagpieSettings) -> MagpieSettings,
+    ): Boolean {
+        val current = magpieFlow.value
+        if (!guard(current)) return false
+        saveMagpieSettings(transform(current))
+        return true
     }
 
     override fun observeKimiCodeSettings(): Flow<KimiCodeSettings> = kimiCodeFlow.asStateFlow()
@@ -224,6 +244,17 @@ class FakePlatformSettingsRepository(
             usageResetStyle = current.usageResetStyle,
         )
         widgetFlow(platformId).value = WidgetDisplayState.NotConfigured
+    }
+
+    override suspend fun editSessionSettings(
+        platformId: String,
+        guard: (SessionPlatformSettings) -> Boolean,
+        transform: (SessionPlatformSettings) -> SessionPlatformSettings,
+    ): Boolean {
+        val current = sessionFlow(platformId).value
+        if (!guard(current)) return false
+        saveSessionSettings(platformId, transform(current))
+        return true
     }
 
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =

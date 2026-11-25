@@ -82,10 +82,22 @@ class CodexQuotaProvider internal constructor(
         settings: CodexSettings,
         windows: List<QuotaWindow>,
     ) {
-        val nextKind = clampCodexWidgetWindowKind(settings.widgetWindowKind, windows)
-        if (nextKind != settings.widgetWindowKind) {
-            repo.saveCodexSettings(settings.copy(widgetWindowKind = nextKind))
-        }
+        repo.editCodexSettings(
+            guard = { current ->
+                current.isConfigured &&
+                    current.accessToken == settings.accessToken &&
+                    current.refreshToken == settings.refreshToken
+            },
+            transform = { current ->
+                // Clamp whatever the user has stored by now, not the pre-request snapshot.
+                val nextKind = clampCodexWidgetWindowKind(current.widgetWindowKind, windows)
+                if (nextKind == current.widgetWindowKind) {
+                    current
+                } else {
+                    current.copy(widgetWindowKind = nextKind)
+                }
+            },
+        )
     }
 
     private suspend fun refreshAndPersist(
@@ -149,7 +161,27 @@ class CodexQuotaProvider internal constructor(
                 email = bundle.email.ifBlank { current.email },
                 planType = bundle.planType.ifBlank { current.planType },
             )
-            repo.saveCodexSettings(next)
+            val applied = repo.editCodexSettings(
+                guard = { stored ->
+                    stored.isConfigured &&
+                        stored.accessToken == current.accessToken &&
+                        stored.refreshToken == current.refreshToken
+                },
+                transform = { stored ->
+                    stored.copy(
+                        accessToken = next.accessToken,
+                        refreshToken = next.refreshToken,
+                        idToken = next.idToken,
+                        accountId = next.accountId,
+                        expiresAtEpochMs = next.expiresAtEpochMs,
+                        email = next.email,
+                        planType = next.planType,
+                    )
+                },
+            )
+            if (!applied) {
+                CodexDebugLog.w("refreshAndPersist skip persist: credentials changed")
+            }
             CodexDebugLog.i(
                 "refreshAndPersist persisted at=${CodexDebugLog.tokenFp(next.accessToken)} " +
                     "rt=${CodexDebugLog.tokenFp(next.refreshToken)} " +

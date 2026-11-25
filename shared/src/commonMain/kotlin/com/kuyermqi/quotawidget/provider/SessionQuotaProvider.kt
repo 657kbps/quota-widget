@@ -37,11 +37,48 @@ class SessionQuotaProvider(
         val platformId = platform.id
         val settings = repo.getSessionSettings(platformId)
         require(client.isConfigured(settings)) { "${platform.displayName} 未配置" }
+        // Credentials this fetch is allowed to replace: the ones it sent, then whatever it
+        // rotated them into. A user who logs out or re-logs-in meanwhile fails the guard below,
+        // so a late network result can never resurrect or overwrite their credentials.
+        var baseline = settings
         return client.fetch(settings) { next ->
-            repo.saveSessionSettings(platformId, next)
+            val expected = baseline
+            val applied = repo.editSessionSettings(
+                platformId = platformId,
+                guard = { current ->
+                    current.isConfiguredFor(platformId) && current.hasSameCredentialsAs(expected)
+                },
+                transform = { current -> current.mergeRefreshResult(next) },
+            )
+            if (applied) baseline = next
         }
     }
 }
+
+private fun SessionPlatformSettings.hasSameCredentialsAs(other: SessionPlatformSettings): Boolean =
+    accessToken == other.accessToken &&
+        refreshToken == other.refreshToken &&
+        apiKey == other.apiKey
+
+/**
+ * What a refresh may persist: rotated tokens and the account metadata derived from them.
+ * Widget display preferences belong to the user, so they always come from the stored value.
+ */
+private fun SessionPlatformSettings.mergeRefreshResult(
+    next: SessionPlatformSettings,
+): SessionPlatformSettings = copy(
+    accessToken = next.accessToken,
+    refreshToken = next.refreshToken,
+    expiresAtEpochMs = next.expiresAtEpochMs,
+    apiKey = next.apiKey,
+    accountId = next.accountId,
+    email = next.email,
+    plan = next.plan,
+    projectId = next.projectId,
+    domain = next.domain,
+    uid = next.uid,
+    enterpriseId = next.enterpriseId,
+)
 
 class WorkBuddyQuotaClient(
     private val region: WorkBuddyRegion,

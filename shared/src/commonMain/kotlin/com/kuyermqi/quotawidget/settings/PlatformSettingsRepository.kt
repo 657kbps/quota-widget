@@ -183,6 +183,13 @@ data class ZhipuSettings(
         get() = apiKey.isNotBlank()
 }
 
+/**
+ * Atomically merges a refresh result into persisted settings: [guard] sees the value that is
+ * stored when the write happens, [transform] maps it to the merged result, and the write is
+ * skipped entirely (returning false) when [guard] rejects that value.
+ *
+ * Every `edit*Settings` method on [PlatformSettingsRepository] follows this contract.
+ */
 interface PlatformSettingsRepository {
     fun observeDeepSeekSettings(): Flow<DeepSeekSettings>
     suspend fun getDeepSeekSettings(): DeepSeekSettings
@@ -197,6 +204,10 @@ interface PlatformSettingsRepository {
     suspend fun getCodexSettings(): CodexSettings
     suspend fun saveCodexSettings(settings: CodexSettings)
     suspend fun clearCodexSettings()
+    suspend fun editCodexSettings(
+        guard: (CodexSettings) -> Boolean,
+        transform: (CodexSettings) -> CodexSettings,
+    ): Boolean
 
     fun observeNewApiSettings(): Flow<NewApiSettings>
     suspend fun getNewApiSettings(): NewApiSettings
@@ -207,6 +218,10 @@ interface PlatformSettingsRepository {
     suspend fun getMagpieSettings(): MagpieSettings
     suspend fun saveMagpieSettings(settings: MagpieSettings)
     suspend fun clearMagpieSettings()
+    suspend fun editMagpieSettings(
+        guard: (MagpieSettings) -> Boolean,
+        transform: (MagpieSettings) -> MagpieSettings,
+    ): Boolean
 
     fun observeKimiCodeSettings(): Flow<KimiCodeSettings>
     suspend fun getKimiCodeSettings(): KimiCodeSettings
@@ -222,6 +237,11 @@ interface PlatformSettingsRepository {
     suspend fun getSessionSettings(platformId: String): SessionPlatformSettings
     suspend fun saveSessionSettings(platformId: String, settings: SessionPlatformSettings)
     suspend fun clearSessionSettings(platformId: String)
+    suspend fun editSessionSettings(
+        platformId: String,
+        guard: (SessionPlatformSettings) -> Boolean,
+        transform: (SessionPlatformSettings) -> SessionPlatformSettings,
+    ): Boolean
 
     fun observeWidgetState(platformId: String): Flow<WidgetDisplayState>
     suspend fun getWidgetState(platformId: String): WidgetDisplayState

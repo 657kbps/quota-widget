@@ -161,50 +161,67 @@ class AndroidPlatformSettingsRepository(
         dataStore.data.first().toCodexSettings()
 
     override suspend fun saveCodexSettings(settings: CodexSettings) {
+        editSettings { prefs -> prefs.applyCodexSettings(settings) }
+    }
+
+    override suspend fun editCodexSettings(
+        guard: (CodexSettings) -> Boolean,
+        transform: (CodexSettings) -> CodexSettings,
+    ): Boolean {
+        var applied = false
         editSettings { prefs ->
-            if (!settings.isConfigured) {
-                prefs.remove(Keys.CODEX_ACCESS_ENC)
-                prefs.remove(Keys.CODEX_REFRESH_ENC)
-                prefs.remove(Keys.CODEX_ID_ENC)
-                prefs.remove(Keys.CODEX_ACCOUNT_ID)
-                prefs.remove(Keys.CODEX_EXPIRES_AT)
-                prefs.remove(Keys.CODEX_EMAIL)
-                prefs.remove(Keys.CODEX_PLAN_TYPE)
-                prefs.clearWidgetPayload(PlatformIds.CODEX)
-                prefs[widgetStatusKey(PlatformIds.CODEX)] = Status.NOT_CONFIGURED
-            } else {
-                prefs[Keys.CODEX_ACCESS_ENC] = encrypt(settings.accessToken, CODEX_ACCESS_AD)
-                prefs[Keys.CODEX_REFRESH_ENC] = encrypt(settings.refreshToken, CODEX_REFRESH_AD)
-                if (settings.idToken.isBlank()) {
-                    prefs.remove(Keys.CODEX_ID_ENC)
-                } else {
-                    prefs[Keys.CODEX_ID_ENC] = encrypt(settings.idToken, CODEX_ID_AD)
-                }
-                prefs[Keys.CODEX_ACCOUNT_ID] = settings.accountId
-                prefs[Keys.CODEX_EXPIRES_AT] = settings.expiresAtEpochMs
-                if (settings.email.isBlank()) {
-                    prefs.remove(Keys.CODEX_EMAIL)
-                } else {
-                    prefs[Keys.CODEX_EMAIL] = settings.email
-                }
-                if (settings.planType.isBlank()) {
-                    prefs.remove(Keys.CODEX_PLAN_TYPE)
-                } else {
-                    prefs[Keys.CODEX_PLAN_TYPE] = settings.planType
-                }
-                val status = prefs[widgetStatusKey(PlatformIds.CODEX)]
-                if (status == null ||
-                    status == Status.NOT_CONFIGURED ||
-                    status == Status.NEEDS_REAUTH
-                ) {
-                    prefs[widgetStatusKey(PlatformIds.CODEX)] = Status.LOADING
-                }
+            val current = prefs.toCodexSettings()
+            if (guard(current)) {
+                prefs.applyCodexSettings(transform(current))
+                applied = true
             }
-            prefs[Keys.CODEX_WIDGET_WINDOW] = settings.widgetWindowKind.name
-            prefs[Keys.CODEX_USAGE_DISPLAY] = settings.usageDisplayMode.name
-            prefs[Keys.CODEX_USAGE_PROGRESS_STYLE] = settings.usageProgressStyle.name
-            prefs[Keys.CODEX_USAGE_RESET_STYLE] = settings.usageResetStyle.name
         }
+        return applied
+    }
+
+    private fun MutablePreferences.applyCodexSettings(settings: CodexSettings) {
+        if (!settings.isConfigured) {
+            remove(Keys.CODEX_ACCESS_ENC)
+            remove(Keys.CODEX_REFRESH_ENC)
+            remove(Keys.CODEX_ID_ENC)
+            remove(Keys.CODEX_ACCOUNT_ID)
+            remove(Keys.CODEX_EXPIRES_AT)
+            remove(Keys.CODEX_EMAIL)
+            remove(Keys.CODEX_PLAN_TYPE)
+            clearWidgetPayload(PlatformIds.CODEX)
+            this[widgetStatusKey(PlatformIds.CODEX)] = Status.NOT_CONFIGURED
+        } else {
+            this[Keys.CODEX_ACCESS_ENC] = encrypt(settings.accessToken, CODEX_ACCESS_AD)
+            this[Keys.CODEX_REFRESH_ENC] = encrypt(settings.refreshToken, CODEX_REFRESH_AD)
+            if (settings.idToken.isBlank()) {
+                remove(Keys.CODEX_ID_ENC)
+            } else {
+                this[Keys.CODEX_ID_ENC] = encrypt(settings.idToken, CODEX_ID_AD)
+            }
+            this[Keys.CODEX_ACCOUNT_ID] = settings.accountId
+            this[Keys.CODEX_EXPIRES_AT] = settings.expiresAtEpochMs
+            if (settings.email.isBlank()) {
+                remove(Keys.CODEX_EMAIL)
+            } else {
+                this[Keys.CODEX_EMAIL] = settings.email
+            }
+            if (settings.planType.isBlank()) {
+                remove(Keys.CODEX_PLAN_TYPE)
+            } else {
+                this[Keys.CODEX_PLAN_TYPE] = settings.planType
+            }
+            val status = this[widgetStatusKey(PlatformIds.CODEX)]
+            if (status == null ||
+                status == Status.NOT_CONFIGURED ||
+                status == Status.NEEDS_REAUTH
+            ) {
+                this[widgetStatusKey(PlatformIds.CODEX)] = Status.LOADING
+            }
+        }
+        this[Keys.CODEX_WIDGET_WINDOW] = settings.widgetWindowKind.name
+        this[Keys.CODEX_USAGE_DISPLAY] = settings.usageDisplayMode.name
+        this[Keys.CODEX_USAGE_PROGRESS_STYLE] = settings.usageProgressStyle.name
+        this[Keys.CODEX_USAGE_RESET_STYLE] = settings.usageResetStyle.name
     }
 
     override suspend fun clearCodexSettings() {
@@ -268,36 +285,53 @@ class AndroidPlatformSettingsRepository(
         dataStore.data.first().toMagpieSettings()
 
     override suspend fun saveMagpieSettings(settings: MagpieSettings) {
+        editSettings { prefs -> prefs.applyMagpieSettings(settings) }
+    }
+
+    override suspend fun editMagpieSettings(
+        guard: (MagpieSettings) -> Boolean,
+        transform: (MagpieSettings) -> MagpieSettings,
+    ): Boolean {
+        var applied = false
         editSettings { prefs ->
-            if (!settings.isConfigured) {
-                prefs.remove(Keys.MAGPIE_BASE_URL)
-                prefs.remove(Keys.MAGPIE_KEY_ENC)
-                prefs.remove(Keys.MAGPIE_PROVIDERS)
-                prefs.remove(Keys.MAGPIE_SELECTED_PROVIDER)
-                prefs.clearWidgetPayload(PlatformIds.MAGPIE)
-                prefs[widgetStatusKey(PlatformIds.MAGPIE)] = Status.NOT_CONFIGURED
-            } else {
-                prefs[Keys.MAGPIE_BASE_URL] = settings.baseUrl.trim().trimEnd('/')
-                prefs[Keys.MAGPIE_KEY_ENC] = encrypt(settings.apiKey, MAGPIE_KEY_AD)
-                prefs[Keys.MAGPIE_PROVIDERS] = encodeMagpieProviders(settings.providers)
-                if (settings.selectedProviderId.isBlank()) {
-                    prefs.remove(Keys.MAGPIE_SELECTED_PROVIDER)
-                } else {
-                    prefs[Keys.MAGPIE_SELECTED_PROVIDER] = settings.selectedProviderId
-                }
-                val status = prefs[widgetStatusKey(PlatformIds.MAGPIE)]
-                if (status == null ||
-                    status == Status.NOT_CONFIGURED ||
-                    status == Status.NEEDS_REAUTH
-                ) {
-                    prefs[widgetStatusKey(PlatformIds.MAGPIE)] = Status.LOADING
-                }
+            val current = prefs.toMagpieSettings()
+            if (guard(current)) {
+                prefs.applyMagpieSettings(transform(current))
+                applied = true
             }
-            prefs[Keys.MAGPIE_WIDGET_WINDOW] = settings.widgetWindowKind.name
-            prefs[Keys.MAGPIE_USAGE_DISPLAY] = settings.usageDisplayMode.name
-            prefs[Keys.MAGPIE_USAGE_PROGRESS_STYLE] = settings.usageProgressStyle.name
-            prefs[Keys.MAGPIE_USAGE_RESET_STYLE] = settings.usageResetStyle.name
         }
+        return applied
+    }
+
+    private fun MutablePreferences.applyMagpieSettings(settings: MagpieSettings) {
+        if (!settings.isConfigured) {
+            remove(Keys.MAGPIE_BASE_URL)
+            remove(Keys.MAGPIE_KEY_ENC)
+            remove(Keys.MAGPIE_PROVIDERS)
+            remove(Keys.MAGPIE_SELECTED_PROVIDER)
+            clearWidgetPayload(PlatformIds.MAGPIE)
+            this[widgetStatusKey(PlatformIds.MAGPIE)] = Status.NOT_CONFIGURED
+        } else {
+            this[Keys.MAGPIE_BASE_URL] = settings.baseUrl.trim().trimEnd('/')
+            this[Keys.MAGPIE_KEY_ENC] = encrypt(settings.apiKey, MAGPIE_KEY_AD)
+            this[Keys.MAGPIE_PROVIDERS] = encodeMagpieProviders(settings.providers)
+            if (settings.selectedProviderId.isBlank()) {
+                remove(Keys.MAGPIE_SELECTED_PROVIDER)
+            } else {
+                this[Keys.MAGPIE_SELECTED_PROVIDER] = settings.selectedProviderId
+            }
+            val status = this[widgetStatusKey(PlatformIds.MAGPIE)]
+            if (status == null ||
+                status == Status.NOT_CONFIGURED ||
+                status == Status.NEEDS_REAUTH
+            ) {
+                this[widgetStatusKey(PlatformIds.MAGPIE)] = Status.LOADING
+            }
+        }
+        this[Keys.MAGPIE_WIDGET_WINDOW] = settings.widgetWindowKind.name
+        this[Keys.MAGPIE_USAGE_DISPLAY] = settings.usageDisplayMode.name
+        this[Keys.MAGPIE_USAGE_PROGRESS_STYLE] = settings.usageProgressStyle.name
+        this[Keys.MAGPIE_USAGE_RESET_STYLE] = settings.usageResetStyle.name
     }
 
     override suspend fun clearMagpieSettings() {
@@ -405,56 +439,79 @@ class AndroidPlatformSettingsRepository(
         dataStore.data.first().toSessionSettings(platformId)
 
     override suspend fun saveSessionSettings(platformId: String, settings: SessionPlatformSettings) {
-        val previous = getSessionSettings(platformId)
+        editSettings { prefs ->
+            prefs.applySessionSettings(platformId, prefs.toSessionSettings(platformId), settings)
+        }
+    }
+
+    override suspend fun editSessionSettings(
+        platformId: String,
+        guard: (SessionPlatformSettings) -> Boolean,
+        transform: (SessionPlatformSettings) -> SessionPlatformSettings,
+    ): Boolean {
+        var applied = false
+        editSettings { prefs ->
+            val current = prefs.toSessionSettings(platformId)
+            if (guard(current)) {
+                prefs.applySessionSettings(platformId, current, transform(current))
+                applied = true
+            }
+        }
+        return applied
+    }
+
+    private fun MutablePreferences.applySessionSettings(
+        platformId: String,
+        previous: SessionPlatformSettings,
+        settings: SessionPlatformSettings,
+    ) {
         val credentialsChanged = previous.accessToken != settings.accessToken ||
             previous.refreshToken != settings.refreshToken ||
             previous.apiKey != settings.apiKey ||
             previous.expiresAtEpochMs != settings.expiresAtEpochMs
-        editSettings { prefs ->
-            if (!settings.isConfiguredFor(platformId)) {
-                prefs.remove(sessionAccessKey(platformId))
-                prefs.remove(sessionRefreshKey(platformId))
-                prefs.remove(sessionApiKey(platformId))
-                prefs.remove(sessionExpiresAtKey(platformId))
-                prefs.remove(sessionAccountIdKey(platformId))
-                prefs.remove(sessionEmailKey(platformId))
-                prefs.remove(sessionPlanKey(platformId))
-                prefs.remove(sessionProjectIdKey(platformId))
-                prefs.remove(sessionDomainKey(platformId))
-                prefs.remove(sessionUidKey(platformId))
-                prefs.remove(sessionEnterpriseIdKey(platformId))
-                prefs.clearWidgetPayload(platformId)
-                prefs[widgetStatusKey(platformId)] = Status.NOT_CONFIGURED
+        if (!settings.isConfiguredFor(platformId)) {
+            remove(sessionAccessKey(platformId))
+            remove(sessionRefreshKey(platformId))
+            remove(sessionApiKey(platformId))
+            remove(sessionExpiresAtKey(platformId))
+            remove(sessionAccountIdKey(platformId))
+            remove(sessionEmailKey(platformId))
+            remove(sessionPlanKey(platformId))
+            remove(sessionProjectIdKey(platformId))
+            remove(sessionDomainKey(platformId))
+            remove(sessionUidKey(platformId))
+            remove(sessionEnterpriseIdKey(platformId))
+            clearWidgetPayload(platformId)
+            this[widgetStatusKey(platformId)] = Status.NOT_CONFIGURED
+        } else {
+            putEncrypted(this, sessionAccessKey(platformId), settings.accessToken, platformId, "access")
+            putEncrypted(this, sessionRefreshKey(platformId), settings.refreshToken, platformId, "refresh")
+            putEncrypted(this, sessionApiKey(platformId), settings.apiKey, platformId, "api_key")
+            if (settings.expiresAtEpochMs > 0L) {
+                this[sessionExpiresAtKey(platformId)] = settings.expiresAtEpochMs
             } else {
-                putEncrypted(prefs, sessionAccessKey(platformId), settings.accessToken, platformId, "access")
-                putEncrypted(prefs, sessionRefreshKey(platformId), settings.refreshToken, platformId, "refresh")
-                putEncrypted(prefs, sessionApiKey(platformId), settings.apiKey, platformId, "api_key")
-                if (settings.expiresAtEpochMs > 0L) {
-                    prefs[sessionExpiresAtKey(platformId)] = settings.expiresAtEpochMs
-                } else {
-                    prefs.remove(sessionExpiresAtKey(platformId))
-                }
-                prefs.putOrRemove(sessionAccountIdKey(platformId), settings.accountId.trim())
-                prefs.putOrRemove(sessionEmailKey(platformId), settings.email.trim())
-                prefs.putOrRemove(sessionPlanKey(platformId), settings.plan.trim())
-                prefs.putOrRemove(sessionProjectIdKey(platformId), settings.projectId.trim())
-                prefs.putOrRemove(sessionDomainKey(platformId), settings.domain.trim())
-                prefs.putOrRemove(sessionUidKey(platformId), settings.uid.trim())
-                prefs.putOrRemove(sessionEnterpriseIdKey(platformId), settings.enterpriseId.trim())
-                val status = prefs[widgetStatusKey(platformId)]
-                if (credentialsChanged ||
-                    status == null ||
-                    status == Status.NOT_CONFIGURED ||
-                    status == Status.NEEDS_REAUTH
-                ) {
-                    prefs[widgetStatusKey(platformId)] = Status.LOADING
-                }
+                remove(sessionExpiresAtKey(platformId))
             }
-            prefs[sessionWidgetWindowKey(platformId)] = settings.widgetWindowKind.name
-            prefs[sessionUsageDisplayKey(platformId)] = settings.usageDisplayMode.name
-            prefs[sessionUsageProgressStyleKey(platformId)] = settings.usageProgressStyle.name
-            prefs[sessionUsageResetStyleKey(platformId)] = settings.usageResetStyle.name
+            putOrRemove(sessionAccountIdKey(platformId), settings.accountId.trim())
+            putOrRemove(sessionEmailKey(platformId), settings.email.trim())
+            putOrRemove(sessionPlanKey(platformId), settings.plan.trim())
+            putOrRemove(sessionProjectIdKey(platformId), settings.projectId.trim())
+            putOrRemove(sessionDomainKey(platformId), settings.domain.trim())
+            putOrRemove(sessionUidKey(platformId), settings.uid.trim())
+            putOrRemove(sessionEnterpriseIdKey(platformId), settings.enterpriseId.trim())
+            val status = this[widgetStatusKey(platformId)]
+            if (credentialsChanged ||
+                status == null ||
+                status == Status.NOT_CONFIGURED ||
+                status == Status.NEEDS_REAUTH
+            ) {
+                this[widgetStatusKey(platformId)] = Status.LOADING
+            }
         }
+        this[sessionWidgetWindowKey(platformId)] = settings.widgetWindowKind.name
+        this[sessionUsageDisplayKey(platformId)] = settings.usageDisplayMode.name
+        this[sessionUsageProgressStyleKey(platformId)] = settings.usageProgressStyle.name
+        this[sessionUsageResetStyleKey(platformId)] = settings.usageResetStyle.name
     }
 
     override suspend fun clearSessionSettings(platformId: String) {
