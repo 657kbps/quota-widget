@@ -21,6 +21,7 @@ import com.kuyermqi.quotawidget.session.stringOrNull
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import com.kuyermqi.quotawidget.util.parseDateTimeToEpochMs
+import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.header
@@ -169,7 +170,7 @@ class WorkBuddyClient(
         ) {
             return account
         }
-        val list = runCatching {
+        val list = suspendRunCatching {
             call(
                 region = region,
                 method = HttpMethod.Get,

@@ -10,6 +10,7 @@ import com.kuyermqi.quotawidget.domain.formatUsagePrimaryDisplay
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.util.currentTimeMillis
+import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.get
@@ -39,7 +40,7 @@ class CodexUsageClient(
             }
         } catch (e: ResponseException) {
             val status = e.response.status
-            val errBody = runCatching { e.response.bodyAsText() }.getOrNull().orEmpty()
+            val errBody = suspendRunCatching { e.response.bodyAsText() }.getOrNull().orEmpty()
             val summary = CodexDebugLog.summarizeOAuthErrorBody(errBody)
             CodexDebugLog.w(
                 "usage.http_error status=$status $summary " +

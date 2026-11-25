@@ -11,6 +11,7 @@ import com.kuyermqi.quotawidget.domain.httpFailure
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.util.currentTimeMillis
+import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.get
@@ -62,7 +63,7 @@ class OpenCodeLegacyClient(
         var dto = GoPageUsageParser.parse(html)
         if (dto == null) {
             log("go page parse miss; trying _server fallback")
-            dto = runCatching {
+            dto = suspendRunCatching {
                 val serverFnId = resolveServerFnId(workspaceId, cookieHeader)
                 val body = invokeLiteSubscription(workspaceId, cookieHeader, serverFnId)
                 if (looksLikeAuthError(body)) {
@@ -153,7 +154,7 @@ class OpenCodeLegacyClient(
             }
         }
 
-        val getBody = runCatching {
+        val getBody = suspendRunCatching {
             val response = httpClient.get(getUrl) {
                 header(HttpHeaders.Cookie, cookieHeader)
                 header(HttpHeaders.Accept, "*/*")
@@ -233,7 +234,7 @@ class OpenCodeLegacyClient(
             else -> Unit
         }
         if (response.status.value >= 400) {
-            val text = runCatching { response.bodyAsText() }.getOrDefault("")
+            val text = suspendRunCatching { response.bodyAsText() }.getOrDefault("")
             throw HttpStatusException(
                 statusCode = response.status.value,
                 message = "OpenCode 额度请求失败 HTTP ${response.status.value}: ${text.take(120)}",
@@ -278,7 +279,7 @@ class OpenCodeLegacyClient(
             val absolute = queue.removeFirst()
             if (!seen.add(absolute) || !absolute.endsWith(".js")) continue
             scanned += 1
-            val js = runCatching {
+            val js = suspendRunCatching {
                 httpClient.get(absolute) {
                     header(HttpHeaders.Cookie, cookieHeader)
                     header(HttpHeaders.Accept, "*/*")
@@ -333,7 +334,7 @@ class OpenCodeLegacyClient(
             val absolute = queue.removeFirst()
             if (!seen.add(absolute) || !absolute.endsWith(".js")) continue
             scanned += 1
-            val js = runCatching {
+            val js = suspendRunCatching {
                 httpClient.get(absolute) {
                     header(HttpHeaders.Cookie, cookieHeader)
                     header(HttpHeaders.Accept, "*/*")
@@ -358,7 +359,7 @@ class OpenCodeLegacyClient(
     }
 
     private suspend fun resolveEntryClientUrl(): String? {
-        val home = runCatching {
+        val home = suspendRunCatching {
             httpClient.get("$BASE_URL/") {
                 header(HttpHeaders.Accept, "text/html")
                 header(HttpHeaders.UserAgent, BROWSER_UA)

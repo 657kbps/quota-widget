@@ -20,6 +20,7 @@ import com.kuyermqi.quotawidget.session.objectOrNull
 import com.kuyermqi.quotawidget.session.stringOrNull
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.util.currentTimeMillis
+import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ResponseException
@@ -244,12 +245,12 @@ class AntigravityClient(
     }
 
     private suspend fun fetchEmail(accessToken: String): String? {
-        val response = runCatching {
+        val response = suspendRunCatching {
             httpClient.get(WHO_URL) {
                 header(HttpHeaders.Authorization, "Bearer $accessToken")
             }
         }.getOrNull() ?: return null
-        return runCatching {
+        return suspendRunCatching {
             json.parseToJsonElement(response.bodyAsText()).jsonObject.stringOrNull("email")
         }.getOrNull()
     }

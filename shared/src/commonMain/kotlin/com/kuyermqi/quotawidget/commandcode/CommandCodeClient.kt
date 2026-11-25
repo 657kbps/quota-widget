@@ -17,6 +17,7 @@ import com.kuyermqi.quotawidget.session.objectOrNull
 import com.kuyermqi.quotawidget.session.stringOrNull
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.util.currentTimeMillis
+import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.get
@@ -98,7 +99,7 @@ class CommandCodeClient(
         }
         val root = who ?: throw (lastError ?: IllegalStateException("Command Code 登录失败"))
         val user = root.objectOrNull("user") ?: root
-        val subscription = runCatching { fetchSubscription(apiKey) }.getOrNull()
+        val subscription = suspendRunCatching { fetchSubscription(apiKey) }.getOrNull()
         return CommandCodeIdentity(
             email = user.stringOrNull("email").orEmpty(),
             userName = user.stringOrNull("userName")
@@ -122,7 +123,7 @@ class CommandCodeClient(
             }
             throw e
         }
-        val subscription = runCatching { fetchSubscription(settings.apiKey) }.getOrNull()
+        val subscription = suspendRunCatching { fetchSubscription(settings.apiKey) }.getOrNull()
         val parsed = parseCredits(credits, subscription)
         if (parsed.windows.isEmpty()) {
             if (parsed.balance <= 0.0) {

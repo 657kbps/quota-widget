@@ -18,6 +18,7 @@ import com.kuyermqi.quotawidget.session.objectOrNull
 import com.kuyermqi.quotawidget.session.stringOrNull
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.util.currentTimeMillis
+import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ResponseException
@@ -105,7 +106,7 @@ class ClineClient(
                 },
             )
         } catch (e: ClientRequestException) {
-            val error = runCatching {
+            val error = suspendRunCatching {
                 json.parseToJsonElement(e.response.bodyAsText()).jsonObject.stringOrNull("error")
             }.getOrNull()
             return when (error) {

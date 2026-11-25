@@ -13,6 +13,7 @@ import com.kuyermqi.quotawidget.opencode.parseIsoInstantMillis
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.util.currentTimeMillis
+import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.accept
@@ -75,7 +76,7 @@ class MagpieQuotaClient(
     }
 
     private suspend fun ResponseException.toMagpieError(): Exception {
-        val serverMessage = runCatching {
+        val serverMessage = suspendRunCatching {
             json.decodeFromString(
                 MagpieErrorEnvelope.serializer(),
                 response.bodyAsText(),

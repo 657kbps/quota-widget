@@ -2,6 +2,7 @@ package com.kuyermqi.quotawidget.codex
 
 import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.util.currentTimeMillis
+import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ResponseException
@@ -80,7 +81,7 @@ class CodexOAuth(
             )
         } catch (e: ResponseException) {
             val status = e.response.status
-            val errBody = runCatching { e.response.bodyAsText() }.getOrNull().orEmpty()
+            val errBody = suspendRunCatching { e.response.bodyAsText() }.getOrNull().orEmpty()
             val summary = CodexDebugLog.summarizeOAuthErrorBody(errBody)
             CodexDebugLog.w(
                 "oauth.refresh http_error status=$status $summary " +
