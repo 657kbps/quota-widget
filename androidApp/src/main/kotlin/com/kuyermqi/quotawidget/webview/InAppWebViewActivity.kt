@@ -55,6 +55,8 @@ import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
 class InAppWebViewActivity : LocaleAwareActivity(), InAppWebViewHost {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var flow: InAppWebViewFlow? = null
+    private var webView: WebView? = null
+    private var webViewReleased = false
 
     override val isFinishingOrDestroyed: Boolean
         get() = isFinishing || isDestroyed
@@ -83,21 +85,22 @@ class InAppWebViewActivity : LocaleAwareActivity(), InAppWebViewHost {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val app = application as QuotaWidgetApp
-        val url = intent.getStringExtra(EXTRA_URL).orEmpty()
         val title = intent.getStringExtra(EXTRA_TITLE).orEmpty()
         val flowId = intent.getStringExtra(EXTRA_FLOW_ID).orEmpty()
         val userAgent = intent.getStringExtra(EXTRA_USER_AGENT).orEmpty()
-        if (url.isBlank()) {
-            finish()
-            return
-        }
         val createdFlow = createFlow(flowId, app.settingsRepository)
         if (flowId.isNotBlank() && createdFlow == null) {
-            finish()
+            finishAndReleaseFlow()
             return
         }
         val activeFlow = createdFlow.orPassthrough()
         flow = activeFlow
+        val url = intent.getStringExtra(EXTRA_URL).orEmpty()
+            .ifBlank { activeFlow.initialUrl().orEmpty() }
+        if (url.isBlank()) {
+            finishAndReleaseFlow()
+            return
+        }
         activeFlow.onPrepare()
         setContent {
             val context = LocalContext.current
@@ -149,6 +152,8 @@ class InAppWebViewActivity : LocaleAwareActivity(), InAppWebViewHost {
                                 CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true
+                                settings.allowFileAccess = false
+                                settings.allowContentAccess = false
                                 if (userAgent.isNotBlank()) {
                                     settings.userAgentString = userAgent
                                 }
@@ -162,6 +167,8 @@ class InAppWebViewActivity : LocaleAwareActivity(), InAppWebViewHost {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                     settings.isAlgorithmicDarkeningAllowed = false
                                 }
+                                this@InAppWebViewActivity.webView = this
+                                this@InAppWebViewActivity.webViewReleased = false
                                 webViewClient = LayoutFixingWebViewClient(activeFlow.createWebViewClient())
                                 loadUrl(url)
                             }
@@ -169,6 +176,7 @@ class InAppWebViewActivity : LocaleAwareActivity(), InAppWebViewHost {
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(padding),
+                        onRelease = ::releaseWebView,
                     )
                 }
             }
@@ -178,7 +186,29 @@ class InAppWebViewActivity : LocaleAwareActivity(), InAppWebViewHost {
     override fun onDestroy() {
         cancelPendingPosts()
         flow?.onDestroy()
+        flow = null
+        webView?.let(::releaseWebView)
         super.onDestroy()
+    }
+
+    /**
+     * Releases the flow (loopback server / HTTP client / scope) before finishing, so an early exit
+     * during [onCreate] does not leak resources or rely on a later [onDestroy].
+     */
+    private fun finishAndReleaseFlow() {
+        flow?.onDestroy()
+        flow = null
+        finish()
+    }
+
+    private fun releaseWebView(view: WebView) {
+        if (webViewReleased) return
+        webViewReleased = true
+        webView = null
+        runCatching { view.stopLoading() }
+        view.webViewClient = WebViewClient()
+        runCatching { (view.parent as? ViewGroup)?.removeView(view) }
+        runCatching { view.destroy() }
     }
 
     private fun createFlow(
