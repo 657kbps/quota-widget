@@ -1,15 +1,18 @@
 package com.kuyermqi.quotawidget.opencode
 
 import com.kuyermqi.quotawidget.deepseek.createHttpClient
+import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
+import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.formatUsagePrimaryDisplay
 import com.kuyermqi.quotawidget.domain.formatUsageRemainingRolling
+import com.kuyermqi.quotawidget.domain.httpFailure
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -77,7 +80,7 @@ class OpenCodeLegacyClient(
         }
         val windows = dto.toWindows()
         if (windows.isEmpty()) {
-            throw IllegalStateException("无法解析 OpenCode Go 额度窗口")
+            throw QuotaUnavailableException("无法解析 OpenCode Go 额度窗口")
         }
         return QuotaSnapshot(
             platformId = PlatformIds.OPENCODE_GO,
@@ -102,13 +105,13 @@ class OpenCodeLegacyClient(
             response.bodyAsText().also {
                 log("GET go status=${response.status} bodyLen=${it.length}")
             }
-        } catch (e: ClientRequestException) {
-            when (e.response.status) {
-                HttpStatusCode.Unauthorized,
-                HttpStatusCode.Forbidden,
-                -> throw SessionExpiredException("OpenCode 会话已失效")
-                else -> throw e
-            }
+        } catch (e: ResponseException) {
+            throw httpFailure(
+                statusCode = e.response.status.value,
+                sessionExpiredMessage = "OpenCode 会话已失效",
+                failureMessage = "OpenCode Go 页面请求失败 HTTP ${e.response.status.value}",
+                cause = e,
+            )
         }
     }
 
@@ -200,19 +203,23 @@ class OpenCodeLegacyClient(
                 )
             }
             text
-        } catch (e: ClientRequestException) {
+        } catch (e: ResponseException) {
             when (e.response.status) {
-                HttpStatusCode.Unauthorized,
-                HttpStatusCode.Forbidden,
-                -> throw SessionExpiredException("OpenCode 会话已失效")
                 HttpStatusCode.NotFound -> {
                     if (clearLiteCacheOnNotFound) cachedServerFnId = null
                     cachedWorkspacesServerFnId = null
-                    throw IllegalStateException("OpenCode 接口已失效，请稍后重试")
+                    throw httpFailure(
+                        statusCode = HttpStatusCode.NotFound.value,
+                        sessionExpiredMessage = "OpenCode 会话已失效",
+                        failureMessage = "OpenCode 接口已失效，请稍后重试",
+                        cause = e,
+                    )
                 }
-                else -> throw IllegalStateException(
-                    "OpenCode 请求失败 HTTP ${e.response.status.value}: ${e.message}",
-                    e,
+                else -> throw httpFailure(
+                    statusCode = e.response.status.value,
+                    sessionExpiredMessage = "OpenCode 会话已失效",
+                    failureMessage = "OpenCode 请求失败 HTTP ${e.response.status.value}: ${e.message}",
+                    cause = e,
                 )
             }
         }
@@ -227,8 +234,9 @@ class OpenCodeLegacyClient(
         }
         if (response.status.value >= 400) {
             val text = runCatching { response.bodyAsText() }.getOrDefault("")
-            throw IllegalStateException(
-                "OpenCode 额度请求失败 HTTP ${response.status.value}: ${text.take(120)}",
+            throw HttpStatusException(
+                statusCode = response.status.value,
+                message = "OpenCode 额度请求失败 HTTP ${response.status.value}: ${text.take(120)}",
             )
         }
     }
@@ -242,13 +250,13 @@ class OpenCodeLegacyClient(
                 header(HttpHeaders.Accept, "text/html,application/xhtml+xml")
                 header(HttpHeaders.UserAgent, BROWSER_UA)
             }.bodyAsText()
-        } catch (e: ClientRequestException) {
-            when (e.response.status) {
-                HttpStatusCode.Unauthorized,
-                HttpStatusCode.Forbidden,
-                -> throw SessionExpiredException("OpenCode 会话已失效")
-                else -> throw e
-            }
+        } catch (e: ResponseException) {
+            throw httpFailure(
+                statusCode = e.response.status.value,
+                sessionExpiredMessage = "OpenCode 会话已失效",
+                failureMessage = "OpenCode Go 页面请求失败 HTTP ${e.response.status.value}",
+                cause = e,
+            )
         }
         if (looksLikeLoginPage(html)) {
             throw SessionExpiredException("OpenCode 会话已失效")

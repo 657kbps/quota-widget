@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.magpie
 
 import com.kuyermqi.quotawidget.deepseek.createHttpClient
+import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
@@ -87,12 +88,16 @@ class MagpieQuotaClient(
                         ?: "Magpie 网关密钥无效或已失效，请检查配置",
                 )
             HttpStatusCode.Forbidden ->
-                IllegalStateException(
+                // Not a session issue: the gateway answered, the key just lacks the
+                // quota scope, which only the account owner can grant.
+                QuotaUnavailableException(
                     serverMessage
                         ?: "Magpie 拒绝访问额度接口，请检查网关密钥的额度权限",
                 )
-            else -> IllegalStateException(
-                serverMessage ?: "查询 Magpie 额度失败: ${response.status}",
+            else -> HttpStatusException(
+                statusCode = response.status.value,
+                message = serverMessage ?: "查询 Magpie 额度失败: ${response.status}",
+                cause = this,
             )
         }
     }

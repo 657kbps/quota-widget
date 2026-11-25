@@ -1,13 +1,34 @@
 package com.kuyermqi.quotawidget.refresh
 
-import com.kuyermqi.quotawidget.codex.CodexAuthErrors
-import com.kuyermqi.quotawidget.codex.CodexRegionUnavailableException
+import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.domain.isRetryableHttpStatus
 import com.kuyermqi.quotawidget.provider.QuotaProvider
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
+import io.ktor.client.plugins.ResponseException
 import kotlinx.coroutines.CancellationException
+import kotlinx.io.IOException
+
+/**
+ * Only network-level failures and retryable HTTP statuses are worth another attempt.
+ * Everything else (bad credentials, entitlement gaps, parse failures, geo blocks)
+ * needs a human, so WorkManager must not keep burning retries on it.
+ */
+internal fun isRetryableFailure(error: Throwable): Boolean {
+    val visited = mutableSetOf<Throwable>()
+    var current: Throwable? = error
+    while (current != null && visited.add(current)) {
+        when (current) {
+            is HttpStatusException -> return isRetryableHttpStatus(current.statusCode)
+            is ResponseException -> return isRetryableHttpStatus(current.response.status.value)
+            is IOException -> return true
+        }
+        current = current.cause
+    }
+    return false
+}
 
 class BalanceRefreshInteractor(
     private val settingsRepository: PlatformSettingsRepository,
@@ -32,8 +53,10 @@ class BalanceRefreshInteractor(
      * Fetches quota for [platformId] without forcing a loading placeholder,
      * so the widget can keep showing the previous value while the icon spins.
      *
-     * On transient failure, keeps an existing [WidgetDisplayState.Success] instead of
-     * overwriting it with Error (avoids "获取失败" after lock-screen network blips).
+     * Retryable failures ([isRetryableFailure]) keep an existing
+     * [WidgetDisplayState.Success] instead of overwriting it with Error (avoids
+     * "获取失败" after lock-screen network blips). Permanent failures write
+     * [WidgetDisplayState.Error] and stop WorkManager retries.
      *
      * Session expiry ([SessionExpiredException]) writes [WidgetDisplayState.NeedsReauth]
      * and does not retain a prior Success.
@@ -71,29 +94,26 @@ class BalanceRefreshInteractor(
             BalanceRefreshResult.Completed(WidgetDisplayState.Error(message))
         } catch (e: Exception) {
             val message = e.message?.takeIf { it.isNotBlank() } ?: "查询额度失败"
-            val retryable = !isNonRetryableTransient(e)
+            val retryable = isRetryableFailure(e)
             println(
                 "QuotaRefresh fetchFailed platform=$platformId " +
-                    "retryable=$retryable msg=$message",
+                    "retryable=$retryable type=${e::class.simpleName} msg=$message",
             )
             e.printStackTrace()
+            if (!retryable) {
+                settingsRepository.saveWidgetError(platformId, message)
+                return BalanceRefreshResult.Completed(WidgetDisplayState.Error(message))
+            }
             val previous = settingsRepository.getWidgetState(platformId)
             if (previous is WidgetDisplayState.Success) {
-                BalanceRefreshResult.TransientFailure(previous, retryable = retryable)
+                BalanceRefreshResult.TransientFailure(previous, retryable = true)
             } else {
                 settingsRepository.saveWidgetError(platformId, message)
                 BalanceRefreshResult.TransientFailure(
                     WidgetDisplayState.Error(message),
-                    retryable = retryable,
+                    retryable = true,
                 )
             }
         }
-    }
-
-    private fun isNonRetryableTransient(error: Exception): Boolean {
-        if (error is CodexRegionUnavailableException) return true
-        val message = error.message.orEmpty()
-        return message == CodexAuthErrors.REGION_UNAVAILABLE_MESSAGE ||
-            message.startsWith(CodexAuthErrors.REGION_UNAVAILABLE_MESSAGE)
     }
 }

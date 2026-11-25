@@ -8,12 +8,13 @@ import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.formatBalance
+import com.kuyermqi.quotawidget.domain.httpFailure
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.settings.DEFAULT_NEW_API_QUOTA_PER_USD
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -44,12 +45,14 @@ class NewApiUsageClient(
                 header(HttpHeaders.Authorization, "Bearer $apiKey")
                 accept(ContentType.Application.Json)
             }
-        } catch (e: ClientRequestException) {
+        } catch (e: ResponseException) {
             val status = e.response.status
-            if (status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden) {
-                throw SessionExpiredException("NewAPI Token 无效或已失效，请检查配置")
-            }
-            throw IllegalStateException("查询 NewAPI 额度失败: $status", e)
+            throw httpFailure(
+                statusCode = status.value,
+                sessionExpiredMessage = "NewAPI Token 无效或已失效，请检查配置",
+                failureMessage = "查询 NewAPI 额度失败: $status",
+                cause = e,
+            )
         }
         if (response.status == HttpStatusCode.Unauthorized ||
             response.status == HttpStatusCode.Forbidden

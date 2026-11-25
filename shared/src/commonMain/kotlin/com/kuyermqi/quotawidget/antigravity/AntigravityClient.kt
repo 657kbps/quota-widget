@@ -2,7 +2,9 @@ package com.kuyermqi.quotawidget.antigravity
 
 import com.kuyermqi.quotawidget.codex.codexSha256
 import com.kuyermqi.quotawidget.deepseek.createHttpClient
+import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
+import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
@@ -20,6 +22,7 @@ import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -182,7 +185,7 @@ class AntigravityClient(
             fetchQuotaWindows(current.accessToken, current.projectId)
         }
         if (windows.isEmpty()) {
-            throw IllegalStateException("Antigravity 未返回可用的额度信息")
+            throw QuotaUnavailableException("Antigravity 未返回可用的额度信息")
         }
         return QuotaSnapshot(
             platformId = PlatformIds.ANTIGRAVITY,
@@ -210,12 +213,16 @@ class AntigravityClient(
                     append("client_secret", CLIENT_SECRET)
                 },
             )
-        } catch (e: ClientRequestException) {
+        } catch (e: ResponseException) {
             val status = e.response.status.value
             if (status == 400 || status == 401) {
                 throw SessionExpiredException("Antigravity 登录已过期，请重新登录")
             }
-            throw IllegalStateException("Antigravity 刷新登录失败: HTTP $status", e)
+            throw HttpStatusException(
+                statusCode = status,
+                message = "Antigravity 刷新登录失败: HTTP $status",
+                cause = e,
+            )
         }
         val data = json.parseToJsonElement(response.bodyAsText()).jsonObject
         val access = data.stringOrNull("access_token").orEmpty()
@@ -391,12 +398,16 @@ class AntigravityClient(
                 header(HttpHeaders.UserAgent, USER_AGENT)
                 setBody(body.toString())
             }
-        } catch (e: ClientRequestException) {
+        } catch (e: ResponseException) {
             val status = e.response.status.value
             if (status == 401 || status == 403) {
                 throw SessionExpiredException("Antigravity 登录已过期，请重新登录")
             }
-            throw IllegalStateException("Antigravity 请求失败: HTTP $status", e)
+            throw HttpStatusException(
+                statusCode = status,
+                message = "Antigravity 请求失败: HTTP $status",
+                cause = e,
+            )
         }
         val text = response.bodyAsText()
         return runCatching { json.parseToJsonElement(text).jsonObject }.getOrElse {

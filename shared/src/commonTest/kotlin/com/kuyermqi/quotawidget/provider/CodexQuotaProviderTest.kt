@@ -15,6 +15,7 @@ import com.kuyermqi.quotawidget.settings.CodexSettings
 import com.kuyermqi.quotawidget.settings.FakePlatformSettingsRepository
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -33,7 +34,7 @@ class CodexQuotaProviderTest {
         val provider = CodexQuotaProvider(
             tokenRefresher = CodexTokenRefresher {
                 refreshCalls++
-                throw IllegalStateException("OAuth token refresh failed: 503")
+                throw IOException("OAuth token refresh failed: connect timeout")
             },
             usageFetcher = CodexUsageFetcher { _, _ -> error("usage should not run") },
         )
@@ -68,7 +69,7 @@ class CodexQuotaProviderTest {
     }
 
     @Test
-    fun regionRestricted_usage_isTransient_keepsSuccessAndCredentials() = runTest {
+    fun regionRestricted_usage_writesErrorAndKeepsCredentials() = runTest {
         val previous = sampleSnapshot()
         val settings = CodexSettings(
             accessToken = "access-fresh",
@@ -94,18 +95,20 @@ class CodexQuotaProviderTest {
 
         val result = interactor.refresh(PlatformIds.CODEX)
 
+        val regionError = WidgetDisplayState.Error(CodexRegionUnavailableException().message!!)
         assertEquals(0, refreshCalls)
-        val failure = assertIs<BalanceRefreshResult.TransientFailure>(result)
-        assertEquals(false, failure.retryable)
-        assertIs<WidgetDisplayState.Success>(failure.retained)
-        assertIs<WidgetDisplayState.Success>(repo.getWidgetState(PlatformIds.CODEX))
+        val completed = assertIs<BalanceRefreshResult.Completed>(result)
+        assertEquals(regionError, completed.state)
+        assertEquals(regionError, repo.getWidgetState(PlatformIds.CODEX))
+        assertEquals(1, repo.widgetErrorSaves.size)
+        assertEquals(PlatformIds.CODEX, repo.widgetErrorSaves.single().first)
         assertEquals("access-fresh", repo.getCodexSettings().accessToken)
         assertEquals("refresh-keep", repo.getCodexSettings().refreshToken)
         assertTrue(repo.getCodexSettings().isConfigured)
     }
 
     @Test
-    fun regionRestricted_oauthRefresh_isTransient_keepsCredentials() = runTest {
+    fun regionRestricted_oauthRefresh_writesErrorAndKeepsCredentials() = runTest {
         val previous = sampleSnapshot()
         val repo = FakePlatformSettingsRepository(
             codex = expiredCodexSettings(),
@@ -121,16 +124,13 @@ class CodexQuotaProviderTest {
 
         val result = interactor.refresh(PlatformIds.CODEX)
 
-        val failure = assertIs<BalanceRefreshResult.TransientFailure>(result)
-        assertEquals(false, failure.retryable)
-        assertIs<WidgetDisplayState.Success>(failure.retained)
+        val regionError = WidgetDisplayState.Error(CodexRegionUnavailableException().message!!)
+        val completed = assertIs<BalanceRefreshResult.Completed>(result)
+        assertEquals(regionError, completed.state)
         assertTrue(repo.getCodexSettings().isConfigured)
         assertEquals("access-old", repo.getCodexSettings().accessToken)
         assertEquals("refresh-old", repo.getCodexSettings().refreshToken)
-        assertEquals(
-            WidgetDisplayState.Success(previous),
-            repo.getWidgetState(PlatformIds.CODEX),
-        )
+        assertEquals(regionError, repo.getWidgetState(PlatformIds.CODEX))
     }
 
     @Test

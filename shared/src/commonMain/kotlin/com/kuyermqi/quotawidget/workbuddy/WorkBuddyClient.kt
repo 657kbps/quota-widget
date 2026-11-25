@@ -1,7 +1,9 @@
 package com.kuyermqi.quotawidget.workbuddy
 
 import com.kuyermqi.quotawidget.deepseek.createHttpClient
+import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
+import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
@@ -20,7 +22,7 @@ import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import com.kuyermqi.quotawidget.util.parseDateTimeToEpochMs
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
@@ -223,7 +225,7 @@ class WorkBuddyClient(
             window = enterprise?.toEnterpriseWindow()
         }
         if (window == null) {
-            throw IllegalStateException("${region.appName} 未返回可用的额度信息")
+            throw QuotaUnavailableException("${region.appName} 未返回可用的额度信息")
         }
         val summaryPlan = summary?.let {
             if (it.booleanOrNull("IsPaidUser") == true) "Pro" else "Free"
@@ -271,8 +273,8 @@ class WorkBuddyClient(
                 ) + enterpriseHeaders(settings),
                 body = "{}",
             )
-        } catch (e: WorkBuddyHttpException) {
-            if (e.status == 401 || e.status == 403) {
+        } catch (e: HttpStatusException) {
+            if (e.statusCode == 401 || e.statusCode == 403) {
                 throw SessionExpiredException("${region.appName} 登录已过期，请重新登录")
             }
             throw e
@@ -321,12 +323,16 @@ class WorkBuddyClient(
                 enterpriseHeaders(settings).forEach { (name, value) -> header(name, value) }
                 setBody("{}")
             }
-        } catch (e: ClientRequestException) {
+        } catch (e: ResponseException) {
             val status = e.response.status.value
             if (status == 401 || status == 403) {
                 throw SessionExpiredException("${region.appName} 登录已过期，请重新登录")
             }
-            throw IllegalStateException("${region.appName} 查询额度失败: HTTP $status", e)
+            throw HttpStatusException(
+                statusCode = status,
+                message = "${region.appName} 查询额度失败: HTTP $status",
+                cause = e,
+            )
         }
         return response.bodyAsText().toEnvelopeData(region.displayName())
     }
@@ -349,17 +355,19 @@ class WorkBuddyClient(
                 header("User-Agent", "WorkBuddy/${region.appVersion}")
                 headers.forEach { (name, value) -> header(name, value) }
             }
-        } catch (e: ClientRequestException) {
-            val status = e.response.status.value
-            val bodyText = runCatching { e.response.bodyAsText() }.getOrNull().orEmpty()
-            val code = runCatching {
-                json.parseToJsonElement(bodyText).jsonObject.intOrNull("code")
-            }.getOrNull() ?: 0
-            throw WorkBuddyHttpException(status, code)
+        } catch (e: ResponseException) {
+            throw HttpStatusException(
+                statusCode = e.response.status.value,
+                message = "WorkBuddy HTTP ${e.response.status.value}",
+                cause = e,
+            )
         }
         val text = response.bodyAsText()
         if (response.status != HttpStatusCode.OK) {
-            throw WorkBuddyHttpException(response.status.value)
+            throw HttpStatusException(
+                statusCode = response.status.value,
+                message = "WorkBuddy HTTP ${response.status.value}",
+            )
         }
         return text.toEnvelopeData(region.displayName())
     }
@@ -563,8 +571,3 @@ internal class WorkBuddyApiException(
     val code: Int,
     message: String,
 ) : Exception("WorkBuddy API error $code: $message")
-
-internal class WorkBuddyHttpException(
-    val status: Int,
-    val code: Int = 0,
-) : Exception("WorkBuddy HTTP $status${if (code != 0) " (code $code)" else ""}")

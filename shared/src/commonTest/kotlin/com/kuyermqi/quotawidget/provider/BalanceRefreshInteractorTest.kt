@@ -1,6 +1,8 @@
 package com.kuyermqi.quotawidget.provider
 
+import com.kuyermqi.quotawidget.codex.CodexRegionUnavailableException
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
+import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -13,6 +15,7 @@ import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.platform.QuotaPlatform
 import com.kuyermqi.quotawidget.refresh.BalanceRefreshInteractor
 import com.kuyermqi.quotawidget.refresh.BalanceRefreshResult
+import com.kuyermqi.quotawidget.refresh.isRetryableFailure
 import com.kuyermqi.quotawidget.settings.DeepSeekSettings
 import com.kuyermqi.quotawidget.settings.FakePlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.KimiCodeSettings
@@ -21,6 +24,7 @@ import com.kuyermqi.quotawidget.settings.ZhipuSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -85,7 +89,7 @@ class BalanceRefreshInteractorTest {
     }
 
     @Test
-    fun refresh_transientFailure_keepsPreviousSuccess() = runTest {
+    fun refresh_ioException_isRetryableAndKeepsPreviousSuccess() = runTest {
         val previous = deepSeekSnapshot("9.99")
         val repo = FakePlatformSettingsRepository(
             deepSeek = DeepSeekSettings(apiKey = "sk-test"),
@@ -93,7 +97,7 @@ class BalanceRefreshInteractorTest {
         )
         val interactor = BalanceRefreshInteractor(
             repo,
-            listOf(FakeDeepSeekProvider(error = IllegalStateException("network down"))),
+            listOf(FakeDeepSeekProvider(error = IOException("network down"))),
         )
 
         val result = interactor.refresh(PlatformIds.DEEPSEEK)
@@ -106,6 +110,121 @@ class BalanceRefreshInteractorTest {
             WidgetDisplayState.Success(previous),
             repo.getWidgetState(PlatformIds.DEEPSEEK),
         )
+        assertTrue(repo.widgetErrorSaves.isEmpty())
+    }
+
+    @Test
+    fun refresh_httpServiceUnavailable_isRetryable() = runTest {
+        val previous = deepSeekSnapshot("9.99")
+        val repo = FakePlatformSettingsRepository(
+            deepSeek = DeepSeekSettings(apiKey = "sk-test"),
+            widgetStates = mapOf(PlatformIds.DEEPSEEK to WidgetDisplayState.Success(previous)),
+        )
+        val interactor = BalanceRefreshInteractor(
+            repo,
+            listOf(FakeDeepSeekProvider(error = HttpStatusException(503, "upstream down"))),
+        )
+
+        val result = interactor.refresh(PlatformIds.DEEPSEEK)
+
+        val failure = assertIs<BalanceRefreshResult.TransientFailure>(result)
+        assertEquals(true, failure.retryable)
+        assertIs<WidgetDisplayState.Success>(failure.retained)
+        assertEquals(
+            WidgetDisplayState.Success(previous),
+            repo.getWidgetState(PlatformIds.DEEPSEEK),
+        )
+    }
+
+    @Test
+    fun refresh_httpTooManyRequests_isRetryable() = runTest {
+        val repo = FakePlatformSettingsRepository(
+            deepSeek = DeepSeekSettings(apiKey = "sk-test"),
+            widgetStates = mapOf(PlatformIds.DEEPSEEK to WidgetDisplayState.Loading),
+        )
+        val interactor = BalanceRefreshInteractor(
+            repo,
+            listOf(FakeDeepSeekProvider(error = HttpStatusException(429, "rate limited"))),
+        )
+
+        val result = interactor.refresh(PlatformIds.DEEPSEEK)
+
+        val failure = assertIs<BalanceRefreshResult.TransientFailure>(result)
+        assertEquals(true, failure.retryable)
+        assertEquals("rate limited", assertIs<WidgetDisplayState.Error>(failure.retained).message)
+    }
+
+    @Test
+    fun refresh_httpNotFound_isNotRetryableAndDropsStaleSuccess() = runTest {
+        val previous = deepSeekSnapshot("9.99")
+        val repo = FakePlatformSettingsRepository(
+            deepSeek = DeepSeekSettings(apiKey = "sk-test"),
+            widgetStates = mapOf(PlatformIds.DEEPSEEK to WidgetDisplayState.Success(previous)),
+        )
+        val interactor = BalanceRefreshInteractor(
+            repo,
+            listOf(FakeDeepSeekProvider(error = HttpStatusException(404, "接口不存在"))),
+        )
+
+        val result = interactor.refresh(PlatformIds.DEEPSEEK)
+
+        val completed = assertIs<BalanceRefreshResult.Completed>(result)
+        assertEquals(WidgetDisplayState.Error("接口不存在"), completed.state)
+        assertEquals(
+            WidgetDisplayState.Error("接口不存在"),
+            repo.getWidgetState(PlatformIds.DEEPSEEK),
+        )
+        assertEquals(listOf(PlatformIds.DEEPSEEK to "接口不存在"), repo.widgetErrorSaves)
+    }
+
+    @Test
+    fun refresh_unknownFailure_isNotRetryableAndWritesError() = runTest {
+        val repo = FakePlatformSettingsRepository(
+            deepSeek = DeepSeekSettings(apiKey = "sk-test"),
+            widgetStates = mapOf(
+                PlatformIds.DEEPSEEK to WidgetDisplayState.Success(deepSeekSnapshot("9.99")),
+            ),
+        )
+        val interactor = BalanceRefreshInteractor(
+            repo,
+            listOf(FakeDeepSeekProvider(error = IllegalStateException("unexpected payload"))),
+        )
+
+        val result = interactor.refresh(PlatformIds.DEEPSEEK)
+
+        val completed = assertIs<BalanceRefreshResult.Completed>(result)
+        assertEquals(WidgetDisplayState.Error("unexpected payload"), completed.state)
+        assertEquals(
+            WidgetDisplayState.Error("unexpected payload"),
+            repo.getWidgetState(PlatformIds.DEEPSEEK),
+        )
+        assertEquals(listOf(PlatformIds.DEEPSEEK to "unexpected payload"), repo.widgetErrorSaves)
+    }
+
+    @Test
+    fun isRetryableFailure_walksCauseChainAndStopsAtStatus() {
+        assertTrue(isRetryableFailure(IOException("io")))
+        assertTrue(
+            isRetryableFailure(
+                IllegalStateException("wrapped", IOException("timeout")),
+            ),
+        )
+        assertTrue(isRetryableFailure(HttpStatusException(500, "boom")))
+        assertTrue(isRetryableFailure(HttpStatusException(408, "timeout")))
+        assertEquals(false, isRetryableFailure(HttpStatusException(403, "denied")))
+        assertEquals(false, isRetryableFailure(IllegalStateException("parse")))
+        assertEquals(false, isRetryableFailure(CodexRegionUnavailableException()))
+        // A status-bearing exception decides even when its cause looks retryable.
+        assertEquals(
+            false,
+            isRetryableFailure(HttpStatusException(404, "missing", IOException("reset"))),
+        )
+        // Cyclic cause chains must not hang.
+        val cyclic = object : Exception("loop") {
+            override val cause: Throwable get() = this
+        }
+        assertEquals(false, isRetryableFailure(cyclic))
+        assertTrue(isRetryableFailure(HttpStatusException(503, "boom", cyclic)))
     }
 
     @Test
@@ -116,7 +235,7 @@ class BalanceRefreshInteractorTest {
         )
         val interactor = BalanceRefreshInteractor(
             repo,
-            listOf(FakeDeepSeekProvider(error = IllegalStateException("boom"))),
+            listOf(FakeDeepSeekProvider(error = IOException("boom"))),
         )
 
         val result = interactor.refresh(PlatformIds.DEEPSEEK)

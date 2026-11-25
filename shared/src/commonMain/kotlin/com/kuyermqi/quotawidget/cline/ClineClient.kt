@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.cline
 
 import com.kuyermqi.quotawidget.deepseek.createHttpClient
+import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
@@ -19,6 +20,7 @@ import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -179,7 +181,7 @@ class ClineClient(
         } catch (e: SessionExpiredException) {
             throw e
         } catch (e: Exception) {
-            if (e.message?.contains("HTTP 404") == true) {
+            if (e is HttpStatusException && e.statusCode == 404) {
                 null
             } else {
                 limitsError = "ClinePass 限额读取失败"
@@ -306,13 +308,16 @@ class ClineClient(
                     headers.forEach { (name, value) -> header(name, value) }
                 }
             }
-        } catch (e: ClientRequestException) {
+        } catch (e: ResponseException) {
             val status = e.response.status.value
-            val text = runCatching { e.response.bodyAsText() }.getOrNull().orEmpty()
             if (status in lapsedStatuses) {
                 throw SessionExpiredException("Cline 登录已过期，请重新登录")
             }
-            throw IllegalStateException("Cline 请求失败: HTTP $status", e)
+            throw HttpStatusException(
+                statusCode = status,
+                message = "Cline 请求失败: HTTP $status",
+                cause = e,
+            )
         }
         val text = response.bodyAsText()
         val root = runCatching { json.parseToJsonElement(text).jsonObject }.getOrElse {

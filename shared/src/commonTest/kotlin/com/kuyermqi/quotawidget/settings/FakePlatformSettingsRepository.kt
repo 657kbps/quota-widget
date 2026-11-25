@@ -66,6 +66,9 @@ class FakePlatformSettingsRepository(
     var oemBackgroundTipDismissed: Boolean = false
     var updateIgnoredVersion: String? = null
 
+    /** Every [saveWidgetError] call as `platformId to message`, oldest first. */
+    val widgetErrorSaves = mutableListOf<Pair<String, String>>()
+
     override fun observeDeepSeekSettings(): Flow<DeepSeekSettings> = deepSeekFlow.asStateFlow()
     override suspend fun getDeepSeekSettings(): DeepSeekSettings = deepSeekFlow.value
     override suspend fun saveDeepSeekSettings(settings: DeepSeekSettings) {
@@ -234,6 +237,7 @@ class FakePlatformSettingsRepository(
     }
 
     override suspend fun saveWidgetError(platformId: String, message: String) {
+        widgetErrorSaves += platformId to message
         widgetFlow(platformId).value = WidgetDisplayState.Error(message)
     }
 

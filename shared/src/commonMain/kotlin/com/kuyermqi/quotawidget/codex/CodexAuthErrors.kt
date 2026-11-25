@@ -1,5 +1,6 @@
 package com.kuyermqi.quotawidget.codex
 
+import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import io.ktor.http.HttpStatusCode
 
@@ -28,7 +29,11 @@ internal object CodexAuthErrors {
             Kind.SessionExpired ->
                 throw SessionExpiredException(SESSION_EXPIRED_MESSAGE)
             Kind.Transient ->
-                throw IllegalStateException(TEMPORARILY_UNAVAILABLE_MESSAGE, cause)
+                throw HttpStatusException(
+                    statusCode = status.value,
+                    message = TEMPORARILY_UNAVAILABLE_MESSAGE,
+                    cause = cause,
+                )
         }
     }
 

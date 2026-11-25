@@ -1,9 +1,10 @@
 package com.kuyermqi.quotawidget.zhipu
 
 import com.kuyermqi.quotawidget.deepseek.createHttpClient
+import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
-import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
+import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.ServiceRegion
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
@@ -12,7 +13,7 @@ import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -57,15 +58,22 @@ class ZhipuUsageClient(
                 header(HttpHeaders.Authorization, apiKey)
                 accept(ContentType.Application.Json)
             }
-        } catch (e: ClientRequestException) {
-            when (e.response.status) {
+        } catch (e: ResponseException) {
+            val status = e.response.status
+            when (status) {
                 HttpStatusCode.Unauthorized,
                 HttpStatusCode.Forbidden,
                 -> throw SessionExpiredException("Zhipu API Key 无效或已失效，请检查配置")
-                HttpStatusCode.TooManyRequests ->
-                    throw IllegalStateException("Zhipu 请求过于频繁，请稍后重试", e)
-                else ->
-                    throw IllegalStateException("查询 Zhipu 用量失败: ${e.response.status}", e)
+                HttpStatusCode.TooManyRequests -> throw HttpStatusException(
+                    statusCode = status.value,
+                    message = "Zhipu 请求过于频繁，请稍后重试",
+                    cause = e,
+                )
+                else -> throw HttpStatusException(
+                    statusCode = status.value,
+                    message = "查询 Zhipu 用量失败: $status",
+                    cause = e,
+                )
             }
         }
         val body = response.bodyAsText()

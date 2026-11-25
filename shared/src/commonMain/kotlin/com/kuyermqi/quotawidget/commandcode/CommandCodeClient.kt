@@ -1,7 +1,9 @@
 package com.kuyermqi.quotawidget.commandcode
 
 import com.kuyermqi.quotawidget.deepseek.createHttpClient
+import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
+import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
@@ -16,7 +18,7 @@ import com.kuyermqi.quotawidget.session.stringOrNull
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -86,8 +88,8 @@ class CommandCodeClient(
             try {
                 who = accountJson("/alpha/whoami", apiKey)
                 break
-            } catch (e: CommandCodeHttpException) {
-                if (e.status == 401 || e.status == 403) {
+            } catch (e: HttpStatusException) {
+                if (e.statusCode == 401 || e.statusCode == 403) {
                     throw SessionExpiredException("Command Code 登录已过期，请重新登录")
                 }
                 lastError = e
@@ -114,8 +116,8 @@ class CommandCodeClient(
         }
         val credits = try {
             accountJson("/alpha/billing/credits", settings.apiKey)
-        } catch (e: CommandCodeHttpException) {
-            if (e.status == 401 || e.status == 403) {
+        } catch (e: HttpStatusException) {
+            if (e.statusCode == 401 || e.statusCode == 403) {
                 throw SessionExpiredException("Command Code 登录已过期，请重新登录")
             }
             throw e
@@ -124,7 +126,7 @@ class CommandCodeClient(
         val parsed = parseCredits(credits, subscription)
         if (parsed.windows.isEmpty()) {
             if (parsed.balance <= 0.0) {
-                throw IllegalStateException("Command Code 未返回可用的额度信息")
+                throw QuotaUnavailableException("Command Code 未返回可用的额度信息")
             }
             val next = settings.copy(plan = parsed.plan)
             if (next != settings) save(next)
@@ -269,11 +271,18 @@ class CommandCodeClient(
                 header("Authorization", "Bearer $apiKey")
                 header("x-api-key", apiKey)
             }
-        } catch (e: ClientRequestException) {
-            throw CommandCodeHttpException(e.response.status.value)
+        } catch (e: ResponseException) {
+            throw HttpStatusException(
+                statusCode = e.response.status.value,
+                message = "Command Code HTTP ${e.response.status.value}",
+                cause = e,
+            )
         }
         if (response.status != HttpStatusCode.OK) {
-            throw CommandCodeHttpException(response.status.value)
+            throw HttpStatusException(
+                statusCode = response.status.value,
+                message = "Command Code HTTP ${response.status.value}",
+            )
         }
         val text = response.bodyAsText()
         return runCatching { json.parseToJsonElement(text).jsonObject }.getOrElse {
@@ -362,4 +371,3 @@ internal data class CommandCodeParsedCredits(
     val balance: Double,
 )
 
-internal class CommandCodeHttpException(val status: Int) : Exception("Command Code HTTP $status")

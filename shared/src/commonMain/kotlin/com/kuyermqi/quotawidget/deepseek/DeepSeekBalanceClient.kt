@@ -2,11 +2,14 @@ package com.kuyermqi.quotawidget.deepseek
 
 import com.kuyermqi.quotawidget.domain.BalanceSnapshot
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
+import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.formatBalance
+import com.kuyermqi.quotawidget.domain.httpFailure
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -22,13 +25,23 @@ class DeepSeekBalanceClient(
         apiKey: String,
         preferredCurrency: CurrencyPreference,
     ): BalanceSnapshot {
-        val response: DeepSeekBalanceResponse = httpClient.get(BALANCE_URL) {
-            header(HttpHeaders.Authorization, "Bearer $apiKey")
-            accept(ContentType.Application.Json)
-        }.body()
+        val response: DeepSeekBalanceResponse = try {
+            httpClient.get(BALANCE_URL) {
+                header(HttpHeaders.Authorization, "Bearer $apiKey")
+                accept(ContentType.Application.Json)
+            }.body()
+        } catch (e: ResponseException) {
+            val status = e.response.status.value
+            throw httpFailure(
+                statusCode = status,
+                sessionExpiredMessage = "DeepSeek API Key 无效或已失效，请检查配置",
+                failureMessage = "查询 DeepSeek 余额失败: HTTP $status",
+                cause = e,
+            )
+        }
 
         val selected = selectBalance(response.balanceInfos, preferredCurrency)
-            ?: throw IllegalStateException("余额信息为空")
+            ?: throw QuotaUnavailableException("DeepSeek 未返回余额信息")
 
         val currency = CurrencyPreference.fromStorage(selected.currency)
         return BalanceSnapshot(
