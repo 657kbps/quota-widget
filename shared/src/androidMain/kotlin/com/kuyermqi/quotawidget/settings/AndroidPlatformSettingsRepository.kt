@@ -15,6 +15,7 @@ import com.google.crypto.tink.Aead
 import com.google.crypto.tink.KeyTemplates
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
+import com.google.crypto.tink.integration.android.AndroidKeystore
 import com.kuyermqi.quotawidget.domain.ALLOWED_REFRESH_INTERVAL_MINUTES
 import com.kuyermqi.quotawidget.domain.AppLanguage
 import com.kuyermqi.quotawidget.domain.AppSettings
@@ -43,6 +44,8 @@ import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "quota_widget_settings")
 
@@ -51,7 +54,11 @@ class AndroidPlatformSettingsRepository(
 ) : PlatformSettingsRepository {
     private val appContext = context.applicationContext
     private val dataStore = appContext.dataStore
-    private val aead: Aead by lazy { createAead(appContext) }
+    private val aead = RecoveringAead(
+        createAead = { createAead(appContext) },
+        resetKeyset = { resetTinkKeyset(appContext) },
+    )
+    private val settingsWriteMutex = Mutex()
 
     override fun observeDeepSeekSettings(): Flow<DeepSeekSettings> =
         dataStore.data.map { prefs -> prefs.toDeepSeekSettings() }
@@ -60,7 +67,7 @@ class AndroidPlatformSettingsRepository(
         dataStore.data.first().toDeepSeekSettings()
 
     override suspend fun saveDeepSeekSettings(settings: DeepSeekSettings) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             if (settings.apiKey.isBlank()) {
                 prefs.remove(Keys.API_KEY_ENCRYPTED)
                 prefs.clearWidgetPayload(PlatformIds.DEEPSEEK)
@@ -88,7 +95,7 @@ class AndroidPlatformSettingsRepository(
             previous.workspaceId != settings.workspaceId ||
             previous.authCookie != settings.authCookie ||
             previous.apiKey != settings.apiKey
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             if (!settings.isConfigured) {
                 prefs.remove(Keys.OPENCODE_WORKSPACE_ID)
                 prefs.remove(Keys.OPENCODE_WORKSPACE_NAME)
@@ -154,7 +161,7 @@ class AndroidPlatformSettingsRepository(
         dataStore.data.first().toCodexSettings()
 
     override suspend fun saveCodexSettings(settings: CodexSettings) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             if (!settings.isConfigured) {
                 prefs.remove(Keys.CODEX_ACCESS_ENC)
                 prefs.remove(Keys.CODEX_REFRESH_ENC)
@@ -219,7 +226,7 @@ class AndroidPlatformSettingsRepository(
         dataStore.data.first().toNewApiSettings()
 
     override suspend fun saveNewApiSettings(settings: NewApiSettings) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             if (!settings.isConfigured) {
                 prefs.remove(Keys.NEW_API_BASE_URL)
                 prefs.remove(Keys.NEW_API_KEY_ENC)
@@ -261,7 +268,7 @@ class AndroidPlatformSettingsRepository(
         dataStore.data.first().toMagpieSettings()
 
     override suspend fun saveMagpieSettings(settings: MagpieSettings) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             if (!settings.isConfigured) {
                 prefs.remove(Keys.MAGPIE_BASE_URL)
                 prefs.remove(Keys.MAGPIE_KEY_ENC)
@@ -312,7 +319,7 @@ class AndroidPlatformSettingsRepository(
         dataStore.data.first().toKimiCodeSettings()
 
     override suspend fun saveKimiCodeSettings(settings: KimiCodeSettings) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             if (!settings.isConfigured) {
                 prefs.remove(Keys.KIMI_CODE_API_KEY_ENC)
                 prefs.clearWidgetPayload(PlatformIds.KIMI_CODE)
@@ -355,7 +362,7 @@ class AndroidPlatformSettingsRepository(
         dataStore.data.first().toZhipuSettings()
 
     override suspend fun saveZhipuSettings(settings: ZhipuSettings) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             if (!settings.isConfigured) {
                 prefs.remove(Keys.ZHIPU_API_KEY_ENC)
                 prefs.clearWidgetPayload(PlatformIds.ZHIPU)
@@ -403,7 +410,7 @@ class AndroidPlatformSettingsRepository(
             previous.refreshToken != settings.refreshToken ||
             previous.apiKey != settings.apiKey ||
             previous.expiresAtEpochMs != settings.expiresAtEpochMs
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             if (!settings.isConfiguredFor(platformId)) {
                 prefs.remove(sessionAccessKey(platformId))
                 prefs.remove(sessionRefreshKey(platformId))
@@ -476,7 +483,7 @@ class AndroidPlatformSettingsRepository(
     }
 
     override suspend fun saveWidgetSuccess(platformId: String, snapshot: QuotaSnapshot) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs.migrateLegacyWidgetIfNeeded()
             prefs[widgetStatusKey(platformId)] = Status.SUCCESS
             prefs[widgetPlatformIdKey(platformId)] = snapshot.platformId
@@ -500,7 +507,7 @@ class AndroidPlatformSettingsRepository(
     }
 
     override suspend fun saveWidgetError(platformId: String, message: String) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs.migrateLegacyWidgetIfNeeded()
             prefs[widgetStatusKey(platformId)] = Status.ERROR
             prefs[widgetErrorKey(platformId)] = message
@@ -508,7 +515,7 @@ class AndroidPlatformSettingsRepository(
     }
 
     override suspend fun saveWidgetLoading(platformId: String) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs.migrateLegacyWidgetIfNeeded()
             prefs[widgetStatusKey(platformId)] = Status.LOADING
             prefs.remove(widgetErrorKey(platformId))
@@ -516,7 +523,7 @@ class AndroidPlatformSettingsRepository(
     }
 
     override suspend fun saveWidgetNotConfigured(platformId: String) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs.migrateLegacyWidgetIfNeeded()
             prefs[widgetStatusKey(platformId)] = Status.NOT_CONFIGURED
             prefs.clearWidgetPayload(platformId)
@@ -524,7 +531,7 @@ class AndroidPlatformSettingsRepository(
     }
 
     override suspend fun saveWidgetNeedsReauth(platformId: String) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs.migrateLegacyWidgetIfNeeded()
             prefs[widgetStatusKey(platformId)] = Status.NEEDS_REAUTH
             prefs.remove(widgetErrorKey(platformId))
@@ -539,7 +546,7 @@ class AndroidPlatformSettingsRepository(
     }
 
     override suspend fun setRefreshIconPhase(platformId: String, phase: RefreshIconPhase) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[refreshPhaseKey(platformId)] = phase.name
             prefs.remove(Keys.LEGACY_REFRESH_ICON_PHASE)
         }
@@ -553,14 +560,14 @@ class AndroidPlatformSettingsRepository(
     }
 
     override suspend fun setRefreshStartedAtEpochMs(platformId: String, epochMs: Long) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[refreshStartedAtKey(platformId)] = epochMs
             prefs.remove(Keys.LEGACY_REFRESH_STARTED_AT)
         }
     }
 
     override suspend fun clearAllRefreshIconPhases() {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             for (platformId in buildList {
                 add(PlatformIds.DEEPSEEK)
                 add(PlatformIds.OPENCODE_GO)
@@ -581,7 +588,7 @@ class AndroidPlatformSettingsRepository(
         dataStore.data.first()[Keys.PLATFORM_TIP_DISMISSED] == true
 
     override suspend fun setPlatformTipDismissed(dismissed: Boolean) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.PLATFORM_TIP_DISMISSED] = dismissed
         }
     }
@@ -590,7 +597,7 @@ class AndroidPlatformSettingsRepository(
         dataStore.data.first()[Keys.OEM_BACKGROUND_TIP_DISMISSED] == true
 
     override suspend fun setOemBackgroundTipDismissed(dismissed: Boolean) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.OEM_BACKGROUND_TIP_DISMISSED] = dismissed
         }
     }
@@ -599,7 +606,7 @@ class AndroidPlatformSettingsRepository(
         dataStore.data.first()[Keys.UPDATE_IGNORED_VERSION]
 
     override suspend fun setUpdateIgnoredVersion(version: String?) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             if (version.isNullOrBlank()) {
                 prefs.remove(Keys.UPDATE_IGNORED_VERSION)
             } else {
@@ -615,7 +622,7 @@ class AndroidPlatformSettingsRepository(
         dataStore.data.first().toAppSettings()
 
     override suspend fun saveAppSettings(settings: AppSettings) {
-        dataStore.edit { prefs ->
+        editSettings { prefs ->
             prefs[Keys.DARK_THEME_MODE] = settings.darkThemeMode.name
             prefs[Keys.THEME_COLOR_MODE] = settings.themeColorMode.name
             prefs[Keys.CUSTOM_SEED_COLOR_ARGB] = settings.customSeedColorArgb
@@ -953,13 +960,37 @@ class AndroidPlatformSettingsRepository(
         "session_${platformId}_$field".encodeToByteArray()
 
     private fun encrypt(plain: String, associatedData: ByteArray): String {
-        val cipher = aead.encrypt(plain.encodeToByteArray(), associatedData)
+        val cipher = aead.load().aead.encrypt(plain.encodeToByteArray(), associatedData)
         return Base64.encodeToString(cipher, Base64.NO_WRAP)
     }
 
     private fun decrypt(encoded: String, associatedData: ByteArray): String {
         val cipher = Base64.decode(encoded, Base64.NO_WRAP)
-        return aead.decrypt(cipher, associatedData).decodeToString()
+        return aead.load().aead.decrypt(cipher, associatedData).decodeToString()
+    }
+
+    /**
+     * Applies [transform], recreating a lost keyset first and dropping the ciphertexts that the
+     * discarded keyset can no longer decrypt, so [transform] can store fresh ciphertexts. The
+     * pending cleanup survives the read path that may have triggered the recovery; it is cleared
+     * only after this write persisted the removal.
+     */
+    private suspend fun editSettings(transform: suspend (MutablePreferences) -> Unit) {
+        settingsWriteMutex.withLock {
+            val cleanupCiphertexts =
+                runCatching { aead.load().requiresCiphertextCleanup }.getOrDefault(false)
+            dataStore.edit { prefs ->
+                if (cleanupCiphertexts) prefs.removeUndecryptableStoredCiphertexts()
+                transform(prefs)
+            }
+            if (cleanupCiphertexts) aead.acknowledgeCiphertextCleanup()
+        }
+    }
+
+    private fun MutablePreferences.removeUndecryptableStoredCiphertexts() {
+        asMap().keys
+            .filter { isEncryptedPreferenceName(it.name) }
+            .forEach { remove(it) }
     }
 
     private object Keys {
@@ -1150,15 +1181,27 @@ class AndroidPlatformSettingsRepository(
         private fun refreshStartedAtKey(platformId: String) =
             longPreferencesKey("refresh_${platformId}_started_at")
 
+        private const val TINK_KEYSET_NAME = "quota_widget_tink_keyset"
+        private const val TINK_KEYSET_PREFERENCES = "quota_widget_tink_prefs"
+        private const val TINK_MASTER_KEY_ID = "quota_widget_master_key"
+
         private fun createAead(context: Context): Aead {
             AeadConfig.register()
             return AndroidKeysetManager.Builder()
-                .withSharedPref(context, "quota_widget_tink_keyset", "quota_widget_tink_prefs")
+                .withSharedPref(context, TINK_KEYSET_NAME, TINK_KEYSET_PREFERENCES)
                 .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
-                .withMasterKeyUri("android-keystore://quota_widget_master_key")
+                .withMasterKeyUri("android-keystore://$TINK_MASTER_KEY_ID")
                 .build()
                 .keysetHandle
                 .getPrimitive(Aead::class.java)
+        }
+
+        private fun resetTinkKeyset(context: Context) {
+            context.getSharedPreferences(TINK_KEYSET_PREFERENCES, Context.MODE_PRIVATE)
+                .edit()
+                .clear()
+                .apply()
+            runCatching { AndroidKeystore.deleteKey(TINK_MASTER_KEY_ID) }
         }
     }
 }
