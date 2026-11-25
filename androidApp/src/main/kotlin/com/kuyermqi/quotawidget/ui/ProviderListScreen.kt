@@ -10,7 +10,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -138,11 +137,16 @@ internal fun ProviderListScreen(
                     modifier = Modifier.fillMaxSize(),
                     state = listState,
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    if (tips != null && !searching) {
+                    if (!searching) {
                         item(key = "tips") {
-                            tips()
+                            if (tips != null) {
+                                Box(modifier = Modifier.padding(bottom = 12.dp)) {
+                                    tips()
+                                }
+                            } else {
+                                Spacer(modifier = Modifier.fillMaxWidth())
+                            }
                         }
                     }
                     if (searching) {
@@ -179,14 +183,16 @@ internal fun ProviderListScreen(
                         }
                         if (unconfiguredEntries.isNotEmpty()) {
                             item(key = "unconfigured") {
-                                ProviderSection(
-                                    title = stringResource(R.string.home_section_unconfigured),
-                                    count = unconfiguredEntries.size,
-                                    rows = unconfiguredEntries,
-                                    expanded = unconfiguredExpanded,
-                                    onToggle = { onUnconfiguredExpandedChange(!unconfiguredExpanded) },
-                                    onOpenProvider = onOpenProvider,
-                                )
+                                Box(modifier = Modifier.padding(top = 12.dp)) {
+                                    ProviderSection(
+                                        title = stringResource(R.string.home_section_unconfigured),
+                                        count = unconfiguredEntries.size,
+                                        rows = unconfiguredEntries,
+                                        expanded = unconfiguredExpanded,
+                                        onToggle = { onUnconfiguredExpandedChange(!unconfiguredExpanded) },
+                                        onOpenProvider = onOpenProvider,
+                                    )
+                                }
                             }
                         }
                     }
