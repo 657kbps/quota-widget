@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.currentState
 import androidx.glance.state.GlanceStateDefinition
@@ -60,20 +59,10 @@ class CodexCompactWidget : GlanceAppWidget() {
     }
 }
 
-class CodexWidgetReceiver : GlanceAppWidgetReceiver() {
+class CodexWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = CodexWidget()
-
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class CodexCompactWidgetReceiver : GlanceAppWidgetReceiver() {
+class CodexCompactWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = CodexCompactWidget()
-
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }

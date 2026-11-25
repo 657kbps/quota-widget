@@ -28,7 +28,7 @@ import com.kuyermqi.quotawidget.settings.ZhipuSettings
 import com.kuyermqi.quotawidget.ui.components.ApiKeyUsageConfigContent
 import com.kuyermqi.quotawidget.ui.platformDisplayName
 import com.kuyermqi.quotawidget.ui.usage.formatUsageWindowSummaryWithFallback
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
 class ZhipuHomeState internal constructor(
@@ -226,7 +226,7 @@ fun ColumnScope.ZhipuHomeContent(
                         WidgetDisplayState.NeedsReauth -> msgInvalidKey
                         else -> null
                     }
-                    WidgetGlanceState.syncAndUpdate(context, "zhipu_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "zhipu_save")
                 } finally {
                     state.isSaving = false
                 }

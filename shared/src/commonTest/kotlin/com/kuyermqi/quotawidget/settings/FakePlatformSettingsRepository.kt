@@ -5,6 +5,9 @@ import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.platform.PlatformIds
+import com.kuyermqi.quotawidget.refresh.isRefreshPhaseStale
+import com.kuyermqi.quotawidget.refresh.shouldResetRefreshPhase
+import com.kuyermqi.quotawidget.util.currentTimeMillis
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -298,8 +301,25 @@ class FakePlatformSettingsRepository(
         refreshStartedAt[platformId] = epochMs
     }
 
-    override suspend fun clearAllRefreshIconPhases() {
-        refreshPhases.clear()
+    override suspend fun setRefreshIconPhaseIfStartedAt(
+        platformId: String,
+        expectedStartedAtEpochMs: Long,
+        phase: RefreshIconPhase,
+    ): Boolean {
+        if (!shouldResetRefreshPhase(getRefreshStartedAtEpochMs(platformId), expectedStartedAtEpochMs)) {
+            return false
+        }
+        refreshPhases[platformId] = phase
+        return true
+    }
+
+    override suspend fun clearStaleRefreshIconPhases() {
+        val now = currentTimeMillis()
+        for (platformId in (refreshPhases.keys + refreshStartedAt.keys)) {
+            if (isRefreshPhaseStale(refreshStartedAt[platformId] ?: 0L, now)) {
+                refreshPhases[platformId] = RefreshIconPhase.Idle
+            }
+        }
     }
 
     override suspend fun isPlatformTipDismissed(): Boolean = platformTipDismissed

@@ -26,8 +26,8 @@ import com.kuyermqi.quotawidget.ui.UpdateAvailableDialog
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
 import com.kuyermqi.quotawidget.update.UpdateAvailability
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
 import com.kuyermqi.quotawidget.widget.WidgetRefreshCoordinator
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
@@ -71,7 +71,7 @@ class MainActivity : LocaleAwareActivity() {
                 appSettings.themeColorMode,
                 appSettings.customSeedColorArgb,
             ) {
-                WidgetGlanceState.syncAndUpdate(this@MainActivity, "app_theme")
+                WidgetSyncCoordinator.syncWidgets(this@MainActivity, "app_theme")
             }
 
             QuotaWidgetTheme(

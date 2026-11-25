@@ -31,7 +31,7 @@ import com.kuyermqi.quotawidget.settings.CodexSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.CodexConfigContent
 import com.kuyermqi.quotawidget.ui.usage.formatCodexUsageWindowSummary
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
 class CodexHomeState internal constructor(
@@ -206,7 +206,7 @@ fun codexHomeEffects(
             if (draftInvalid) {
                 state.draftWindowKind = preferred
             }
-            WidgetGlanceState.syncAndUpdate(context, "codex_window_clamp")
+            WidgetSyncCoordinator.syncWidgets(context, "codex_window_clamp")
         } else {
             // Settings valid; only draft is out of range (e.g. dirty pick no longer offered).
             state.draftWindowKind = state.settings.widgetWindowKind
@@ -286,7 +286,7 @@ fun codexHomeEffects(
                         state.error = null
                     }
                 }
-                WidgetGlanceState.syncAndUpdate(context, "codex_login")
+                WidgetSyncCoordinator.syncWidgets(context, "codex_login")
             } finally {
                 state.isBusy = false
             }
@@ -356,7 +356,7 @@ fun ColumnScope.CodexHomeContent(
                         keepUsageProgressStyle = state.draftUsageProgressStyle,
                         keepUsageResetStyle = state.draftUsageResetStyle,
                     )
-                    WidgetGlanceState.syncAndUpdate(context, "codex_logout")
+                    WidgetSyncCoordinator.syncWidgets(context, "codex_logout")
                 } finally {
                     state.isBusy = false
                 }
@@ -401,7 +401,7 @@ fun ColumnScope.CodexHomeContent(
                             state.error = null
                         }
                     }
-                    WidgetGlanceState.syncAndUpdate(context, "codex_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "codex_save")
                 } finally {
                     state.isSaving = false
                     state.isBusy = false

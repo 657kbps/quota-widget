@@ -12,7 +12,6 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.action.Action
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.layout.Alignment
@@ -222,20 +221,10 @@ Triple(contextString(R.string.widget_fetch_failed), null, 26.sp)
     }
 }
 
-class DeepSeekBalanceWidgetReceiver : GlanceAppWidgetReceiver() {
+class DeepSeekBalanceWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = DeepSeekBalanceWidget()
-
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class DeepSeekBalanceCompactWidgetReceiver : GlanceAppWidgetReceiver() {
+class DeepSeekBalanceCompactWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = DeepSeekBalanceCompactWidget()
-
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }

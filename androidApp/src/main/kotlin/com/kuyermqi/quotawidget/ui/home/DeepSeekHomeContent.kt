@@ -19,7 +19,7 @@ import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.settings.DeepSeekSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.DeepSeekConfigContent
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
 class DeepSeekHomeState internal constructor(
@@ -152,7 +152,7 @@ fun ColumnScope.DeepSeekHomeContent(
                         is WidgetDisplayState.Error -> result.message
                         else -> null
                     }
-                    WidgetGlanceState.syncAndUpdate(context, "deepseek_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "deepseek_save")
                 } finally {
                     state.isSaving = false
                 }

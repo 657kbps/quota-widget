@@ -15,8 +15,8 @@ import com.kuyermqi.quotawidget.settings.AndroidPlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.update.UpdateCheckInteractor
-import com.kuyermqi.quotawidget.widget.PeriodicRefreshScheduler
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.widget.RefreshScheduleGate
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -68,12 +68,12 @@ class QuotaWidgetApp : Application() {
         updateCheckInteractor = UpdateCheckInteractor(
             settingsRepository = settingsRepository,
         )
-        // Clear any stuck spinner left by a killed ActionCallback / worker.
+        // Reset only spinner phases whose owning run is gone (killed process); a live
+        // refresh writes a fresh start token and is therefore left spinning.
         appScope.launch {
-            settingsRepository.clearAllRefreshIconPhases()
-            android.util.Log.i("QuotaRefresh", "onCreate cleared refresh phases")
-            val interval = settingsRepository.getAppSettings().refreshIntervalMinutes
-            PeriodicRefreshScheduler.schedule(this@QuotaWidgetApp, interval)
+            settingsRepository.clearStaleRefreshIconPhases()
+            android.util.Log.i("QuotaRefresh", "onCreate cleared stale refresh phases")
+            RefreshScheduleGate.sync(this@QuotaWidgetApp)
         }
         appScope.launch {
             settingsRepository.observeAppSettings()
@@ -96,7 +96,7 @@ class QuotaWidgetApp : Application() {
                         }
                     }
                     if (changed) {
-                        WidgetGlanceState.syncAndUpdate(this@QuotaWidgetApp, "app_language")
+                        WidgetSyncCoordinator.syncWidgets(this@QuotaWidgetApp, "app_language")
                     }
                 }
         }

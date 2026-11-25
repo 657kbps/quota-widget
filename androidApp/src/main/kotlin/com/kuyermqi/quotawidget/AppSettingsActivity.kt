@@ -14,8 +14,8 @@ import com.kuyermqi.quotawidget.locale.LocaleAwareActivity
 import com.kuyermqi.quotawidget.ui.AppSettingsScreen
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
-import com.kuyermqi.quotawidget.widget.PeriodicRefreshScheduler
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.widget.RefreshScheduleGate
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 
 class AppSettingsActivity : LocaleAwareActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +35,7 @@ class AppSettingsActivity : LocaleAwareActivity() {
                 appSettings.themeColorMode,
                 appSettings.customSeedColorArgb,
             ) {
-                WidgetGlanceState.syncAndUpdate(this@AppSettingsActivity, "app_theme")
+                WidgetSyncCoordinator.syncWidgets(this@AppSettingsActivity, "app_theme")
             }
 
             QuotaWidgetTheme(
@@ -47,7 +47,7 @@ class AppSettingsActivity : LocaleAwareActivity() {
                     settingsRepository = app.settingsRepository,
                     onBack = { finish() },
                     onRefreshIntervalChanged = { minutes ->
-                        PeriodicRefreshScheduler.schedule(this@AppSettingsActivity, minutes)
+                        RefreshScheduleGate.syncAsync(this@AppSettingsActivity, minutes)
                     },
                     onCheckForUpdates = { versionName ->
                         app.updateCheckInteractor.checkManually(versionName)

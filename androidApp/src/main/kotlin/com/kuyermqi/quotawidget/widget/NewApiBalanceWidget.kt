@@ -13,7 +13,6 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.action.Action
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.currentState
@@ -246,20 +245,10 @@ Triple(contextString(R.string.widget_fetch_failed), null, 26.sp)
     }
 }
 
-class NewApiBalanceWidgetReceiver : GlanceAppWidgetReceiver() {
+class NewApiBalanceWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = NewApiBalanceWidget()
-
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class NewApiBalanceCompactWidgetReceiver : GlanceAppWidgetReceiver() {
+class NewApiBalanceCompactWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = NewApiBalanceCompactWidget()
-
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }

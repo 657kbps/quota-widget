@@ -63,7 +63,7 @@ import com.kuyermqi.quotawidget.ui.home.rememberOpenCodeGoHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberSessionPlatformHomeState
 import com.kuyermqi.quotawidget.ui.home.rememberZhipuHomeState
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
 data class FocusPlatformRequest(
@@ -289,7 +289,7 @@ fun HomeScreen(
                     msgWorkspacesLoadFailed = msgOpenCodeWorkspacesLoadFailed,
                 )
             }
-            WidgetGlanceState.syncAndUpdate(context, "home_refresh")
+            WidgetSyncCoordinator.syncWidgets(context, "home_refresh")
         } finally {
             if (showPullIndicator) isRefreshing = false
         }

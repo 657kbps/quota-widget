@@ -35,7 +35,7 @@ import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.OpenCodeAuthPanel
 import com.kuyermqi.quotawidget.ui.components.OpenCodeGoConfigContent
 import com.kuyermqi.quotawidget.ui.usage.formatUsageWindowSummary
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -293,7 +293,7 @@ fun openCodeGoHomeEffects(
                         state.authPanel = OpenCodeAuthPanel.SUMMARY
                     }
                 }
-                WidgetGlanceState.syncAndUpdate(context, "opencode_login")
+                WidgetSyncCoordinator.syncWidgets(context, "opencode_login")
             } finally {
                 state.isBusy = false
             }
@@ -393,7 +393,7 @@ fun ColumnScope.OpenCodeGoHomeContent(
                         keepUsageProgressStyle = state.draftUsageProgressStyle,
                         keepUsageResetStyle = state.draftUsageResetStyle,
                     )
-                    WidgetGlanceState.syncAndUpdate(context, "opencode_logout")
+                    WidgetSyncCoordinator.syncWidgets(context, "opencode_logout")
                 } finally {
                     state.isBusy = false
                 }
@@ -466,7 +466,7 @@ fun ColumnScope.OpenCodeGoHomeContent(
                             }
                         }
                     }
-                    WidgetGlanceState.syncAndUpdate(context, "opencode_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "opencode_save")
                 } finally {
                     state.isSaving = false
                     state.isBusy = false

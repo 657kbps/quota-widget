@@ -60,6 +60,12 @@ class BalanceRefreshInteractor(
     }
 
     /**
+     * Platform ids that currently have usable credentials, in provider order.
+     */
+    suspend fun configuredPlatformIds(): List<String> =
+        providers.filter { it.isConfigured(settingsRepository) }.map { it.platform.id }
+
+    /**
      * Fetches quota for [platformId] without forcing a loading placeholder,
      * so the widget can keep showing the previous value while the icon spins.
      *

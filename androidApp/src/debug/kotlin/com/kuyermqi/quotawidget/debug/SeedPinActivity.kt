@@ -12,7 +12,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.kuyermqi.quotawidget.QuotaWidgetApp
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -79,7 +79,7 @@ class SeedPinActivity : Activity() {
     private fun reseed() {
         scope.launch {
             DebugWidgetSeed.seed(applicationContext as QuotaWidgetApp)
-            WidgetGlanceState.syncAndUpdate(this@SeedPinActivity, "debug_seed")
+            WidgetSyncCoordinator.syncWidgets(this@SeedPinActivity, "debug_seed")
             status.text = "假数据已写入"
         }
     }

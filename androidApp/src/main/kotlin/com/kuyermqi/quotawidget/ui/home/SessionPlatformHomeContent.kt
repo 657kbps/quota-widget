@@ -37,7 +37,7 @@ import com.kuyermqi.quotawidget.ui.components.SessionAuthPanel
 import com.kuyermqi.quotawidget.ui.components.SessionPlatformConfigContent
 import com.kuyermqi.quotawidget.ui.platformDisplayName
 import com.kuyermqi.quotawidget.ui.usage.formatCodexUsageWindowSummary
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import com.kuyermqi.quotawidget.workbuddy.WorkBuddyClient
 import com.kuyermqi.quotawidget.workbuddy.WorkBuddyRegion
 import kotlinx.coroutines.Dispatchers
@@ -299,7 +299,7 @@ fun sessionPlatformHomeEffects(
                     onRefreshPlatform(state.platformId)
                 }
                 handleRefreshResult(state, settingsRepository, refreshed, reauthMessage)
-                WidgetGlanceState.syncAndUpdate(context, "session_login")
+                WidgetSyncCoordinator.syncWidgets(context, "session_login")
             } catch (e: Exception) {
                 state.error = e.message ?: loginFailed
             }
@@ -365,7 +365,7 @@ fun sessionPlatformHomeEffects(
                 }
                 state.lastDisplay = null
                 state.error = null
-                WidgetGlanceState.syncAndUpdate(context, "session_logout")
+                WidgetSyncCoordinator.syncWidgets(context, "session_logout")
             } catch (e: Exception) {
                 state.error = e.message
             } finally {
@@ -391,7 +391,7 @@ fun sessionPlatformHomeEffects(
                         state.authPanel = SessionAuthPanel.SUMMARY
                     }
                 }
-                WidgetGlanceState.syncAndUpdate(context, "session_save")
+                WidgetSyncCoordinator.syncWidgets(context, "session_save")
             } catch (e: Exception) {
                 state.error = e.message
             } finally {

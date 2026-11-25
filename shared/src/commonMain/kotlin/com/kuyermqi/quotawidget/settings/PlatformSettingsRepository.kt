@@ -255,7 +255,18 @@ interface PlatformSettingsRepository {
     suspend fun setRefreshIconPhase(platformId: String, phase: RefreshIconPhase)
     suspend fun getRefreshStartedAtEpochMs(platformId: String): Long
     suspend fun setRefreshStartedAtEpochMs(platformId: String, epochMs: Long)
-    suspend fun clearAllRefreshIconPhases()
+
+    /**
+     * Writes [phase] only when the stored start token still equals [expectedStartedAtEpochMs].
+     * Returns false (and writes nothing) when a newer run owns the phase.
+     */
+    suspend fun setRefreshIconPhaseIfStartedAt(
+        platformId: String,
+        expectedStartedAtEpochMs: Long,
+        phase: RefreshIconPhase,
+    ): Boolean
+
+    suspend fun clearStaleRefreshIconPhases()
 
     suspend fun isPlatformTipDismissed(): Boolean
     suspend fun setPlatformTipDismissed(dismissed: Boolean)

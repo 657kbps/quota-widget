@@ -7,8 +7,6 @@ import androidx.work.WorkerParameters
 import com.kuyermqi.quotawidget.refresh.BalanceRefreshResult
 import com.kuyermqi.quotawidget.widget.WidgetRefreshCoordinator
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.withContext
 
 class BalanceRefreshWorker(
     appContext: Context,
@@ -54,21 +52,9 @@ class BalanceRefreshWorker(
                 TAG,
                 "doWork cancelled userInitiated=$userInitiated platformId=$platformId",
             )
-            withContext(NonCancellable) {
-                try {
-                    WidgetRefreshCoordinator.forceIdle(applicationContext, platformId)
-                } catch (_: Exception) {
-                    // ignore cleanup failures
-                }
-            }
             throw t
         } catch (t: Exception) {
             android.util.Log.e(TAG, "doWork failed userInitiated=$userInitiated platformId=$platformId", t)
-            try {
-                WidgetRefreshCoordinator.forceIdle(applicationContext, platformId)
-            } catch (_: Exception) {
-                // ignore cleanup failures
-            }
             Result.retry()
         }
     }

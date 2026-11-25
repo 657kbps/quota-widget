@@ -21,4 +21,8 @@ object PeriodicRefreshScheduler {
             request,
         )
     }
+
+    fun cancel(context: Context) {
+        WorkManager.getInstance(context).cancelUniqueWork(BalanceRefreshWorker.UNIQUE_WORK_NAME)
+    }
 }

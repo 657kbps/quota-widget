@@ -41,6 +41,9 @@ import com.kuyermqi.quotawidget.magpie.decodeMagpieProviders
 import com.kuyermqi.quotawidget.magpie.encodeMagpieProviders
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
+import com.kuyermqi.quotawidget.refresh.isRefreshPhaseStale
+import com.kuyermqi.quotawidget.refresh.shouldResetRefreshPhase
+import com.kuyermqi.quotawidget.util.currentTimeMillis
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -48,6 +51,17 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "quota_widget_settings")
+
+private val REFRESH_PHASE_PLATFORM_IDS: List<String> = buildList {
+    add(PlatformIds.DEEPSEEK)
+    add(PlatformIds.OPENCODE_GO)
+    add(PlatformIds.CODEX)
+    add(PlatformIds.NEW_API)
+    add(PlatformIds.MAGPIE)
+    add(PlatformIds.KIMI_CODE)
+    add(PlatformIds.ZHIPU)
+    addAll(PlatformIds.sessionPlatforms)
+}
 
 class AndroidPlatformSettingsRepository(
     context: Context,
@@ -609,6 +623,24 @@ class AndroidPlatformSettingsRepository(
         }
     }
 
+    override suspend fun setRefreshIconPhaseIfStartedAt(
+        platformId: String,
+        expectedStartedAtEpochMs: Long,
+        phase: RefreshIconPhase,
+    ): Boolean {
+        var applied = false
+        editSettings { prefs ->
+            val storedStartedAt = prefs[refreshStartedAtKey(platformId)]
+                ?: prefs[Keys.LEGACY_REFRESH_STARTED_AT]
+                ?: 0L
+            if (!shouldResetRefreshPhase(storedStartedAt, expectedStartedAtEpochMs)) return@editSettings
+            prefs[refreshPhaseKey(platformId)] = phase.name
+            prefs.remove(Keys.LEGACY_REFRESH_ICON_PHASE)
+            applied = true
+        }
+        return applied
+    }
+
     override suspend fun getRefreshStartedAtEpochMs(platformId: String): Long {
         val prefs = dataStore.data.first()
         return prefs[refreshStartedAtKey(platformId)]
@@ -623,19 +655,16 @@ class AndroidPlatformSettingsRepository(
         }
     }
 
-    override suspend fun clearAllRefreshIconPhases() {
+    override suspend fun clearStaleRefreshIconPhases() {
+        val now = currentTimeMillis()
         editSettings { prefs ->
-            for (platformId in buildList {
-                add(PlatformIds.DEEPSEEK)
-                add(PlatformIds.OPENCODE_GO)
-                add(PlatformIds.CODEX)
-                add(PlatformIds.NEW_API)
-                add(PlatformIds.MAGPIE)
-                add(PlatformIds.KIMI_CODE)
-                add(PlatformIds.ZHIPU)
-                addAll(PlatformIds.sessionPlatforms)
-            }) {
-                prefs[refreshPhaseKey(platformId)] = RefreshIconPhase.Idle.name
+            for (platformId in REFRESH_PHASE_PLATFORM_IDS) {
+                val startedAt = prefs[refreshStartedAtKey(platformId)]
+                    ?: prefs[Keys.LEGACY_REFRESH_STARTED_AT]
+                    ?: 0L
+                if (isRefreshPhaseStale(startedAt, now)) {
+                    prefs[refreshPhaseKey(platformId)] = RefreshIconPhase.Idle.name
+                }
             }
             prefs.remove(Keys.LEGACY_REFRESH_ICON_PHASE)
         }

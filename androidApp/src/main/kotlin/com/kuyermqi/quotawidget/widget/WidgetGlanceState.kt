@@ -217,7 +217,7 @@ object WidgetGlanceState {
         ),
     )
 
-    suspend fun syncAndUpdate(context: Context, reason: String) {
+    internal suspend fun syncAndUpdate(context: Context, reason: String) {
         val app = context.applicationContext as QuotaWidgetApp
         val repo = app.settingsRepository
         val appSettings = repo.getAppSettings()

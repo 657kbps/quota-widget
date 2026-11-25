@@ -24,7 +24,7 @@ import com.kuyermqi.quotawidget.settings.DEFAULT_NEW_API_QUOTA_PER_USD
 import com.kuyermqi.quotawidget.settings.NewApiSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.NewApiConfigContent
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
 class NewApiHomeState internal constructor(
@@ -249,7 +249,7 @@ fun ColumnScope.NewApiHomeContent(
                         is WidgetDisplayState.Error -> result.message
                         else -> null
                     }
-                    WidgetGlanceState.syncAndUpdate(context, "new_api_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "new_api_save")
                 } finally {
                     state.isSaving = false
                 }

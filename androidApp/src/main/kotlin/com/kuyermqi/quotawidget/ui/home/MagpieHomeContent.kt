@@ -28,7 +28,7 @@ import com.kuyermqi.quotawidget.settings.MagpieSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.MagpieConfigContent
 import com.kuyermqi.quotawidget.ui.usage.formatUsageWindowSummary
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
 class MagpieHomeState internal constructor(
@@ -290,7 +290,7 @@ fun ColumnScope.MagpieHomeContent(
                         }
                         else -> Unit
                     }
-                    WidgetGlanceState.syncAndUpdate(context, "magpie_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "magpie_save")
                 } finally {
                     state.isSaving = false
                 }

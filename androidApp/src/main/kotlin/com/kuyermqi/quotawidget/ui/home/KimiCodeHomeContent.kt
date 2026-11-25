@@ -28,7 +28,7 @@ import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.ApiKeyUsageConfigContent
 import com.kuyermqi.quotawidget.ui.platformDisplayName
 import com.kuyermqi.quotawidget.ui.usage.formatUsageWindowSummaryWithFallback
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
 class KimiCodeHomeState internal constructor(
@@ -226,7 +226,7 @@ fun ColumnScope.KimiCodeHomeContent(
                         WidgetDisplayState.NeedsReauth -> msgInvalidKey
                         else -> null
                     }
-                    WidgetGlanceState.syncAndUpdate(context, "kimi_code_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "kimi_code_save")
                 } finally {
                     state.isSaving = false
                 }
