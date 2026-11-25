@@ -38,7 +38,11 @@ class ClineLoginWebViewFlow private constructor(
 
     override suspend fun pollOnce(): Boolean {
         return when (val poll = client.pollDeviceToken(session)) {
-            ClineDevicePoll.Pending, ClineDevicePoll.SlowDown -> false
+            ClineDevicePoll.Pending -> false
+            ClineDevicePoll.SlowDown -> {
+                requestSlowerPolling()
+                false
+            }
             is ClineDevicePoll.Ready -> {
                 val auth = client.register(poll)
                 finishSuccess(

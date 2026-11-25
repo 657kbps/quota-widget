@@ -8,6 +8,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.core.net.toUri
 import com.kuyermqi.quotawidget.domain.session.SessionLoginResult
+import com.kuyermqi.quotawidget.session.DevicePollingInterval
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -99,10 +100,11 @@ abstract class CallbackWebLoginFlow(
  */
 abstract class PollingWebLoginFlow(
     protected val host: InAppWebViewHost,
-    private val intervalMs: Long,
+    intervalMs: Long,
     private val timeoutMs: Long,
 ) : InAppWebViewFlow {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val pollingInterval = DevicePollingInterval(intervalMs)
     private var started = false
     private var finished = false
 
@@ -124,6 +126,11 @@ abstract class PollingWebLoginFlow(
 
     protected open suspend fun onTimeout() {
         finishFailure("登录超时，请重试")
+    }
+
+    /** Widens the polling interval (RFC 8628 `slow_down`); it stays widened afterwards. */
+    protected fun requestSlowerPolling() {
+        pollingInterval.slowDown()
     }
 
     protected fun finishSuccess(result: SessionLoginResult) {
@@ -157,7 +164,7 @@ abstract class PollingWebLoginFlow(
                     onTimeout()
                     return@launch
                 }
-                delay(intervalMs)
+                delay(pollingInterval.currentMs)
             }
         }
     }

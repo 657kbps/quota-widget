@@ -152,68 +152,72 @@ class ClineClient(
         if (current.apiKey.isBlank() && current.isExpiring()) {
             current = refresh(current, save)
         }
+        return try {
+            loadOnce(current, save)
+        } catch (e: SessionExpiredException) {
+            // A lapsed token is retried at most once; a second lapse means the session is gone.
+            if (current.apiKey.isNotBlank() || current.refreshToken.isBlank()) throw e
+            loadOnce(refresh(current, save), save)
+        }
+    }
+
+    private suspend fun loadOnce(
+        current: SessionPlatformSettings,
+        save: suspend (SessionPlatformSettings) -> Unit,
+    ): QuotaSnapshot {
         var limitsError: String? = null
-        var me: JsonObject
-        var balance: JsonObject?
-        while (true) {
-            try {
-                me = clineApi("/users/me", bearer = bearerOf(current))
-                balance = try {
-                    fetchBalance(me, current)
-                } catch (e: SessionExpiredException) {
-                    throw e
-                } catch (e: Exception) {
-                    null
-                }
-                val limits = try {
-                    clineApi("/users/me/plan/usage-limits", bearer = bearerOf(current))
-                } catch (e: SessionExpiredException) {
-                    throw e
-                } catch (e: Exception) {
-                    if (e.message?.contains("HTTP 404") == true) {
-                        null
-                    } else {
-                        limitsError = "ClinePass 限额读取失败"
-                        null
-                    }
-                }
-                val windows = limits.toWindows()
-                val plan = me.stringOrNull("plan")
-                    ?: me.stringOrNull("planType")
-                    ?: me.stringOrNull("planName")
-                    ?: me.stringOrNull("membership")
-                    ?: me.stringOrNull("tier")
-                    ?: ""
-                val balanceText = balance?.toBalanceText()
-                val display = balanceText
-                    ?: if (windows.isNotEmpty()) formatUsagePrimaryDisplay(windows) else plan
-                val email = me.stringOrNull("email").orEmpty()
-                val uid = me.stringOrNull("clineUserId")
-                    ?: me.stringOrNull("id")
-                    ?: me.stringOrNull("subject")
-                    ?: me.stringOrNull("userId")
-                    ?: current.uid
-                val next = current.copy(
-                    uid = uid,
-                    email = email.ifBlank { current.email },
-                    accountId = current.accountId.ifBlank { email.ifBlank { uid } },
-                    plan = plan.ifBlank { current.plan },
-                )
-                if (next != current) save(next)
-                return QuotaSnapshot(
-                    platformId = PlatformIds.CLINE,
-                    platformName = PlatformRegistry.displayName(PlatformIds.CLINE),
-                    windows = windows,
-                    primaryDisplay = display,
-                    updatedAtEpochMs = currentTimeMillis(),
-                ).also {
-                    if (limitsError != null) {
-                        // Surfaced by the home row through an empty display only when nothing loaded.
-                    }
-                }
-            } catch (e: SessionExpiredException) {
-                if (current.apiKey.isNotBlank() || current.refreshToken.isBlank()) throw e
-                current = refresh(current, save)
+        val me = clineApi("/users/me", bearer = bearerOf(current))
+        val balance = try {
+            fetchBalance(me, current)
+        } catch (e: SessionExpiredException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+        val limits = try {
+            clineApi("/users/me/plan/usage-limits", bearer = bearerOf(current))
+        } catch (e: SessionExpiredException) {
+            throw e
+        } catch (e: Exception) {
+            if (e.message?.contains("HTTP 404") == true) {
+                null
+            } else {
+                limitsError = "ClinePass 限额读取失败"
+                null
+            }
+        }
+        val windows = limits.toWindows()
+        val plan = me.stringOrNull("plan")
+            ?: me.stringOrNull("planType")
+            ?: me.stringOrNull("planName")
+            ?: me.stringOrNull("membership")
+            ?: me.stringOrNull("tier")
+            ?: ""
+        val balanceText = balance?.toBalanceText()
+        val display = balanceText
+            ?: if (windows.isNotEmpty()) formatUsagePrimaryDisplay(windows) else plan
+        val email = me.stringOrNull("email").orEmpty()
+        val uid = me.stringOrNull("clineUserId")
+            ?: me.stringOrNull("id")
+            ?: me.stringOrNull("subject")
+            ?: me.stringOrNull("userId")
+            ?: current.uid
+        val next = current.copy(
+            uid = uid,
+            email = email.ifBlank { current.email },
+            accountId = current.accountId.ifBlank { email.ifBlank { uid } },
+            plan = plan.ifBlank { current.plan },
+        )
+        if (next != current) save(next)
+        return QuotaSnapshot(
+            platformId = PlatformIds.CLINE,
+            platformName = PlatformRegistry.displayName(PlatformIds.CLINE),
+            windows = windows,
+            primaryDisplay = display,
+            updatedAtEpochMs = currentTimeMillis(),
+        ).also {
+            if (limitsError != null) {
+                // Surfaced by the home row through an empty display only when nothing loaded.
             }
         }
     }
