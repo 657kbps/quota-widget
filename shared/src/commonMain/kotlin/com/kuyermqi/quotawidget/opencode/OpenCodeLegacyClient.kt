@@ -1,6 +1,5 @@
 package com.kuyermqi.quotawidget.opencode
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
@@ -26,7 +25,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 
 class OpenCodeLegacyClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
 ) {
     private var cachedServerFnId: String? = null
     private var cachedWorkspacesServerFnId: String? = null
@@ -114,10 +113,6 @@ class OpenCodeLegacyClient(
                 cause = e,
             )
         }
-    }
-
-    fun close() {
-        httpClient.close()
     }
 
     /**

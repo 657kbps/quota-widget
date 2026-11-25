@@ -1,7 +1,18 @@
 package com.kuyermqi.quotawidget
 
 import android.app.Application
+import com.kuyermqi.quotawidget.antigravity.AntigravityClient
+import com.kuyermqi.quotawidget.cline.ClineClient
+import com.kuyermqi.quotawidget.codex.CodexOAuth
+import com.kuyermqi.quotawidget.codex.CodexUsageClient
+import com.kuyermqi.quotawidget.commandcode.CommandCodeClient
+import com.kuyermqi.quotawidget.deepseek.DeepSeekBalanceClient
+import com.kuyermqi.quotawidget.deepseek.createHttpClient
+import com.kuyermqi.quotawidget.kimi.KimiCodeUsageClient
 import com.kuyermqi.quotawidget.locale.AppLocale
+import com.kuyermqi.quotawidget.magpie.MagpieQuotaClient
+import com.kuyermqi.quotawidget.newapi.NewApiUsageClient
+import com.kuyermqi.quotawidget.opencode.OpenCodeGoClient
 import com.kuyermqi.quotawidget.provider.CodexQuotaProvider
 import com.kuyermqi.quotawidget.provider.DeepSeekQuotaProvider
 import com.kuyermqi.quotawidget.provider.KimiCodeQuotaProvider
@@ -14,9 +25,12 @@ import com.kuyermqi.quotawidget.refresh.BalanceRefreshInteractor
 import com.kuyermqi.quotawidget.settings.AndroidPlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
+import com.kuyermqi.quotawidget.update.GitHubReleaseClient
 import com.kuyermqi.quotawidget.update.UpdateCheckInteractor
 import com.kuyermqi.quotawidget.widget.RefreshScheduleGate
 import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
+import com.kuyermqi.quotawidget.zhipu.ZhipuUsageClient
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,6 +42,12 @@ import kotlinx.coroutines.withContext
 
 class QuotaWidgetApp : Application() {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /**
+     * The single Ktor client of this process: every provider, login flow and update check
+     * borrows it, so nobody may close it — its lifetime is the process lifetime.
+     */
+    val httpClient: HttpClient = createHttpClient()
 
     lateinit var settingsRepository: PlatformSettingsRepository
         private set
@@ -56,17 +76,18 @@ class QuotaWidgetApp : Application() {
         refreshInteractor = BalanceRefreshInteractor(
             settingsRepository = settingsRepository,
             providers = listOf(
-                DeepSeekQuotaProvider(),
-                OpenCodeGoQuotaProvider(),
-                CodexQuotaProvider(),
-                NewApiQuotaProvider(),
-                MagpieQuotaProvider(),
-                KimiCodeQuotaProvider(),
-                ZhipuQuotaProvider(),
-            ) + sessionQuotaProviders(),
+                DeepSeekQuotaProvider(DeepSeekBalanceClient(httpClient)),
+                OpenCodeGoQuotaProvider(OpenCodeGoClient(httpClient)),
+                CodexQuotaProvider(CodexOAuth(httpClient), CodexUsageClient(httpClient)),
+                NewApiQuotaProvider(NewApiUsageClient(httpClient)),
+                MagpieQuotaProvider(MagpieQuotaClient(httpClient)),
+                KimiCodeQuotaProvider(KimiCodeUsageClient(httpClient)),
+                ZhipuQuotaProvider(ZhipuUsageClient(httpClient)),
+            ) + sessionQuotaProviders(httpClient),
         )
         updateCheckInteractor = UpdateCheckInteractor(
             settingsRepository = settingsRepository,
+            releaseClient = GitHubReleaseClient(httpClient),
         )
         // Reset only spinner phases whose owning run is gone (killed process); a live
         // refresh writes a fresh start token and is therefore left spinning.

@@ -21,7 +21,7 @@ class MagpieQuotaProvider internal constructor(
     private val fetchProviders: MagpieProvidersFetcher,
 ) : QuotaProvider {
     constructor(
-        client: MagpieQuotaClient = MagpieQuotaClient(),
+        client: MagpieQuotaClient,
     ) : this(
         fetchProviders = MagpieProvidersFetcher { baseUrl, apiKey ->
             client.fetchProviders(baseUrl, apiKey)

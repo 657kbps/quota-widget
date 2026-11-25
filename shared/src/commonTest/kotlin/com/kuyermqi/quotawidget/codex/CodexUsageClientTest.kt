@@ -18,12 +18,8 @@ class CodexUsageClientTest {
     fun fetchUsage_unauthorized_isSessionExpired() = runTest {
         val client = clientResponding(HttpStatusCode.Unauthorized, """{"error":"expired"}""")
 
-        try {
-            assertFailsWith<SessionExpiredException> {
-                client.fetchUsage("access-bad", "acc-1")
-            }
-        } finally {
-            client.close()
+        assertFailsWith<SessionExpiredException> {
+            client.fetchUsage("access-bad", "acc-1")
         }
     }
 
@@ -31,14 +27,10 @@ class CodexUsageClientTest {
     fun fetchUsage_serverError_keepsStatusCode() = runTest {
         val client = clientResponding(HttpStatusCode.ServiceUnavailable, "upstream down")
 
-        try {
-            val error = assertFailsWith<HttpStatusException> {
-                client.fetchUsage("access", "acc-1")
-            }
-            assertEquals(HttpStatusCode.ServiceUnavailable.value, error.statusCode)
-        } finally {
-            client.close()
+        val error = assertFailsWith<HttpStatusException> {
+            client.fetchUsage("access", "acc-1")
         }
+        assertEquals(HttpStatusCode.ServiceUnavailable.value, error.statusCode)
     }
 
     @Test
@@ -57,13 +49,9 @@ class CodexUsageClientTest {
         """.trimIndent()
         val client = clientResponding(HttpStatusCode.OK, body)
 
-        try {
-            val snapshot = client.fetchUsage("access", "acc-1")
-            assertEquals(1, snapshot.windows.size)
-            assertEquals(600L, snapshot.windows.single().resetInSec)
-        } finally {
-            client.close()
-        }
+        val snapshot = client.fetchUsage("access", "acc-1")
+        assertEquals(1, snapshot.windows.size)
+        assertEquals(600L, snapshot.windows.single().resetInSec)
     }
 
     private fun clientResponding(status: HttpStatusCode, body: String): CodexUsageClient {

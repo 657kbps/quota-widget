@@ -18,7 +18,7 @@ sealed interface UpdateCheckOutcome {
 
 class UpdateCheckInteractor(
     private val settingsRepository: PlatformSettingsRepository,
-    private val releaseClient: GitHubReleaseClient = GitHubReleaseClient(),
+    private val releaseClient: GitHubReleaseClient,
 ) {
     suspend fun check(currentVersionName: String): UpdateAvailability? {
         if (!settingsRepository.getAppSettings().checkForUpdatesOnLaunch) {

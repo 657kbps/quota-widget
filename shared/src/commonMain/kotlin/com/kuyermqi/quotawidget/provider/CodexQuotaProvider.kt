@@ -30,8 +30,8 @@ class CodexQuotaProvider internal constructor(
     private val usageFetcher: CodexUsageFetcher,
 ) : QuotaProvider {
     constructor(
-        oauth: CodexOAuth = CodexOAuth(),
-        usageClient: CodexUsageClient = CodexUsageClient(),
+        oauth: CodexOAuth,
+        usageClient: CodexUsageClient,
     ) : this(
         tokenRefresher = CodexTokenRefresher { token -> oauth.refresh(token) },
         usageFetcher = CodexUsageFetcher { access, account ->

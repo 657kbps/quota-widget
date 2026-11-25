@@ -49,18 +49,14 @@ class ClineClientTest {
             expiresAtEpochMs = 0L,
         )
 
-        try {
-            assertFailsWith<SessionExpiredException> {
-                client.fetchQuota(settings) { saved = it }
-            }
-        } finally {
-            client.close()
+        assertFailsWith<SessionExpiredException> {
+            client.fetchQuota(settings) { saved = it }
         }
 
         assertEquals(1, paths.count { it.endsWith("/auth/refresh") })
         assertEquals(2, paths.count { it.endsWith("/users/me") })
         assertEquals(3, paths.size)
         assertNotNull(saved, "refresh must persist the rotated tokens")
-        assertEquals("new", saved?.accessToken)
+        assertEquals("new", saved.accessToken)
     }
 }

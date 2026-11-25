@@ -1,6 +1,5 @@
 package com.kuyermqi.quotawidget.commandcode
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
@@ -20,15 +19,11 @@ import com.kuyermqi.quotawidget.util.currentTimeMillis
 import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
-import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.request
-import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -50,38 +45,12 @@ data class CommandCodeIdentity(
 )
 
 class CommandCodeClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
     },
 ) {
-    fun createLoginUrl(state: String, port: Int = DEFAULT_CALLBACK_PORT): String {
-        val callback = percentEncode("http://127.0.0.1:$port/callback")
-        val encodedState = percentEncode(state)
-        return "$STUDIO/studio/auth/cli?callback=$callback&state=$encodedState&mode=redirect"
-    }
-
-    fun parseLoginCallback(url: String): CommandCodeCallback? {
-        val query = url.substringAfter('?', missingDelimiterValue = "")
-        if (query.isBlank()) return null
-        val params = query.split('&').mapNotNull { part ->
-            val index = part.indexOf('=')
-            if (index <= 0) null else {
-                decode(part.substring(0, index)) to decode(part.substring(index + 1))
-            }
-        }.toMap()
-        val key = params["apiKey"].orEmpty()
-        if (key.isBlank()) return null
-        return CommandCodeCallback(
-            apiKey = key,
-            state = params["state"].orEmpty(),
-            userId = params["userId"].orEmpty(),
-            userName = params["userName"].orEmpty(),
-            keyName = params["keyName"].orEmpty(),
-        )
-    }
-
     suspend fun fetchIdentity(apiKey: String): CommandCodeIdentity {
         var who: JsonObject? = null
         var lastError: Exception? = null
@@ -151,104 +120,6 @@ class CommandCodeClient(
         )
     }
 
-    internal fun parseCredits(
-        creditsResponse: JsonObject,
-        subscription: Pair<String, JsonObject?>?,
-        nowEpochMs: Long = currentTimeMillis(),
-    ): CommandCodeParsedCredits {
-        val creditDetail = creditsResponse.objectOrNull("credits") ?: JsonObject(emptyMap())
-        val windowLimits = creditsResponse.objectOrNull("windowLimits")
-            ?: creditDetail.objectOrNull("windowLimits")
-        val planId = creditDetail.stringOrNull("planId")
-            ?: creditsResponse.stringOrNull("planId")
-            ?: subscription?.second?.stringOrNull("planId")
-            ?: ""
-        val plan = planName(planId).ifBlank { subscription?.first.orEmpty() }
-        val windows = buildWindows(
-            credits = creditDetail,
-            windowLimits = windowLimits,
-            subscription = subscription?.second,
-            planId = planId,
-            nowEpochMs = nowEpochMs,
-        )
-        val balance = listOf(
-            creditDetail.doubleOrNull("monthlyCredits") ?: 0.0,
-            creditDetail.doubleOrNull("purchasedCredits") ?: 0.0,
-            creditDetail.doubleOrNull("freeCredits") ?: 0.0,
-        ).sum()
-        return CommandCodeParsedCredits(
-            plan = plan,
-            windows = windows,
-            balance = balance,
-        )
-    }
-
-    fun close() {
-        httpClient.close()
-    }
-
-    private fun buildWindows(
-        credits: JsonObject,
-        windowLimits: JsonObject?,
-        subscription: JsonObject?,
-        planId: String,
-        nowEpochMs: Long,
-    ): List<QuotaWindow> {
-        val windows = mutableListOf<QuotaWindow>()
-        windowLimits?.objectOrNull("fiveHour")
-            ?.toLimitWindow(QuotaWindowKind.FIVE_HOUR, nowEpochMs)
-            ?.let(windows::add)
-        windowLimits?.objectOrNull("weekly")
-            ?.toLimitWindow(QuotaWindowKind.WEEKLY, nowEpochMs)
-            ?.let(windows::add)
-        val monthlyCredits = credits.doubleOrNull("monthlyCredits") ?: 0.0
-        val purchased = credits.doubleOrNull("purchasedCredits") ?: 0.0
-        val free = credits.doubleOrNull("freeCredits") ?: 0.0
-        val monthlyPlan = planOf(planId).second
-        if (monthlyPlan > 0.0 || monthlyCredits > 0.0 || purchased > 0.0 || free > 0.0) {
-            val left = monthlyCredits + purchased + free
-            val units = planOf(planId).third
-            val pool = if (units) {
-                maxOf(monthlyPlan, monthlyCredits)
-            } else {
-                maxOf(monthlyPlan, monthlyCredits) + left - monthlyCredits
-            }
-            if (pool > 0.0) {
-                val used = if (units) {
-                    (pool - monthlyCredits).coerceAtLeast(0.0)
-                } else {
-                    (pool - left).coerceAtLeast(0.0)
-                }
-                val resetAt = subscription?.epochMsOrNull("currentPeriodEnd")
-                windows.add(
-                    QuotaWindow(
-                        kind = QuotaWindowKind.MONTHLY,
-                        usedPercent = (used / pool * 100.0).coerceIn(0.0, 100.0),
-                        resetInSec = resetAt?.takeIf { it > nowEpochMs }
-                            ?.let { (it - nowEpochMs) / 1000L },
-                    ),
-                )
-            }
-        }
-        return windows
-    }
-
-    private fun JsonObject.toLimitWindow(
-        kind: QuotaWindowKind,
-        nowEpochMs: Long,
-    ): QuotaWindow? {
-        val used = doubleOrNull("used") ?: return null
-        val cap = doubleOrNull("cap") ?: return null
-        if (cap <= 0.0) return null
-        val resetAt = epochMsOrNull("resetAt")
-        return QuotaWindow(
-            kind = kind,
-            usedPercent = (used.coerceAtLeast(0.0) / cap * 100.0).coerceIn(0.0, 100.0),
-            resetInSec = resetAt?.takeIf { it > nowEpochMs }
-                ?.let { (it - nowEpochMs) / 1000L },
-        )
-    }
-
     private suspend fun fetchSubscription(apiKey: String): Pair<String, JsonObject?> {
         val body = accountJson("/alpha/billing/subscriptions", apiKey)
         val data = body.objectOrNull("data")
@@ -291,67 +162,6 @@ class CommandCodeClient(
         }
     }
 
-    private fun planName(planId: String): String = planOf(planId).first
-
-    private fun planOf(planId: String): Triple<String, Double, Boolean> {
-        val value = planId.lowercase().replace('_', '-')
-        return when {
-            value.startsWith("individual-provider") -> Triple("Provider", 0.0, false)
-            value.startsWith("individual-pro-v1") -> Triple("Pro", 80.0, true)
-            value.startsWith("individual-goat") -> Triple("GOAT", 70.0, true)
-            value.startsWith("individual-ultra") -> Triple("Ultra", 300.0, false)
-            value.startsWith("individual-max") -> Triple("Max", 150.0, false)
-            value.startsWith("individual-pro") -> Triple("Pro", 30.0, true)
-            value.startsWith("individual-go") -> Triple("Go", 10.0, true)
-            value.startsWith("teams-pro") -> Triple("Teams Pro", 40.0, false)
-            else -> Triple("", 0.0, false)
-        }
-    }
-
-    private fun formatMoney(value: Double): String {
-        val rounded = kotlin.math.round(value * 100.0) / 100.0
-        val cents = kotlin.math.round(rounded * 100.0).toLong()
-        return "${cents / 100}.${(cents % 100).toString().padStart(2, '0')}"
-    }
-
-    private fun percentEncode(value: String): String = buildString {
-        for (byte in value.encodeToByteArray()) {
-            val code = byte.toInt() and 0xFF
-            val char = code.toChar()
-            if (char.isLetterOrDigit() || char in "-._~") {
-                append(char)
-            } else {
-                append('%')
-                append(HEX[code shr 4])
-                append(HEX[code and 0x0F])
-            }
-        }
-    }
-
-    private fun decode(value: String): String {
-        if (!value.contains('%') && !value.contains('+')) return value
-        val bytes = ArrayList<Byte>(value.length)
-        var index = 0
-        while (index < value.length) {
-            val char = value[index]
-            if (char == '%' && index + 2 < value.length) {
-                val code = value.substring(index + 1, index + 3).toIntOrNull(16)
-                if (code != null) {
-                    bytes.add(code.toByte())
-                    index += 3
-                    continue
-                }
-            }
-            if (char == '+') {
-                bytes.add(' '.code.toByte())
-            } else {
-                bytes.add(char.code.toByte())
-            }
-            index += 1
-        }
-        return bytes.toByteArray().decodeToString()
-    }
-
     companion object {
         private const val HEX = "0123456789ABCDEF"
         const val STATE_EXTRA = "extra_command_code_state"
@@ -363,6 +173,187 @@ class CommandCodeClient(
             val chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
             return buildString(32) { repeat(32) { append(chars[Random.nextInt(chars.length)]) } }
         }
+
+        fun createLoginUrl(state: String, port: Int = DEFAULT_CALLBACK_PORT): String {
+            val callback = percentEncode("http://127.0.0.1:$port/callback")
+            val encodedState = percentEncode(state)
+            return "$STUDIO/studio/auth/cli?callback=$callback&state=$encodedState&mode=redirect"
+        }
+
+        fun parseLoginCallback(url: String): CommandCodeCallback? {
+            val query = url.substringAfter('?', missingDelimiterValue = "")
+            if (query.isBlank()) return null
+            val params = query.split('&').mapNotNull { part ->
+                val index = part.indexOf('=')
+                if (index <= 0) null else {
+                    decode(part.substring(0, index)) to decode(part.substring(index + 1))
+                }
+            }.toMap()
+            val key = params["apiKey"].orEmpty()
+            if (key.isBlank()) return null
+            return CommandCodeCallback(
+                apiKey = key,
+                state = params["state"].orEmpty(),
+                userId = params["userId"].orEmpty(),
+                userName = params["userName"].orEmpty(),
+                keyName = params["keyName"].orEmpty(),
+            )
+        }
+
+        internal fun parseCredits(
+            creditsResponse: JsonObject,
+            subscription: Pair<String, JsonObject?>?,
+            nowEpochMs: Long = currentTimeMillis(),
+        ): CommandCodeParsedCredits {
+            val creditDetail = creditsResponse.objectOrNull("credits") ?: JsonObject(emptyMap())
+            val windowLimits = creditsResponse.objectOrNull("windowLimits")
+                ?: creditDetail.objectOrNull("windowLimits")
+            val planId = creditDetail.stringOrNull("planId")
+                ?: creditsResponse.stringOrNull("planId")
+                ?: subscription?.second?.stringOrNull("planId")
+                ?: ""
+            val plan = planName(planId).ifBlank { subscription?.first.orEmpty() }
+            val windows = buildWindows(
+                credits = creditDetail,
+                windowLimits = windowLimits,
+                subscription = subscription?.second,
+                planId = planId,
+                nowEpochMs = nowEpochMs,
+            )
+            val balance = listOf(
+                creditDetail.doubleOrNull("monthlyCredits") ?: 0.0,
+                creditDetail.doubleOrNull("purchasedCredits") ?: 0.0,
+                creditDetail.doubleOrNull("freeCredits") ?: 0.0,
+            ).sum()
+            return CommandCodeParsedCredits(
+                plan = plan,
+                windows = windows,
+                balance = balance,
+            )
+        }
+
+        private fun buildWindows(
+            credits: JsonObject,
+            windowLimits: JsonObject?,
+            subscription: JsonObject?,
+            planId: String,
+            nowEpochMs: Long,
+        ): List<QuotaWindow> {
+            val windows = mutableListOf<QuotaWindow>()
+            windowLimits?.objectOrNull("fiveHour")
+                ?.toLimitWindow(QuotaWindowKind.FIVE_HOUR, nowEpochMs)
+                ?.let(windows::add)
+            windowLimits?.objectOrNull("weekly")
+                ?.toLimitWindow(QuotaWindowKind.WEEKLY, nowEpochMs)
+                ?.let(windows::add)
+            val monthlyCredits = credits.doubleOrNull("monthlyCredits") ?: 0.0
+            val purchased = credits.doubleOrNull("purchasedCredits") ?: 0.0
+            val free = credits.doubleOrNull("freeCredits") ?: 0.0
+            val monthlyPlan = planOf(planId).second
+            if (monthlyPlan > 0.0 || monthlyCredits > 0.0 || purchased > 0.0 || free > 0.0) {
+                val left = monthlyCredits + purchased + free
+                val units = planOf(planId).third
+                val pool = if (units) {
+                    maxOf(monthlyPlan, monthlyCredits)
+                } else {
+                    maxOf(monthlyPlan, monthlyCredits) + left - monthlyCredits
+                }
+                if (pool > 0.0) {
+                    val used = if (units) {
+                        (pool - monthlyCredits).coerceAtLeast(0.0)
+                    } else {
+                        (pool - left).coerceAtLeast(0.0)
+                    }
+                    val resetAt = subscription?.epochMsOrNull("currentPeriodEnd")
+                    windows.add(
+                        QuotaWindow(
+                            kind = QuotaWindowKind.MONTHLY,
+                            usedPercent = (used / pool * 100.0).coerceIn(0.0, 100.0),
+                            resetInSec = resetAt?.takeIf { it > nowEpochMs }
+                                ?.let { (it - nowEpochMs) / 1000L },
+                        ),
+                    )
+                }
+            }
+            return windows
+        }
+
+        private fun JsonObject.toLimitWindow(
+            kind: QuotaWindowKind,
+            nowEpochMs: Long,
+        ): QuotaWindow? {
+            val used = doubleOrNull("used") ?: return null
+            val cap = doubleOrNull("cap") ?: return null
+            if (cap <= 0.0) return null
+            val resetAt = epochMsOrNull("resetAt")
+            return QuotaWindow(
+                kind = kind,
+                usedPercent = (used.coerceAtLeast(0.0) / cap * 100.0).coerceIn(0.0, 100.0),
+                resetInSec = resetAt?.takeIf { it > nowEpochMs }
+                    ?.let { (it - nowEpochMs) / 1000L },
+            )
+        }
+
+        private fun planName(planId: String): String = planOf(planId).first
+
+        private fun planOf(planId: String): Triple<String, Double, Boolean> {
+            val value = planId.lowercase().replace('_', '-')
+            return when {
+                value.startsWith("individual-provider") -> Triple("Provider", 0.0, false)
+                value.startsWith("individual-pro-v1") -> Triple("Pro", 80.0, true)
+                value.startsWith("individual-goat") -> Triple("GOAT", 70.0, true)
+                value.startsWith("individual-ultra") -> Triple("Ultra", 300.0, false)
+                value.startsWith("individual-max") -> Triple("Max", 150.0, false)
+                value.startsWith("individual-pro") -> Triple("Pro", 30.0, true)
+                value.startsWith("individual-go") -> Triple("Go", 10.0, true)
+                value.startsWith("teams-pro") -> Triple("Teams Pro", 40.0, false)
+                else -> Triple("", 0.0, false)
+            }
+        }
+
+        private fun formatMoney(value: Double): String {
+            val rounded = kotlin.math.round(value * 100.0) / 100.0
+            val cents = kotlin.math.round(rounded * 100.0).toLong()
+            return "${cents / 100}.${(cents % 100).toString().padStart(2, '0')}"
+        }
+
+        private fun percentEncode(value: String): String = buildString {
+            for (byte in value.encodeToByteArray()) {
+                val code = byte.toInt() and 0xFF
+                val char = code.toChar()
+                if (char.isLetterOrDigit() || char in "-._~") {
+                    append(char)
+                } else {
+                    append('%')
+                    append(HEX[code shr 4])
+                    append(HEX[code and 0x0F])
+                }
+            }
+        }
+
+        private fun decode(value: String): String {
+            if (!value.contains('%') && !value.contains('+')) return value
+            val bytes = ArrayList<Byte>(value.length)
+            var index = 0
+            while (index < value.length) {
+                val char = value[index]
+                if (char == '%' && index + 2 < value.length) {
+                    val code = value.substring(index + 1, index + 3).toIntOrNull(16)
+                    if (code != null) {
+                        bytes.add(code.toByte())
+                        index += 3
+                        continue
+                    }
+                }
+                if (char == '+') {
+                    bytes.add(' '.code.toByte())
+                } else {
+                    bytes.add(char.code.toByte())
+                }
+                index += 1
+            }
+            return bytes.toByteArray().decodeToString()
+        }
     }
 }
 
@@ -371,4 +362,3 @@ internal data class CommandCodeParsedCredits(
     val windows: List<QuotaWindow>,
     val balance: Double,
 )
-

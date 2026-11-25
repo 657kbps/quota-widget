@@ -9,7 +9,7 @@ import com.kuyermqi.quotawidget.settings.OpenCodeAuthMethod
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 
 class OpenCodeGoQuotaProvider(
-    private val client: OpenCodeGoClient = OpenCodeGoClient(),
+    private val client: OpenCodeGoClient,
 ) : QuotaProvider {
     override val platform: QuotaPlatform =
         PlatformRegistry.find(PlatformIds.OPENCODE_GO)

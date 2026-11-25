@@ -1,6 +1,5 @@
 package com.kuyermqi.quotawidget.codex
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -22,7 +21,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 class CodexUsageClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -62,10 +61,6 @@ class CodexUsageClient(
             primaryDisplay = formatUsagePrimaryDisplay(windows),
             updatedAtEpochMs = currentTimeMillis(),
         )
-    }
-
-    fun close() {
-        httpClient.close()
     }
 
     companion object {

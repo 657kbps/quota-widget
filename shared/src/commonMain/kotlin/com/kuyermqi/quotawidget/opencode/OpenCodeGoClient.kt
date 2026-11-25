@@ -1,6 +1,5 @@
 package com.kuyermqi.quotawidget.opencode
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
@@ -32,7 +31,7 @@ import kotlinx.serialization.json.Json
  * `GET /zen/go/v1/usage` instead of a browser session.
  */
 class OpenCodeGoClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
 ) {
     private val legacyClient = OpenCodeLegacyClient(httpClient)
 
@@ -128,10 +127,6 @@ class OpenCodeGoClient(
                 ?: formatUsagePrimaryDisplay(windows),
             updatedAtEpochMs = currentTimeMillis(),
         )
-    }
-
-    fun close() {
-        httpClient.close()
     }
 
     private suspend fun getJson(

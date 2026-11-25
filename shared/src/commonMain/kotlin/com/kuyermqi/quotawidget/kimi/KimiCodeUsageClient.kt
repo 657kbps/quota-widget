@@ -1,6 +1,5 @@
 package com.kuyermqi.quotawidget.kimi
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
@@ -44,7 +43,7 @@ import kotlinx.serialization.json.JsonPrimitive
  * [Kimi Code CLI]: https://www.kimi.com/code/docs/kimi-code-cli/guides/getting-started.html
  */
 class KimiCodeUsageClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -99,10 +98,6 @@ class KimiCodeUsageClient(
             throw QuotaUnavailableException("Kimi Code 已认证，但未返回额度数据（可能是套餐未生效或接口暂不可用）")
         }
         return snapshot
-    }
-
-    fun close() {
-        httpClient.close()
     }
 
     companion object {

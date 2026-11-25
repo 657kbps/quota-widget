@@ -173,12 +173,7 @@ internal class CommandCodeCallbackServer(
                 )
             }.getOrNull()
         } else {
-            val client = CommandCodeClient()
-            try {
-                client.parseLoginCallback("http://127.0.0.1/callback?$body")
-            } finally {
-                client.close()
-            }
+            CommandCodeClient.parseLoginCallback("http://127.0.0.1/callback?$body")
         }
         if (callback == null || callback.apiKey.isBlank()) {
             respond(connection, 400, FAILURE_HTML)

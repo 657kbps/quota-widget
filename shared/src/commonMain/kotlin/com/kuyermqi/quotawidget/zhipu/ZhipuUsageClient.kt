@@ -1,6 +1,5 @@
 package com.kuyermqi.quotawidget.zhipu
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
@@ -40,7 +39,7 @@ import kotlinx.serialization.json.Json
  * [api.z.ai]: https://docs.z.ai
  */
 class ZhipuUsageClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -98,10 +97,6 @@ class ZhipuUsageClient(
             primaryDisplay = formatUsagePrimaryDisplay(windows),
             updatedAtEpochMs = nowEpochMs,
         )
-    }
-
-    fun close() {
-        httpClient.close()
     }
 
     companion object {

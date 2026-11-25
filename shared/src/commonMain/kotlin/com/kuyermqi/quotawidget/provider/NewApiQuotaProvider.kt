@@ -8,7 +8,7 @@ import com.kuyermqi.quotawidget.platform.QuotaPlatform
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 
 class NewApiQuotaProvider(
-    private val client: NewApiUsageClient = NewApiUsageClient(),
+    private val client: NewApiUsageClient,
 ) : QuotaProvider {
     override val platform: QuotaPlatform =
         PlatformRegistry.find(PlatformIds.NEW_API)

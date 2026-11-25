@@ -6,7 +6,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,6 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.res.Resources
 import com.kuyermqi.quotawidget.R
+import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
@@ -172,12 +172,10 @@ data class OpenCodeGoHomeBindings(
 fun rememberOpenCodeGoHomeState(
     settingsRepository: PlatformSettingsRepository,
 ): OpenCodeGoHomeState {
-    val client = remember { OpenCodeGoClient() }
+    val app = LocalContext.current.applicationContext as QuotaWidgetApp
+    val client = remember(app) { OpenCodeGoClient(app.httpClient) }
     val state = remember(settingsRepository, client) {
         OpenCodeGoHomeState(settingsRepository, client)
-    }
-    DisposableEffect(client) {
-        onDispose { client.close() }
     }
     return state
 }

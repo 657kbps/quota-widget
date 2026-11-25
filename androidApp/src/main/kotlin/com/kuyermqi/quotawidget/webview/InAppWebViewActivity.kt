@@ -44,7 +44,6 @@ import com.kuyermqi.quotawidget.domain.commandcode.CommandCodeLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.opencode.OpenCodeLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.workbuddy.WorkBuddyLoginWebViewFlow
 import com.kuyermqi.quotawidget.locale.LocaleAwareActivity
-import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
 
@@ -88,7 +87,7 @@ class InAppWebViewActivity : LocaleAwareActivity(), InAppWebViewHost {
         val title = intent.getStringExtra(EXTRA_TITLE).orEmpty()
         val flowId = intent.getStringExtra(EXTRA_FLOW_ID).orEmpty()
         val userAgent = intent.getStringExtra(EXTRA_USER_AGENT).orEmpty()
-        val createdFlow = createFlow(flowId, app.settingsRepository)
+        val createdFlow = createFlow(flowId, app)
         if (flowId.isNotBlank() && createdFlow == null) {
             finishAndReleaseFlow()
             return
@@ -213,16 +212,24 @@ class InAppWebViewActivity : LocaleAwareActivity(), InAppWebViewHost {
 
     private fun createFlow(
         flowId: String,
-        settingsRepository: PlatformSettingsRepository,
+        app: QuotaWidgetApp,
     ): InAppWebViewFlow? =
         when (flowId) {
             OpenCodeLoginWebViewFlow.FLOW_ID -> OpenCodeLoginWebViewFlow(this)
-            CodexLoginWebViewFlow.FLOW_ID -> CodexLoginWebViewFlow.fromIntent(this, intent)
-            WorkBuddyLoginWebViewFlow.FLOW_ID -> WorkBuddyLoginWebViewFlow.fromIntent(this, intent)
-            ClineLoginWebViewFlow.FLOW_ID -> ClineLoginWebViewFlow.fromIntent(this, intent)
-            CommandCodeLoginWebViewFlow.FLOW_ID -> CommandCodeLoginWebViewFlow.fromIntent(this, intent)
-            AntigravityLoginWebViewFlow.FLOW_ID ->
-                AntigravityLoginWebViewFlow.fromIntent(this, intent, settingsRepository)
+            CodexLoginWebViewFlow.FLOW_ID ->
+                CodexLoginWebViewFlow.fromIntent(this, app.httpClient, intent)
+            WorkBuddyLoginWebViewFlow.FLOW_ID ->
+                WorkBuddyLoginWebViewFlow.fromIntent(this, app.httpClient, intent)
+            ClineLoginWebViewFlow.FLOW_ID ->
+                ClineLoginWebViewFlow.fromIntent(this, app.httpClient, intent)
+            CommandCodeLoginWebViewFlow.FLOW_ID ->
+                CommandCodeLoginWebViewFlow.fromIntent(this, app.httpClient, intent)
+            AntigravityLoginWebViewFlow.FLOW_ID -> AntigravityLoginWebViewFlow.fromIntent(
+                host = this,
+                httpClient = app.httpClient,
+                intent = intent,
+                settingsRepository = app.settingsRepository,
+            )
             else -> null
         }
 

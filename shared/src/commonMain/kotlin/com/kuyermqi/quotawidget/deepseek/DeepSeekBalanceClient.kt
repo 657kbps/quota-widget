@@ -19,7 +19,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 class DeepSeekBalanceClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
 ) {
     suspend fun fetchBalance(
         apiKey: String,
@@ -52,10 +52,6 @@ class DeepSeekBalanceClient(
             formattedBalance = formatBalance(currency, selected.totalBalance),
             updatedAtEpochMs = currentTimeMillis(),
         )
-    }
-
-    fun close() {
-        httpClient.close()
     }
 
     companion object {

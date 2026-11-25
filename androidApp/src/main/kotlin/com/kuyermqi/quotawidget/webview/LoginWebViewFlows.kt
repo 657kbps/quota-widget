@@ -53,10 +53,7 @@ abstract class CallbackWebLoginFlow(
 
     override fun onDestroy() {
         scope.cancel()
-        closeResources()
     }
-
-    protected open fun closeResources() {}
 
     protected abstract suspend fun onCallback(uri: Uri)
 
@@ -116,10 +113,7 @@ abstract class PollingWebLoginFlow(
 
     override fun onDestroy() {
         scope.cancel()
-        closeResources()
     }
-
-    protected open fun closeResources() {}
 
     /** Returns true once the login has been persisted / handed to [finishSuccess]. */
     protected abstract suspend fun pollOnce(): Boolean

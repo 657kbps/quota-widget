@@ -1,6 +1,5 @@
 package com.kuyermqi.quotawidget.codex
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
@@ -23,24 +22,12 @@ import kotlin.random.Random
  * Codex CLI OAuth (PKCE) — same client as sub2api / CLIProxyAPI / OpenCode.
  */
 class CodexOAuth(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
     },
 ) {
-    fun createPkceSession(): CodexPkceSession {
-        val verifier = generateCodeVerifier()
-        val challenge = generateCodeChallenge(verifier)
-        val state = generateHex(32)
-        return CodexPkceSession(
-            state = state,
-            codeVerifier = verifier,
-            codeChallenge = challenge,
-            authorizeUrl = buildAuthorizeUrl(state, challenge),
-        )
-    }
-
     suspend fun exchangeCode(
         code: String,
         codeVerifier: String,
@@ -103,10 +90,6 @@ class CodexOAuth(
         return bundle
     }
 
-    fun close() {
-        httpClient.close()
-    }
-
     companion object {
         const val CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann"
         const val AUTHORIZE_URL = "https://auth.openai.com/oauth/authorize"
@@ -118,6 +101,18 @@ class CodexOAuth(
 
         /** Refresh when access token expires within this window. */
         const val REFRESH_SKEW_MS = 5 * 60 * 1000L
+
+        fun createPkceSession(): CodexPkceSession {
+            val verifier = generateCodeVerifier()
+            val challenge = generateCodeChallenge(verifier)
+            val state = generateHex(32)
+            return CodexPkceSession(
+                state = state,
+                codeVerifier = verifier,
+                codeChallenge = challenge,
+                authorizeUrl = buildAuthorizeUrl(state, challenge),
+            )
+        }
 
         fun buildAuthorizeUrl(state: String, codeChallenge: String): String {
             val params = listOf(

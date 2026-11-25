@@ -19,12 +19,8 @@ class DeepSeekBalanceClientTest {
     fun fetchBalance_unauthorized_isSessionExpired() = runTest {
         val client = clientResponding(HttpStatusCode.Unauthorized, """{"error":"invalid key"}""")
 
-        try {
-            assertFailsWith<SessionExpiredException> {
-                client.fetchBalance("sk-bad", CurrencyPreference.CNY)
-            }
-        } finally {
-            client.close()
+        assertFailsWith<SessionExpiredException> {
+            client.fetchBalance("sk-bad", CurrencyPreference.CNY)
         }
     }
 
@@ -32,14 +28,10 @@ class DeepSeekBalanceClientTest {
     fun fetchBalance_rateLimited_keepsStatusCode() = runTest {
         val client = clientResponding(HttpStatusCode.TooManyRequests, """{"error":"slow down"}""")
 
-        try {
-            val error = assertFailsWith<HttpStatusException> {
-                client.fetchBalance("sk-test", CurrencyPreference.CNY)
-            }
-            assertEquals(HttpStatusCode.TooManyRequests.value, error.statusCode)
-        } finally {
-            client.close()
+        val error = assertFailsWith<HttpStatusException> {
+            client.fetchBalance("sk-test", CurrencyPreference.CNY)
         }
+        assertEquals(HttpStatusCode.TooManyRequests.value, error.statusCode)
     }
 
     private fun clientResponding(status: HttpStatusCode, body: String): DeepSeekBalanceClient {

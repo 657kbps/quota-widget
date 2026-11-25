@@ -194,12 +194,8 @@ class OpenCodeGoClientTest {
             """{"error":{"type":"EntitlementError","message":"subscription required"}}"""
         val client = apiClientResponding(HttpStatusCode.Forbidden, body)
 
-        try {
-            assertFailsWith<QuotaUnavailableException> {
-                client.fetchQuotaByApiKey("api-key")
-            }
-        } finally {
-            client.close()
+        assertFailsWith<QuotaUnavailableException> {
+            client.fetchQuotaByApiKey("api-key")
         }
     }
 
@@ -207,12 +203,8 @@ class OpenCodeGoClientTest {
     fun fetchQuotaByApiKey_forbiddenWithoutEntitlementHint_isSessionExpired() = runTest {
         val client = apiClientResponding(HttpStatusCode.Forbidden, """{"error":"denied"}""")
 
-        try {
-            assertFailsWith<SessionExpiredException> {
-                client.fetchQuotaByApiKey("api-key")
-            }
-        } finally {
-            client.close()
+        assertFailsWith<SessionExpiredException> {
+            client.fetchQuotaByApiKey("api-key")
         }
     }
 

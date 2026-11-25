@@ -11,6 +11,7 @@ import com.kuyermqi.quotawidget.domain.session.SessionLoginResult
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
 import com.kuyermqi.quotawidget.webview.InAppWebViewHost
 import com.kuyermqi.quotawidget.webview.PollingWebLoginFlow
+import io.ktor.client.HttpClient
 
 /**
  * Cline's WorkOS device sign-in: the approval page is shown in the WebView
@@ -18,22 +19,19 @@ import com.kuyermqi.quotawidget.webview.PollingWebLoginFlow
  */
 class ClineLoginWebViewFlow private constructor(
     host: InAppWebViewHost,
+    httpClient: HttpClient,
     private val session: ClineDeviceSession,
 ) : PollingWebLoginFlow(
     host = host,
     intervalMs = session.intervalSeconds.coerceAtLeast(1) * 1000L,
     timeoutMs = session.expiresInSeconds.coerceIn(30, 600) * 1000L,
 ) {
-    private val client = ClineClient()
+    private val client = ClineClient(httpClient)
 
     override fun onPrepare() {
         CookieManager.getInstance().removeAllCookies(null)
         CookieManager.getInstance().flush()
         super.onPrepare()
-    }
-
-    override fun closeResources() {
-        client.close()
     }
 
     override suspend fun pollOnce(): Boolean {
@@ -82,12 +80,17 @@ class ClineLoginWebViewFlow private constructor(
                 .putExtra(EXTRA_INTERVAL, session.intervalSeconds)
                 .putExtra(EXTRA_EXPIRES_IN, session.expiresInSeconds)
 
-        fun fromIntent(host: InAppWebViewHost, intent: Intent): ClineLoginWebViewFlow? {
+        fun fromIntent(
+            host: InAppWebViewHost,
+            httpClient: HttpClient,
+            intent: Intent,
+        ): ClineLoginWebViewFlow? {
             val deviceCode = intent.getStringExtra(EXTRA_DEVICE_CODE).orEmpty()
             val verificationUrl = intent.getStringExtra(EXTRA_VERIFICATION_URL).orEmpty()
             if (deviceCode.isBlank() || verificationUrl.isBlank()) return null
             return ClineLoginWebViewFlow(
                 host = host,
+                httpClient = httpClient,
                 session = ClineDeviceSession(
                     deviceCode = deviceCode,
                     verificationUrl = verificationUrl,

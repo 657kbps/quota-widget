@@ -11,6 +11,7 @@ import com.kuyermqi.quotawidget.webview.PollingWebLoginFlow
 import com.kuyermqi.quotawidget.workbuddy.WorkBuddyClient
 import com.kuyermqi.quotawidget.workbuddy.WorkBuddyLoginSession
 import com.kuyermqi.quotawidget.workbuddy.WorkBuddyRegion
+import io.ktor.client.HttpClient
 
 /**
  * WorkBuddy browser sign-in. The page finishes server-side; this flow polls
@@ -18,6 +19,7 @@ import com.kuyermqi.quotawidget.workbuddy.WorkBuddyRegion
  */
 class WorkBuddyLoginWebViewFlow private constructor(
     host: InAppWebViewHost,
+    httpClient: HttpClient,
     private val region: WorkBuddyRegion,
     private val state: String,
 ) : PollingWebLoginFlow(
@@ -25,17 +27,13 @@ class WorkBuddyLoginWebViewFlow private constructor(
     intervalMs = 1_000L,
     timeoutMs = 5 * 60 * 1000L,
 ) {
-    private val client = WorkBuddyClient()
+    private val client = WorkBuddyClient(httpClient)
     private var token: com.kuyermqi.quotawidget.workbuddy.WorkBuddyToken? = null
 
     override fun onPrepare() {
         CookieManager.getInstance().removeAllCookies(null)
         CookieManager.getInstance().flush()
         super.onPrepare()
-    }
-
-    override fun closeResources() {
-        client.close()
     }
 
     override suspend fun pollOnce(): Boolean {
@@ -94,12 +92,16 @@ class WorkBuddyLoginWebViewFlow private constructor(
         ).putExtra(EXTRA_PLATFORM_ID, region.platformId)
             .putExtra(EXTRA_STATE, session.state)
 
-        fun fromIntent(host: InAppWebViewHost, intent: Intent): WorkBuddyLoginWebViewFlow? {
+        fun fromIntent(
+            host: InAppWebViewHost,
+            httpClient: HttpClient,
+            intent: Intent,
+        ): WorkBuddyLoginWebViewFlow? {
             val platformId = intent.getStringExtra(EXTRA_PLATFORM_ID).orEmpty()
             val region = WorkBuddyRegion.forPlatform(platformId) ?: return null
             val state = intent.getStringExtra(EXTRA_STATE).orEmpty()
             if (state.isBlank()) return null
-            return WorkBuddyLoginWebViewFlow(host, region, state)
+            return WorkBuddyLoginWebViewFlow(host, httpClient, region, state)
         }
     }
 }

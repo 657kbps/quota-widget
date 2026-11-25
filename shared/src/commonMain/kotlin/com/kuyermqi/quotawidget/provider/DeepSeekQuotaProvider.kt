@@ -10,7 +10,7 @@ import com.kuyermqi.quotawidget.platform.QuotaPlatform
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 
 class DeepSeekQuotaProvider(
-    private val client: DeepSeekBalanceClient = DeepSeekBalanceClient(),
+    private val client: DeepSeekBalanceClient,
 ) : QuotaProvider {
     override val platform: QuotaPlatform =
         PlatformRegistry.find(PlatformIds.DEEPSEEK)

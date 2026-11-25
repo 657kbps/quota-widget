@@ -13,6 +13,7 @@ import com.kuyermqi.quotawidget.domain.session.SessionLoginResult
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
 import com.kuyermqi.quotawidget.webview.InAppWebViewFlow
 import com.kuyermqi.quotawidget.webview.InAppWebViewHost
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,10 +27,11 @@ import kotlinx.coroutines.launch
  */
 class CommandCodeLoginWebViewFlow private constructor(
     private val host: InAppWebViewHost,
+    httpClient: HttpClient,
     private val state: String,
 ) : InAppWebViewFlow {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val client = CommandCodeClient()
+    private val client = CommandCodeClient(httpClient)
     private var finished = false
 
     private val server = CommandCodeCallbackServer(
@@ -41,7 +43,9 @@ class CommandCodeLoginWebViewFlow private constructor(
     )
 
     private val loginUrl: String by lazy {
-        server.port.takeIf { it > 0 }?.let { client.createLoginUrl(state, it) }.orEmpty()
+        server.port.takeIf { it > 0 }
+            ?.let { port -> CommandCodeClient.createLoginUrl(state, port) }
+            .orEmpty()
     }
 
     init {
@@ -59,7 +63,6 @@ class CommandCodeLoginWebViewFlow private constructor(
 
     override fun onDestroy() {
         server.close()
-        client.close()
         scope.cancel()
     }
 
@@ -108,10 +111,14 @@ class CommandCodeLoginWebViewFlow private constructor(
             ).putExtra(EXTRA_STATE, state)
         }
 
-        fun fromIntent(host: InAppWebViewHost, intent: Intent): CommandCodeLoginWebViewFlow? {
+        fun fromIntent(
+            host: InAppWebViewHost,
+            httpClient: HttpClient,
+            intent: Intent,
+        ): CommandCodeLoginWebViewFlow? {
             val state = intent.getStringExtra(EXTRA_STATE).orEmpty()
             if (state.isBlank()) return null
-            return CommandCodeLoginWebViewFlow(host, state)
+            return CommandCodeLoginWebViewFlow(host, httpClient, state)
         }
     }
 }

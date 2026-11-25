@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.kuyermqi.quotawidget.R
+import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.antigravity.AntigravityClient
 import com.kuyermqi.quotawidget.cline.ClineClient
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -274,6 +275,7 @@ fun sessionPlatformHomeEffects(
     onRefreshPlatform: suspend (String) -> WidgetDisplayState,
 ): SessionPlatformHomeBindings {
     val context = LocalContext.current
+    val app = context.applicationContext as QuotaWidgetApp
     val scope = rememberCoroutineScope()
     val loginFailed = stringResource(R.string.session_login_failed)
     val reauthMessage = stringResource(R.string.session_reauth_hint)
@@ -318,26 +320,18 @@ fun sessionPlatformHomeEffects(
                         } else {
                             WorkBuddyRegion.INTERNATIONAL
                         }
-                        val client = WorkBuddyClient()
-                        try {
-                            val session = withContext(Dispatchers.IO) {
-                                client.createLoginSession(region)
-                            }
-                            WorkBuddyLoginWebViewFlow.createIntent(context, region, session)
-                        } finally {
-                            client.close()
+                        val client = WorkBuddyClient(app.httpClient)
+                        val session = withContext(Dispatchers.IO) {
+                            client.createLoginSession(region)
                         }
+                        WorkBuddyLoginWebViewFlow.createIntent(context, region, session)
                     }
                     PlatformIds.CLINE -> {
-                        val client = ClineClient()
-                        try {
-                            val session = withContext(Dispatchers.IO) {
-                                client.createDeviceSession()
-                            }
-                            ClineLoginWebViewFlow.createIntent(context, session)
-                        } finally {
-                            client.close()
+                        val client = ClineClient(app.httpClient)
+                        val session = withContext(Dispatchers.IO) {
+                            client.createDeviceSession()
                         }
+                        ClineLoginWebViewFlow.createIntent(context, session)
                     }
                     PlatformIds.COMMAND_CODE -> withContext(Dispatchers.IO) {
                         CommandCodeLoginWebViewFlow.createIntent(context)

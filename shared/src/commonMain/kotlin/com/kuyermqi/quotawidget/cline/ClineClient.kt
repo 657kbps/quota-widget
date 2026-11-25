@@ -1,6 +1,5 @@
 package com.kuyermqi.quotawidget.cline
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -62,7 +61,7 @@ data class ClineAuthResult(
 )
 
 class ClineClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -259,10 +258,6 @@ class ClineClient(
         )
         save(next)
         return next
-    }
-
-    fun close() {
-        httpClient.close()
     }
 
     private suspend fun fetchBalance(me: JsonObject, settings: SessionPlatformSettings): JsonObject? {

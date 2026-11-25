@@ -14,6 +14,7 @@ import com.kuyermqi.quotawidget.codex.CodexOAuth
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
 import com.kuyermqi.quotawidget.webview.InAppWebViewFlow
 import com.kuyermqi.quotawidget.webview.InAppWebViewHost
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -27,11 +28,12 @@ import kotlinx.coroutines.withContext
  */
 class CodexLoginWebViewFlow(
     private val host: InAppWebViewHost,
+    httpClient: HttpClient,
     private val expectedState: String,
     private val codeVerifier: String,
 ) : InAppWebViewFlow {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val oauth = CodexOAuth()
+    private val oauth = CodexOAuth(httpClient)
     private var loginCompleted = false
     private var exchangeStarted = false
 
@@ -57,7 +59,6 @@ class CodexLoginWebViewFlow(
 
     override fun onDestroy() {
         scope.cancel()
-        oauth.close()
     }
 
     private fun handlePossibleCallback(url: String): Boolean {
@@ -128,7 +129,7 @@ class CodexLoginWebViewFlow(
         private const val TAG = "CodexLogin"
 
         fun createIntent(context: Context): Intent {
-            val session = CodexOAuth().createPkceSession()
+            val session = CodexOAuth.createPkceSession()
             return InAppWebViewActivity.createIntent(
                 context = context,
                 url = session.authorizeUrl,
@@ -138,11 +139,20 @@ class CodexLoginWebViewFlow(
                 .putExtra(EXTRA_CODE_VERIFIER, session.codeVerifier)
         }
 
-        fun fromIntent(host: InAppWebViewHost, intent: Intent): CodexLoginWebViewFlow? {
+        fun fromIntent(
+            host: InAppWebViewHost,
+            httpClient: HttpClient,
+            intent: Intent,
+        ): CodexLoginWebViewFlow? {
             val state = intent.getStringExtra(EXTRA_OAUTH_STATE).orEmpty()
             val verifier = intent.getStringExtra(EXTRA_CODE_VERIFIER).orEmpty()
             if (state.isBlank() || verifier.isBlank()) return null
-            return CodexLoginWebViewFlow(host, expectedState = state, codeVerifier = verifier)
+            return CodexLoginWebViewFlow(
+                host = host,
+                httpClient = httpClient,
+                expectedState = state,
+                codeVerifier = verifier,
+            )
         }
     }
 }

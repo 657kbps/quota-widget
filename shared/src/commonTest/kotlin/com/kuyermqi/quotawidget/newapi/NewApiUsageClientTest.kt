@@ -408,12 +408,8 @@ class NewApiUsageClientTest {
     fun fetchUsage_forbidden_isSessionExpired() = runTest {
         val client = clientResponding(HttpStatusCode.Forbidden, """{"message":"bad token"}""")
 
-        try {
-            assertFailsWith<SessionExpiredException> {
-                client.fetchUsage("https://api.example.com", "sk-bad")
-            }
-        } finally {
-            client.close()
+        assertFailsWith<SessionExpiredException> {
+            client.fetchUsage("https://api.example.com", "sk-bad")
         }
     }
 
@@ -421,14 +417,10 @@ class NewApiUsageClientTest {
     fun fetchUsage_serverError_keepsStatusCode() = runTest {
         val client = clientResponding(HttpStatusCode.BadGateway, "upstream down")
 
-        try {
-            val error = assertFailsWith<HttpStatusException> {
-                client.fetchUsage("https://api.example.com", "sk-test")
-            }
-            assertEquals(HttpStatusCode.BadGateway.value, error.statusCode)
-        } finally {
-            client.close()
+        val error = assertFailsWith<HttpStatusException> {
+            client.fetchUsage("https://api.example.com", "sk-test")
         }
+        assertEquals(HttpStatusCode.BadGateway.value, error.statusCode)
     }
 
     private fun clientResponding(status: HttpStatusCode, body: String): NewApiUsageClient {

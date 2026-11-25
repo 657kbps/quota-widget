@@ -1,6 +1,5 @@
 package com.kuyermqi.quotawidget.workbuddy
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
@@ -90,7 +89,7 @@ data class WorkBuddyAccount(
 )
 
 class WorkBuddyClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -297,10 +296,6 @@ class WorkBuddyClient(
         )
         save(next)
         return next
-    }
-
-    fun close() {
-        httpClient.close()
     }
 
     private suspend fun meter(

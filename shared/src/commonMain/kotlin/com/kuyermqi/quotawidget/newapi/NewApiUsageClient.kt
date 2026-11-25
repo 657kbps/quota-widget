@@ -1,6 +1,5 @@
 package com.kuyermqi.quotawidget.newapi
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.NEW_API_UNLIMITED_REMAINING_DISPLAY
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
@@ -28,7 +27,7 @@ import kotlinx.serialization.json.Json
 import kotlin.math.abs
 
 class NewApiUsageClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -74,10 +73,6 @@ class NewApiUsageClient(
         }
         val data = envelope.data ?: throw IllegalStateException("NewAPI 返回数据为空")
         return toSnapshot(data, quotaPerUsd = quotaPerUsd)
-    }
-
-    fun close() {
-        httpClient.close()
     }
 
     companion object {

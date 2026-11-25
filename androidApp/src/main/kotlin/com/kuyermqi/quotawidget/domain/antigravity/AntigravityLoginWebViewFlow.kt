@@ -13,6 +13,7 @@ import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.webview.CallbackWebLoginFlow
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
 import com.kuyermqi.quotawidget.webview.InAppWebViewHost
+import io.ktor.client.HttpClient
 
 /**
  * Antigravity's Google OAuth (PKCE). Google redirects to a loopback URL that
@@ -21,6 +22,7 @@ import com.kuyermqi.quotawidget.webview.InAppWebViewHost
  */
 class AntigravityLoginWebViewFlow private constructor(
     host: InAppWebViewHost,
+    httpClient: HttpClient,
     private val settingsRepository: PlatformSettingsRepository,
     private val session: AntigravityLoginSession,
 ) : CallbackWebLoginFlow(
@@ -30,15 +32,11 @@ class AntigravityLoginWebViewFlow private constructor(
             uri.path.orEmpty() == "/oauth-callback"
     },
 ) {
-    private val client = AntigravityClient()
+    private val client = AntigravityClient(httpClient)
 
     override fun onPrepare() {
         CookieManager.getInstance().removeAllCookies(null)
         CookieManager.getInstance().flush()
-    }
-
-    override fun closeResources() {
-        client.close()
     }
 
     override suspend fun onCallback(uri: Uri) {
@@ -85,12 +83,7 @@ class AntigravityLoginWebViewFlow private constructor(
         private const val EXTRA_REDIRECT = "extra_antigravity_redirect"
 
         fun createIntent(context: Context): Intent {
-            val client = AntigravityClient()
-            val session = try {
-                client.createLoginSession()
-            } finally {
-                client.close()
-            }
+            val session = AntigravityClient.createLoginSession()
             return InAppWebViewActivity.createIntent(
                 context = context,
                 url = session.authorizeUrl,
@@ -107,6 +100,7 @@ class AntigravityLoginWebViewFlow private constructor(
 
         fun fromIntent(
             host: InAppWebViewHost,
+            httpClient: HttpClient,
             intent: Intent,
             settingsRepository: PlatformSettingsRepository,
         ): AntigravityLoginWebViewFlow? {
@@ -116,6 +110,7 @@ class AntigravityLoginWebViewFlow private constructor(
             if (state.isBlank() || verifier.isBlank() || redirect.isBlank()) return null
             return AntigravityLoginWebViewFlow(
                 host = host,
+                httpClient = httpClient,
                 settingsRepository = settingsRepository,
                 session = AntigravityLoginSession(
                     state = state,
