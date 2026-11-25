@@ -58,7 +58,7 @@ class SessionPlatformSettingsTest {
             SessionPlatformSettings.defaultWindowKind(PlatformIds.WORKBUDDY),
         )
         assertEquals(
-            UsageWindowKind.MONTHLY,
+            UsageWindowKind.ROLLING,
             SessionPlatformSettings.defaultWindowKind(PlatformIds.COMMAND_CODE),
         )
         assertEquals(

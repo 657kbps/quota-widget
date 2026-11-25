@@ -114,8 +114,7 @@ data class SessionPlatformSettings(
 
     companion object {
         fun defaultWindowKind(platformId: String): UsageWindowKind = when (platformId) {
-            PlatformIds.WORKBUDDY, PlatformIds.WORKBUDDY_AI,
-            PlatformIds.COMMAND_CODE -> UsageWindowKind.MONTHLY
+            PlatformIds.WORKBUDDY, PlatformIds.WORKBUDDY_AI -> UsageWindowKind.MONTHLY
             else -> UsageWindowKind.ROLLING
         }
     }
