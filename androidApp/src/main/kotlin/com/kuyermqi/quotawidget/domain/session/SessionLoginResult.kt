@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.domain.session
 
 import android.content.Intent
+import com.kuyermqi.quotawidget.settings.SessionAuthMethod
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 
 /** Credentials one session-based provider login returns to the host screen. */
@@ -9,6 +10,7 @@ data class SessionLoginResult(
     val refreshToken: String = "",
     val expiresAtEpochMs: Long = 0L,
     val apiKey: String = "",
+    val authMethod: SessionAuthMethod? = null,
     val accountId: String = "",
     val email: String = "",
     val plan: String = "",
@@ -22,6 +24,7 @@ data class SessionLoginResult(
         .putExtra(EXTRA_REFRESH_TOKEN, refreshToken)
         .putExtra(EXTRA_EXPIRES_AT, expiresAtEpochMs)
         .putExtra(EXTRA_API_KEY, apiKey)
+        .putExtra(EXTRA_AUTH_METHOD, authMethod?.name.orEmpty())
         .putExtra(EXTRA_ACCOUNT_ID, accountId)
         .putExtra(EXTRA_EMAIL, email)
         .putExtra(EXTRA_PLAN, plan)
@@ -35,6 +38,7 @@ data class SessionLoginResult(
         refreshToken = refreshToken.ifBlank { settings.refreshToken },
         expiresAtEpochMs = expiresAtEpochMs.takeIf { it > 0L } ?: settings.expiresAtEpochMs,
         apiKey = apiKey.ifBlank { settings.apiKey },
+        authMethod = authMethod ?: settings.authMethod,
         accountId = accountId.ifBlank { settings.accountId },
         email = email.ifBlank { settings.email },
         plan = plan.ifBlank { settings.plan },
@@ -49,6 +53,7 @@ data class SessionLoginResult(
         private const val EXTRA_REFRESH_TOKEN = "extra_session_refresh_token"
         private const val EXTRA_EXPIRES_AT = "extra_session_expires_at"
         private const val EXTRA_API_KEY = "extra_session_api_key"
+        private const val EXTRA_AUTH_METHOD = "extra_session_auth_method"
         private const val EXTRA_ACCOUNT_ID = "extra_session_account_id"
         private const val EXTRA_EMAIL = "extra_session_email"
         private const val EXTRA_PLAN = "extra_session_plan"
@@ -64,6 +69,7 @@ data class SessionLoginResult(
                 refreshToken = intent.getStringExtra(EXTRA_REFRESH_TOKEN).orEmpty(),
                 expiresAtEpochMs = intent.getLongExtra(EXTRA_EXPIRES_AT, 0L),
                 apiKey = intent.getStringExtra(EXTRA_API_KEY).orEmpty(),
+                authMethod = SessionAuthMethod.fromStorage(intent.getStringExtra(EXTRA_AUTH_METHOD)),
                 accountId = intent.getStringExtra(EXTRA_ACCOUNT_ID).orEmpty(),
                 email = intent.getStringExtra(EXTRA_EMAIL).orEmpty(),
                 plan = intent.getStringExtra(EXTRA_PLAN).orEmpty(),

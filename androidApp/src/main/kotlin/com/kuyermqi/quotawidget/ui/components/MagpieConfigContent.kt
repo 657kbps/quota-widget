@@ -27,7 +27,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -88,15 +87,11 @@ fun ColumnScope.MagpieConfigContent(
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
-        OutlinedTextField(
+        SecretOutlinedTextField(
             value = apiKey,
             onValueChange = onApiKeyChange,
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(stringResource(R.string.magpie_api_key_label)) },
-            supportingText = { Text(stringResource(R.string.magpie_api_key_hint)) },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            label = stringResource(R.string.magpie_api_key_label),
+            supportingText = stringResource(R.string.magpie_api_key_hint),
             enabled = !isSaving,
         )
         if (providers.size >= 2) {
@@ -141,12 +136,12 @@ fun ColumnScope.MagpieConfigContent(
             color = MaterialTheme.colorScheme.error,
         )
     }
-    Spacer(modifier = Modifier.height(12.dp))
     SaveAction(
         label = stringResource(R.string.action_save),
         enabled = isDirty,
         busy = isSaving,
         onClick = onSave,
+        topSpacing = 12.dp,
     )
 }
 

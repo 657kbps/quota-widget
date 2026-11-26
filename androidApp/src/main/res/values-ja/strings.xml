@@ -70,6 +70,7 @@
     <string name="app_settings_theme_color_custom">カスタム</string>
     <string name="app_settings_theme_color_choose">色を選択</string>
     <string name="app_settings_refresh_interval">自動更新の間隔</string>
+    <string name="app_settings_show_updated_at">更新時刻を表示</string>
     <string name="app_settings_refresh_interval_minutes">%1$d 分</string>
     <string name="app_settings_refresh_interval_hours">%1$d 時間</string>
     <string name="app_settings_check_updates_on_launch">起動時に更新を確認</string>
@@ -123,11 +124,13 @@
     <string name="usage_progress_style_label">プログレスバーのスタイル</string>
     <string name="usage_progress_style_bar">標準</string>
     <string name="usage_progress_style_capsule">カプセル</string>
+    <string name="usage_progress_style_ring">リング</string>
+    <string name="usage_progress_style_gauge">ゲージ</string>
+    <string name="usage_progress_segmented_toggle_title">目盛り分割</string>
     <string name="usage_reset_style_footer">1 行</string>
     <string name="usage_reset_style_stacked">2 行</string>
     <string name="usage_reset_style_pill">カプセル</string>
     <string name="usage_reset_toggle_title">リセット時刻を表示</string>
-    <string name="usage_preview_title">ウィジェットのプレビュー</string>
     <string name="usage_preview_layout_standard">標準</string>
     <string name="usage_preview_layout_compact">コンパクト</string>
     <string name="usage_preview_layout_overview">概要</string>
@@ -136,6 +139,11 @@
     <string name="widget_resets_at">%1$s にリセット</string>
     <string name="widget_resets_at_tomorrow">明日 %1$s にリセット</string>
     <string name="widget_resets_at_date">%1$s %2$s にリセット</string>
+    <string name="widget_circular_updated_sample">今更新</string>
+    <string name="widget_circular_updated_at">%1$s 更新</string>
+    <string name="widget_circular_resets_at">%1$s リセット</string>
+    <string name="widget_circular_resets_at_tomorrow">明日 %1$s リセット</string>
+    <string name="widget_circular_resets_at_date">%1$s %2$s リセット</string>
     <string name="usage_remaining_rolling">ローリング残量 %1$s</string>
     <string name="usage_remaining_weekly">毎週の残量 %1$s</string>
     <string name="usage_remaining_monthly">毎月の残量 %1$s</string>
@@ -154,6 +162,7 @@
     <string name="codex_logout">ログアウト</string>
     <string name="codex_status_logged_out">未ログイン</string>
     <string name="codex_login_failed">ログインが完了しませんでした。再試行してください。</string>
+    <string name="auth_method_google_oauth">Google OAuth</string>
     <string name="action_save">保存</string>
     <string name="unsaved_changes_title">変更を保存しますか？</string>
     <string name="unsaved_changes_message">変更はまだ保存されていません。</string>
@@ -279,5 +288,7 @@
     <string name="widget_updated_never">未更新</string>
     <string name="widget_date_time_pattern">M月d日 HH:mm</string>
     <string name="widget_date_pattern">M月d日</string>
+    <string name="widget_circular_date_time_pattern">M/d HH:mm</string>
+    <string name="widget_circular_date_pattern">M/d</string>
     <string name="widget_time_pattern">HH:mm</string>
 </resources>

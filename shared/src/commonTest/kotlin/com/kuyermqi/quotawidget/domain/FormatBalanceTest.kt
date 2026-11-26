@@ -164,13 +164,24 @@ class FormatBalanceTest {
     }
 
     @Test
-    fun usageProgressStyle_defaultsToBar() {
+    fun usageProgressStyle_defaultsToBarAndSupportsCircularVariants() {
         assertEquals(UsageProgressStyle.BAR, UsageProgressStyle.fromStorage(null))
         assertEquals(UsageProgressStyle.BAR, UsageProgressStyle.fromStorage("unknown"))
-        assertEquals(
-            UsageProgressStyle.CAPSULE,
-            UsageProgressStyle.fromStorage("CAPSULE"),
-        )
+        assertEquals(UsageProgressStyle.CAPSULE, UsageProgressStyle.fromStorage("CAPSULE"))
+        assertEquals(UsageProgressStyle.RING, UsageProgressStyle.fromStorage("RING"))
+        assertEquals(UsageProgressStyle.RING_SEGMENTED, UsageProgressStyle.fromStorage("RING_SEGMENTED"))
+        assertEquals(UsageProgressStyle.GAUGE, UsageProgressStyle.fromStorage("GAUGE"))
+        assertEquals(UsageProgressStyle.GAUGE_SEGMENTED, UsageProgressStyle.fromStorage("GAUGE_SEGMENTED"))
+
+        assertEquals(UsageProgressStyle.BAR, UsageProgressStyle.RING.toLinearFallback())
+        assertEquals(UsageProgressStyle.BAR, UsageProgressStyle.GAUGE_SEGMENTED.toLinearFallback())
+        assertEquals(UsageProgressStyle.CAPSULE, UsageProgressStyle.CAPSULE.toLinearFallback())
+
+        assertEquals(UsageProgressBaseStyle.RING, UsageProgressStyle.RING_SEGMENTED.toBaseStyle())
+        assertEquals(UsageProgressBaseStyle.GAUGE, UsageProgressStyle.GAUGE.toBaseStyle())
+        assertEquals(UsageProgressStyle.RING_SEGMENTED, UsageProgressStyle.RING.withSegmented(true))
+        assertEquals(UsageProgressStyle.GAUGE, UsageProgressStyle.GAUGE_SEGMENTED.withSegmented(false))
+        assertEquals(UsageProgressStyle.BAR, UsageProgressStyle.BAR.withSegmented(true))
     }
 
     @Test

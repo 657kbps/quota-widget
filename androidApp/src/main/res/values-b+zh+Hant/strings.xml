@@ -70,6 +70,7 @@
     <string name="app_settings_theme_color_custom">自訂</string>
     <string name="app_settings_theme_color_choose">選擇顏色</string>
     <string name="app_settings_refresh_interval">自動更新間隔</string>
+    <string name="app_settings_show_updated_at">顯示更新時間</string>
     <string name="app_settings_refresh_interval_minutes">%1$d 分鐘</string>
     <string name="app_settings_refresh_interval_hours">%1$d 小時</string>
     <string name="app_settings_check_updates_on_launch">啟動時檢查更新</string>
@@ -123,11 +124,13 @@
     <string name="usage_progress_style_label">進度條樣式</string>
     <string name="usage_progress_style_bar">一般</string>
     <string name="usage_progress_style_capsule">膠囊</string>
+    <string name="usage_progress_style_ring">圓環</string>
+    <string name="usage_progress_style_gauge">儀表弧</string>
+    <string name="usage_progress_segmented_toggle_title">分段刻度</string>
     <string name="usage_reset_style_footer">單行</string>
     <string name="usage_reset_style_stacked">兩行</string>
     <string name="usage_reset_style_pill">膠囊</string>
     <string name="usage_reset_toggle_title">顯示重設時間</string>
-    <string name="usage_preview_title">小工具預覽</string>
     <string name="usage_preview_layout_standard">標準</string>
     <string name="usage_preview_layout_compact">緊湊</string>
     <string name="usage_preview_layout_overview">總覽</string>
@@ -136,6 +139,11 @@
     <string name="widget_resets_at">重設於 %1$s</string>
     <string name="widget_resets_at_tomorrow">重設於明天 %1$s</string>
     <string name="widget_resets_at_date">重設於 %1$s %2$s</string>
+    <string name="widget_circular_updated_sample">剛剛更新</string>
+    <string name="widget_circular_updated_at">%1$s 更新</string>
+    <string name="widget_circular_resets_at">%1$s 重設</string>
+    <string name="widget_circular_resets_at_tomorrow">明天 %1$s 重設</string>
+    <string name="widget_circular_resets_at_date">%1$s %2$s 重設</string>
     <string name="usage_remaining_rolling">滾動餘量 %1$s</string>
     <string name="usage_remaining_weekly">每週餘量 %1$s</string>
     <string name="usage_remaining_monthly">每月餘量 %1$s</string>
@@ -154,6 +162,7 @@
     <string name="codex_logout">登出</string>
     <string name="codex_status_logged_out">未登入</string>
     <string name="codex_login_failed">登入未完成，請重試</string>
+    <string name="auth_method_google_oauth">Google OAuth</string>
     <string name="action_save">儲存</string>
     <string name="unsaved_changes_title">儲存變更？</string>
     <string name="unsaved_changes_message">目前修改尚未儲存。</string>
@@ -279,5 +288,7 @@
     <string name="widget_updated_never">尚未更新</string>
     <string name="widget_date_time_pattern">M月d日 HH:mm</string>
     <string name="widget_date_pattern">M月d日</string>
+    <string name="widget_circular_date_time_pattern">M/d HH:mm</string>
+    <string name="widget_circular_date_pattern">M/d</string>
     <string name="widget_time_pattern">HH:mm</string>
 </resources>

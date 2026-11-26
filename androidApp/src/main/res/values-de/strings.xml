@@ -70,6 +70,7 @@
     <string name="app_settings_theme_color_custom">Benutzerdefiniert</string>
     <string name="app_settings_theme_color_choose">Farbe wählen</string>
     <string name="app_settings_refresh_interval">Automatisches Aktualisierungsintervall</string>
+    <string name="app_settings_show_updated_at">Aktualisierungszeit anzeigen</string>
     <string name="app_settings_refresh_interval_minutes">%1$d Min.</string>
     <string name="app_settings_refresh_interval_hours">%1$d Std.</string>
     <string name="app_settings_check_updates_on_launch">Beim Start nach Updates suchen</string>
@@ -123,11 +124,13 @@
     <string name="usage_progress_style_label">Stil der Fortschrittsleiste</string>
     <string name="usage_progress_style_bar">Standard</string>
     <string name="usage_progress_style_capsule">Kapsel</string>
+    <string name="usage_progress_style_ring">Ring</string>
+    <string name="usage_progress_style_gauge">Bogen</string>
+    <string name="usage_progress_segmented_toggle_title">Segmentiert</string>
     <string name="usage_reset_style_footer">Einzeilig</string>
     <string name="usage_reset_style_stacked">Zweizeilig</string>
     <string name="usage_reset_style_pill">Kapsel</string>
     <string name="usage_reset_toggle_title">Rücksetzzeit anzeigen</string>
-    <string name="usage_preview_title">Widget-Vorschau</string>
     <string name="usage_preview_layout_standard">Standard</string>
     <string name="usage_preview_layout_compact">Kompakt</string>
     <string name="usage_preview_layout_overview">Übersicht</string>
@@ -136,6 +139,11 @@
     <string name="widget_resets_at">Zurücksetzung um %1$s</string>
     <string name="widget_resets_at_tomorrow">Zurücksetzung morgen um %1$s</string>
     <string name="widget_resets_at_date">Zurücksetzung am %1$s um %2$s</string>
+    <string name="widget_circular_updated_sample">Gerade eben</string>
+    <string name="widget_circular_updated_at">Stand %1$s</string>
+    <string name="widget_circular_resets_at">Reset %1$s</string>
+    <string name="widget_circular_resets_at_tomorrow">Reset morgen %1$s</string>
+    <string name="widget_circular_resets_at_date">Reset %1$s %2$s</string>
     <string name="usage_remaining_rolling">Rollierend verbleibend %1$s</string>
     <string name="usage_remaining_weekly">Wöchentlich verbleibend %1$s</string>
     <string name="usage_remaining_monthly">Monatlich verbleibend %1$s</string>
@@ -154,6 +162,7 @@
     <string name="codex_logout">Abmelden</string>
     <string name="codex_status_logged_out">Nicht angemeldet</string>
     <string name="codex_login_failed">Anmeldung nicht abgeschlossen. Bitte erneut versuchen.</string>
+    <string name="auth_method_google_oauth">Google OAuth</string>
     <string name="action_save">Speichern</string>
     <string name="unsaved_changes_title">Änderungen speichern?</string>
     <string name="unsaved_changes_message">Ihre Änderungen wurden noch nicht gespeichert.</string>
@@ -279,5 +288,7 @@
     <string name="widget_updated_never">Nie aktualisiert</string>
     <string name="widget_date_time_pattern">d. MMM HH:mm</string>
     <string name="widget_date_pattern">d. MMM</string>
+    <string name="widget_circular_date_time_pattern">d.M. HH:mm</string>
+    <string name="widget_circular_date_pattern">d.M.</string>
     <string name="widget_time_pattern">HH:mm</string>
 </resources>

@@ -12,11 +12,30 @@ import com.kuyermqi.quotawidget.widget.widgetContext
  * `重置于 10 月 12 日 14:00`.
  */
 @Composable
-internal fun resetAtText(resetAtEpochMs: Long, nowEpochMs: Long): String =
-    when (val moment = WidgetDateFormatter.resetMoment(widgetContext(), resetAtEpochMs, nowEpochMs)) {
-        is ResetMoment.Today -> contextString(R.string.widget_resets_at, moment.time)
-        is ResetMoment.Tomorrow ->
-            contextString(R.string.widget_resets_at_tomorrow, moment.time)
-        is ResetMoment.Later ->
-            contextString(R.string.widget_resets_at_date, moment.date, moment.time)
+internal fun resetAtText(
+    resetAtEpochMs: Long,
+    nowEpochMs: Long,
+    circular: Boolean = false,
+): String =
+    when (
+        val moment = WidgetDateFormatter.resetMoment(
+            context = widgetContext(),
+            resetAtEpochMs = resetAtEpochMs,
+            nowEpochMs = nowEpochMs,
+            circular = circular,
+        )
+    ) {
+        is ResetMoment.Today -> contextString(
+            if (circular) R.string.widget_circular_resets_at else R.string.widget_resets_at,
+            moment.time,
+        )
+        is ResetMoment.Tomorrow -> contextString(
+            if (circular) R.string.widget_circular_resets_at_tomorrow else R.string.widget_resets_at_tomorrow,
+            moment.time,
+        )
+        is ResetMoment.Later -> contextString(
+            if (circular) R.string.widget_circular_resets_at_date else R.string.widget_resets_at_date,
+            moment.date,
+            moment.time,
+        )
     }

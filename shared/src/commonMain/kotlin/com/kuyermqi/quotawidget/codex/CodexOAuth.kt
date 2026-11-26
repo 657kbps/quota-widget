@@ -102,6 +102,8 @@ class CodexOAuth(
         /** Refresh when access token expires within this window. */
         const val REFRESH_SKEW_MS = 5 * 60 * 1000L
 
+        private val claimsJson = Json { ignoreUnknownKeys = true }
+
         fun createPkceSession(): CodexPkceSession {
             val verifier = generateCodeVerifier()
             val challenge = generateCodeChallenge(verifier)
@@ -148,7 +150,7 @@ class CodexOAuth(
         }
 
         fun parseClaimsJson(payloadJson: String): CodexJwtClaims {
-            val root = Json { ignoreUnknownKeys = true }.parseToJsonElement(payloadJson).jsonObject
+            val root = claimsJson.parseToJsonElement(payloadJson).jsonObject
             val email = root["email"]?.jsonPrimitive?.content
             val auth = root["https://api.openai.com/auth"]?.jsonObject
             val profile = root["https://api.openai.com/profile"]?.jsonObject

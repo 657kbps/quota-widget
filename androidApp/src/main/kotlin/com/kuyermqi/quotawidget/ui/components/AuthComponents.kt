@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -31,15 +30,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -79,6 +75,7 @@ fun ColumnScope.AuthStatusLine(
 }
 
 /** Shared account/method title and plan line. */
+@Suppress("FunctionNaming")
 @Composable
 fun ColumnScope.AuthSummaryHeader(
     title: String,
@@ -97,6 +94,20 @@ fun ColumnScope.AuthSummaryHeader(
         }
         Text(
             text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Optional secondary plan line shown inside an auth account card. */
+@Suppress("FunctionNaming")
+@Composable
+fun ColumnScope.AuthDetailLine(detail: String?) {
+    if (!detail.isNullOrBlank()) {
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = detail,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -329,12 +340,12 @@ private fun ColumnScope.AuthSaveAction(
     saveLabel: String,
     onSave: () -> Unit,
 ) {
-    Spacer(modifier = Modifier.height(12.dp))
     SaveAction(
         label = saveLabel,
         enabled = isDirty,
         busy = isBusy,
         onClick = onSave,
+        topSpacing = 12.dp,
     )
 }
 
@@ -435,15 +446,11 @@ fun ColumnScope.ApiKeyAuthEditor(
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
-        OutlinedTextField(
+        SecretOutlinedTextField(
             value = apiKey,
             onValueChange = onApiKeyChange,
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(apiKeyLabel) },
-            supportingText = { Text(apiKeyHint) },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            label = apiKeyLabel,
+            supportingText = apiKeyHint,
             enabled = !isBusy,
         )
         Spacer(modifier = Modifier.height(12.dp))

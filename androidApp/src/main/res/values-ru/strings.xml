@@ -70,6 +70,7 @@
     <string name="app_settings_theme_color_custom">Свой</string>
     <string name="app_settings_theme_color_choose">Выбрать цвет</string>
     <string name="app_settings_refresh_interval">Интервал автообновления</string>
+    <string name="app_settings_show_updated_at">Показывать время обновления</string>
     <string name="app_settings_refresh_interval_minutes">%1$d мин</string>
     <string name="app_settings_refresh_interval_hours">%1$d ч</string>
     <string name="app_settings_check_updates_on_launch">Проверять обновления при запуске</string>
@@ -123,11 +124,13 @@
     <string name="usage_progress_style_label">Стиль индикатора</string>
     <string name="usage_progress_style_bar">Стандартный</string>
     <string name="usage_progress_style_capsule">Капсула</string>
+    <string name="usage_progress_style_ring">Кольцо</string>
+    <string name="usage_progress_style_gauge">Дуга</string>
+    <string name="usage_progress_segmented_toggle_title">Сегменты</string>
     <string name="usage_reset_style_footer">Одна строка</string>
     <string name="usage_reset_style_stacked">Две строки</string>
     <string name="usage_reset_style_pill">Капсула</string>
     <string name="usage_reset_toggle_title">Показывать время сброса</string>
-    <string name="usage_preview_title">Предпросмотр виджета</string>
     <string name="usage_preview_layout_standard">Стандартный</string>
     <string name="usage_preview_layout_compact">Компактный</string>
     <string name="usage_preview_layout_overview">Обзор</string>
@@ -136,6 +139,11 @@
     <string name="widget_resets_at">Сброс в %1$s</string>
     <string name="widget_resets_at_tomorrow">Сброс завтра в %1$s</string>
     <string name="widget_resets_at_date">Сброс %1$s в %2$s</string>
+    <string name="widget_circular_updated_sample">Обн. сейчас</string>
+    <string name="widget_circular_updated_at">Обн. %1$s</string>
+    <string name="widget_circular_resets_at">Сброс %1$s</string>
+    <string name="widget_circular_resets_at_tomorrow">Сброс завтра %1$s</string>
+    <string name="widget_circular_resets_at_date">Сброс %1$s %2$s</string>
     <string name="usage_remaining_rolling">Скользящий остаток %1$s</string>
     <string name="usage_remaining_weekly">Недельный остаток %1$s</string>
     <string name="usage_remaining_monthly">Месячный остаток %1$s</string>
@@ -154,6 +162,7 @@
     <string name="codex_logout">Выйти</string>
     <string name="codex_status_logged_out">Не выполнен вход</string>
     <string name="codex_login_failed">Вход не завершён. Повторите попытку.</string>
+    <string name="auth_method_google_oauth">Google OAuth</string>
     <string name="action_save">Сохранить</string>
     <string name="unsaved_changes_title">Сохранить изменения?</string>
     <string name="unsaved_changes_message">Изменения ещё не сохранены.</string>
@@ -279,5 +288,7 @@
     <string name="widget_updated_never">Никогда не обновлялось</string>
     <string name="widget_date_time_pattern">d MMM HH:mm</string>
     <string name="widget_date_pattern">d MMM</string>
+    <string name="widget_circular_date_time_pattern">d.M HH:mm</string>
+    <string name="widget_circular_date_pattern">d.M</string>
     <string name="widget_time_pattern">HH:mm</string>
 </resources>

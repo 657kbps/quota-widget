@@ -35,7 +35,6 @@ import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
-import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.domain.formatUsageDisplayPercent
 import com.kuyermqi.quotawidget.domain.formatUsageResetCountdown
 import com.kuyermqi.quotawidget.domain.upcomingResetAtEpochMs
@@ -43,6 +42,7 @@ import com.kuyermqi.quotawidget.domain.usage.overviewWindowLabel
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import com.kuyermqi.quotawidget.widget.BalanceBlock
 import com.kuyermqi.quotawidget.widget.WidgetHeader
+import com.kuyermqi.quotawidget.widget.WidgetStatusBlock
 import com.kuyermqi.quotawidget.widget.clickableNoRipple
 import com.kuyermqi.quotawidget.widget.contextString
 import com.kuyermqi.quotawidget.widget.updatedAtLabel
@@ -150,21 +150,10 @@ fun UsageOverviewWidgetContent(
                             .fillMaxWidth()
                             .clickableNoRipple(openApp),
                     )
-                    BalanceBlock(
-                        title = when (state) {
-                            WidgetDisplayState.NotConfigured ->
-                                contextString(R.string.widget_not_configured)
-                            WidgetDisplayState.Loading ->
-                                contextString(R.string.widget_loading_balance)
-                            WidgetDisplayState.NeedsReauth ->
-                                contextString(R.string.widget_needs_reauth)
-                            is WidgetDisplayState.Error ->
-                                widgetErrorText(state.kind, widgetContext())
-                            is WidgetDisplayState.Success -> ""
-                        },
-                        subtitle = null,
-                        titleSize = 32.sp,
+                    WidgetStatusBlock(
+                        state = state,
                         openApp = openApp,
+                        horizontalReserve = density.paddingStart + density.paddingEnd,
                     )
                 }
                 is WidgetDisplayState.Success -> {
@@ -238,16 +227,18 @@ private fun UsageOverviewSuccessBlock(
                 usageProgressStyle = usageProgressStyle,
             )
         }
-        Spacer(GlanceModifier.height(density.updatedGap))
-        Text(
-            text = updatedAtLabel(snapshot.updatedAtEpochMs),
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurfaceVariant,
-                fontSize = density.updatedSize,
-            ),
-            maxLines = 1,
-            modifier = GlanceModifier.clickableNoRipple(openApp),
-        )
+        updatedAtLabel(snapshot.updatedAtEpochMs)?.let { updated ->
+            Spacer(GlanceModifier.height(density.updatedGap))
+            Text(
+                text = updated,
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                    fontSize = density.updatedSize,
+                ),
+                maxLines = 1,
+                modifier = GlanceModifier.clickableNoRipple(openApp),
+            )
+        }
     }
 }
 
@@ -266,7 +257,7 @@ private fun OverviewUsageRow(
         ?: contextString(R.string.usage_unavailable)
     // A row without data should not advertise a reset for an empty window.
     val resetLabel = resetText?.takeIf { used != null }
-    when (usageProgressStyle) {
+    when (usageProgressStyle.toLinearFallback()) {
         UsageProgressStyle.CAPSULE -> {
             UsageCapsuleProgressBar(
                 label = label,
@@ -279,7 +270,12 @@ private fun OverviewUsageRow(
                 resetText = resetLabel,
             )
         }
-        UsageProgressStyle.BAR -> {
+        UsageProgressStyle.BAR,
+        UsageProgressStyle.RING,
+        UsageProgressStyle.RING_SEGMENTED,
+        UsageProgressStyle.GAUGE,
+        UsageProgressStyle.GAUGE_SEGMENTED,
+        -> {
             Column(
                 modifier = GlanceModifier
                     .fillMaxWidth()

@@ -56,6 +56,7 @@ import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toAppLanguage
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toAppThemeSettings
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toDisplayState
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toRefreshPhase
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toShowWidgetUpdatedAt
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.usageDisplayModeFor
 import com.kuyermqi.quotawidget.worker.BalanceRefreshWorker
 
@@ -63,6 +64,8 @@ import com.kuyermqi.quotawidget.worker.BalanceRefreshWorker
 private val LocalWidgetAndroidContext = staticCompositionLocalOf<Context> {
     error("LocalWidgetAndroidContext not provided")
 }
+
+private val LocalWidgetShowUpdatedAt = staticCompositionLocalOf { true }
 
 internal fun GlanceModifier.clickableNoRipple(onClick: Action): GlanceModifier =
     clickable(onClick = onClick, rippleOverride = R.drawable.widget_no_ripple)
@@ -104,7 +107,10 @@ internal suspend fun GlanceAppWidget.providePlatformGlance(
         val localizedContext = remember(context, appLanguage, primarySystemLocale) {
             AppLocale.wrap(context, appLanguage)
         }
-        CompositionLocalProvider(LocalWidgetAndroidContext provides localizedContext) {
+        CompositionLocalProvider(
+            LocalWidgetAndroidContext provides localizedContext,
+            LocalWidgetShowUpdatedAt provides prefs.toShowWidgetUpdatedAt(),
+        ) {
             val glanceState = prefs.toDisplayState()
             val state = if (
                 prefs[WidgetGlanceState.statusKey] == null &&
@@ -168,10 +174,13 @@ internal fun contextString(@StringRes resId: Int, vararg formatArgs: Any): Strin
 internal fun widgetContext(): Context = LocalWidgetAndroidContext.current
 
 @Composable
-internal fun updatedAtLabel(epochMs: Long): String = contextString(
-    R.string.widget_updated_at,
-    WidgetDateFormatter.formatUpdatedAt(widgetContext(), epochMs),
-)
+internal fun updatedAtLabel(epochMs: Long, compact: Boolean = false): String? {
+    if (!LocalWidgetShowUpdatedAt.current) return null
+    return contextString(
+        if (compact) R.string.widget_circular_updated_at else R.string.widget_updated_at,
+        WidgetDateFormatter.formatUpdatedAt(widgetContext(), epochMs, circular = compact),
+    )
+}
 
 /** Fixed size used by the in-app widget previews; live widgets use [balanceTitleSize]. */
 internal fun balanceTitleFontSize(formattedBalance: String): TextUnit =
@@ -208,12 +217,14 @@ internal fun balanceTitleSize(text: String, compact: Boolean): TextUnit {
     )
 }
 
+@Suppress("FunctionNaming")
 @Composable
 internal fun BalanceBlock(
     title: String,
     subtitle: String?,
     titleSize: TextUnit,
     openApp: Action,
+    maxLines: Int = 1,
 ) {
     Column(modifier = GlanceModifier.fillMaxWidth()) {
         Text(
@@ -223,7 +234,7 @@ internal fun BalanceBlock(
                 fontSize = titleSize,
                 fontWeight = FontWeight.Bold,
             ),
-            maxLines = 1,
+            maxLines = maxLines,
             modifier = GlanceModifier.clickableNoRipple(openApp),
         )
         if (!subtitle.isNullOrBlank()) {

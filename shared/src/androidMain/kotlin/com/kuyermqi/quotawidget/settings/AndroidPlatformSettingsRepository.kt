@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.edit
 import com.google.crypto.tink.Aead
 import com.google.crypto.tink.KeyTemplates
+import com.google.crypto.tink.RegistryConfiguration
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import com.google.crypto.tink.integration.android.AndroidKeystore
@@ -529,6 +530,7 @@ class AndroidPlatformSettingsRepository(
             prefs[SettingsKeys.THEME_COLOR_MODE] = settings.themeColorMode.name
             prefs[SettingsKeys.CUSTOM_SEED_COLOR_ARGB] = settings.customSeedColorArgb
             prefs[SettingsKeys.REFRESH_INTERVAL_MINUTES] = settings.refreshIntervalMinutes
+            prefs[SettingsKeys.SHOW_WIDGET_UPDATED_AT] = settings.showWidgetUpdatedAt
             prefs[SettingsKeys.CHECK_FOR_UPDATES_ON_LAUNCH] = settings.checkForUpdatesOnLaunch
             prefs[SettingsKeys.APP_LANGUAGE] = settings.appLanguage.name
         }
@@ -581,7 +583,7 @@ class AndroidPlatformSettingsRepository(
                 .withMasterKeyUri("android-keystore://$TINK_MASTER_KEY_ID")
                 .build()
                 .keysetHandle
-                .getPrimitive(Aead::class.java)
+                .getPrimitive(RegistryConfiguration.get(), Aead::class.java)
         }
 
         private fun resetTinkKeyset(context: Context) {

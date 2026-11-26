@@ -37,7 +37,6 @@ import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.formatNewApiBalanceTitle
 import com.kuyermqi.quotawidget.domain.formatNewApiWidgetFooter
 import com.kuyermqi.quotawidget.platform.PlatformIds
-import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toNewApiUsageDisplayMode
 
 class NewApiBalanceWidget : GlanceAppWidget() {
@@ -109,31 +108,10 @@ private fun NewApiBalanceWidgetContent(
                     .clickableNoRipple(openApp),
             )
             when (state) {
-                WidgetDisplayState.NotConfigured ->
-                    BalanceBlock(
-                        title = contextString(R.string.widget_not_configured),
-                        subtitle = null,
-                        titleSize = 32.sp,
-                        openApp = openApp,
-                    )
-                WidgetDisplayState.Loading ->
-                    BalanceBlock(
-                        title = contextString(R.string.widget_loading_balance),
-                        subtitle = null,
-                        titleSize = 32.sp,
-                        openApp = openApp,
-                    )
-                WidgetDisplayState.NeedsReauth ->
-                    BalanceBlock(
-                        title = contextString(R.string.widget_needs_reauth),
-                        subtitle = null,
-                        titleSize = 32.sp,
-                        openApp = openApp,
-                    )
                 is WidgetDisplayState.Success -> {
                     val balance = formatNewApiBalanceTitle(state.snapshot, usageDisplayMode)
                         ?: contextString(R.string.usage_unavailable)
-                    val updated = updatedAtLabel(state.snapshot.updatedAtEpochMs)
+                    val updated = updatedAtLabel(state.snapshot.updatedAtEpochMs).orEmpty()
                     BalanceBlock(
                         title = balance,
                         subtitle = formatNewApiWidgetFooter(
@@ -145,13 +123,7 @@ private fun NewApiBalanceWidgetContent(
                         openApp = openApp,
                     )
                 }
-                is WidgetDisplayState.Error ->
-                    BalanceBlock(
-                        title = widgetErrorText(state.kind, widgetContext()),
-                        subtitle = null,
-                        titleSize = 32.sp,
-                        openApp = openApp,
-                    )
+                else -> WidgetStatusBlock(state = state, openApp = openApp)
             }
         }
     }
@@ -183,57 +155,54 @@ private fun NewApiBalanceCompactWidgetContent(
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val (title, subtitle, titleSize) = when (state) {
-                WidgetDisplayState.NotConfigured ->
-Triple(contextString(R.string.widget_not_configured), null, 26.sp)
-                WidgetDisplayState.Loading ->
-Triple(contextString(R.string.widget_loading_balance), null, 26.sp)
-                WidgetDisplayState.NeedsReauth ->
-Triple(contextString(R.string.widget_needs_reauth), null, 26.sp)
+            when (state) {
                 is WidgetDisplayState.Success -> {
-                    val primary = formatNewApiBalanceTitle(state.snapshot, usageDisplayMode)
+                    val title = formatNewApiBalanceTitle(state.snapshot, usageDisplayMode)
                         ?: contextString(R.string.usage_unavailable)
-                    val updated = updatedAtLabel(state.snapshot.updatedAtEpochMs)
-                    Triple(
-                        primary,
-                        formatNewApiWidgetFooter(
-                            snapshot = state.snapshot,
-                            expiredLabel = contextString(R.string.new_api_token_expired),
-                            updatedAtText = updated,
-                        ),
-                        balanceTitleSize(primary, compact = true),
+                    val updated = updatedAtLabel(
+                        state.snapshot.updatedAtEpochMs,
+                        compact = true,
+                    ).orEmpty()
+                    val subtitle = formatNewApiWidgetFooter(
+                        snapshot = state.snapshot,
+                        expiredLabel = contextString(R.string.new_api_token_expired),
+                        updatedAtText = updated,
                     )
+                    val titleSize = balanceTitleSize(title, compact = true)
+                    Column(
+                        modifier = GlanceModifier
+                            .defaultWeight()
+                            .clickableNoRipple(openApp),
+                    ) {
+                        Text(
+                            text = title,
+                            style = TextStyle(
+                                color = GlanceTheme.colors.onSurface,
+                                fontSize = titleSize,
+                                fontWeight = FontWeight.Bold,
+                            ),
+                            maxLines = 1,
+                            modifier = GlanceModifier.clickableNoRipple(openApp),
+                        )
+                        if (!subtitle.isNullOrBlank()) {
+                            Spacer(GlanceModifier.height(2.dp))
+                            Text(
+                                text = subtitle,
+                                style = TextStyle(
+                                    color = GlanceTheme.colors.onSurfaceVariant,
+                                    fontSize = 10.sp,
+                                ),
+                                maxLines = 1,
+                                modifier = GlanceModifier.clickableNoRipple(openApp),
+                            )
+                        }
+                    }
                 }
-                is WidgetDisplayState.Error ->
-                    Triple(widgetErrorText(state.kind, widgetContext()), null, 26.sp)
-            }
-            Column(
-                modifier = GlanceModifier
-                    .defaultWeight()
-                    .clickableNoRipple(openApp),
-            ) {
-                Text(
-                    text = title,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurface,
-                        fontSize = titleSize,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                    maxLines = 1,
-                    modifier = GlanceModifier.clickableNoRipple(openApp),
+                else -> CompactStatusTitle(
+                    state = state,
+                    openApp = openApp,
+                    modifier = GlanceModifier.defaultWeight(),
                 )
-                if (!subtitle.isNullOrBlank()) {
-                    Spacer(GlanceModifier.height(2.dp))
-                    Text(
-                        text = subtitle,
-                        style = TextStyle(
-                            color = GlanceTheme.colors.onSurfaceVariant,
-                            fontSize = 11.sp,
-                        ),
-                        maxLines = 1,
-                        modifier = GlanceModifier.clickableNoRipple(openApp),
-                    )
-                }
             }
             RefreshButton(
                 platformId = PlatformIds.NEW_API,

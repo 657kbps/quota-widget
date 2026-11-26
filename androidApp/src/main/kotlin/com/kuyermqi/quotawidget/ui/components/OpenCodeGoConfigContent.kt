@@ -356,12 +356,12 @@ private fun ColumnScope.AuthChoiceList(
             allowWindowFallback = false,
             updatedAtEpochMs = updatedAtEpochMs,
         )
-        Spacer(modifier = Modifier.height(12.dp))
         SaveAction(
             label = stringResource(R.string.action_save),
             enabled = isDirty,
             busy = isSaving,
             onClick = onSavePrefs,
+            topSpacing = 12.dp,
         )
     }
 }

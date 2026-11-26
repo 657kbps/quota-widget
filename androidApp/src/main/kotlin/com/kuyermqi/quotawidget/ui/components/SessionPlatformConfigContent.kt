@@ -13,7 +13,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +26,8 @@ import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
+import com.kuyermqi.quotawidget.platform.PlatformIds
+import com.kuyermqi.quotawidget.settings.SessionAuthMethod
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 
 /** Auth sub-panel for providers that support both browser login and an API key. */
@@ -36,101 +37,71 @@ enum class SessionAuthPanel {
     API_KEY,
 }
 
+data class SessionUsagePrefsState(
+    val windows: List<QuotaWindow>,
+    val widgetWindowKind: UsageWindowKind,
+    val onWidgetWindowKindChange: (UsageWindowKind) -> Unit,
+    val usageDisplayMode: UsageDisplayMode,
+    val onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
+    val usageProgressStyle: UsageProgressStyle,
+    val onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
+    val usageResetStyle: UsageResetStyle,
+    val onUsageResetStyleChange: (UsageResetStyle) -> Unit,
+    val overviewKinds: List<QuotaWindowKind>,
+    val updatedAtEpochMs: Long = 0L,
+)
+
+data class SessionPlatformConfigState(
+    val platformId: String,
+    val platformName: String,
+    val settings: SessionPlatformSettings,
+    val supportsApiKey: Boolean,
+    val authPanel: SessionAuthPanel,
+    val draftApiKey: String,
+    val onDraftApiKeyChange: (String) -> Unit,
+    val onAuthPanelChange: (SessionAuthPanel) -> Unit,
+    val usagePrefs: SessionUsagePrefsState,
+    val notice: String? = null,
+    val isConfigured: Boolean,
+    val isBusy: Boolean,
+    val isSaving: Boolean,
+    val isDirty: Boolean,
+    val error: String?,
+    val onLogin: () -> Unit,
+    val onLogout: () -> Unit,
+    val onSave: () -> Unit,
+)
+
+@Suppress("FunctionNaming")
 @Composable
 fun ColumnScope.SessionPlatformConfigContent(
-    settings: SessionPlatformSettings,
-    supportsApiKey: Boolean,
-    authPanel: SessionAuthPanel,
-    draftApiKey: String,
-    onDraftApiKeyChange: (String) -> Unit,
-    onAuthPanelChange: (SessionAuthPanel) -> Unit,
-    windows: List<QuotaWindow>,
-    widgetWindowKind: UsageWindowKind,
-    onWidgetWindowKindChange: (UsageWindowKind) -> Unit,
-    usageDisplayMode: UsageDisplayMode,
-    onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
-    usageProgressStyle: UsageProgressStyle,
-    onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
-    usageResetStyle: UsageResetStyle,
-    onUsageResetStyleChange: (UsageResetStyle) -> Unit,
-    overviewKinds: List<QuotaWindowKind>,
-    notice: String? = null,
-    isConfigured: Boolean,
-    isBusy: Boolean,
-    isSaving: Boolean,
-    isDirty: Boolean,
-    error: String?,
-    onLogin: () -> Unit,
-    onLogout: () -> Unit,
-    onSave: () -> Unit,
-    platformName: String = "",
-    updatedAtEpochMs: Long = 0L,
+    state: SessionPlatformConfigState,
 ) {
-    val showTopError = !error.isNullOrBlank() && (supportsApiKey || isConfigured)
+    val showTopError = !state.error.isNullOrBlank() && (state.supportsApiKey || state.isConfigured)
     if (showTopError) {
         Text(
-            text = error,
+            text = state.error,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error,
         )
         Spacer(modifier = Modifier.height(8.dp))
     }
 
-    if (!supportsApiKey) {
-        if (isConfigured) {
-            SessionConfiguredContent(
-                settings = settings,
-                windows = windows,
-                widgetWindowKind = widgetWindowKind,
-                onWidgetWindowKindChange = onWidgetWindowKindChange,
-                usageDisplayMode = usageDisplayMode,
-                onUsageDisplayModeChange = onUsageDisplayModeChange,
-                usageProgressStyle = usageProgressStyle,
-                onUsageProgressStyleChange = onUsageProgressStyleChange,
-                usageResetStyle = usageResetStyle,
-                onUsageResetStyleChange = onUsageResetStyleChange,
-                overviewKinds = overviewKinds,
-                notice = notice,
-                isBusy = isBusy,
-                isSaving = isSaving,
-                isDirty = isDirty,
-                onLogout = onLogout,
-                onSave = onSave,
-                platformName = platformName,
-                updatedAtEpochMs = updatedAtEpochMs,
-            )
+    if (!state.supportsApiKey) {
+        if (state.isConfigured) {
+            SessionConfiguredContent(state = state)
         } else {
-            SessionLoggedOutContent(
-                notice = notice,
-                error = error,
-                isBusy = isBusy,
-                isSaving = isSaving,
-                onLogin = onLogin,
-                platformName = platformName,
-                windows = windows,
-                widgetWindowKind = widgetWindowKind,
-                onWidgetWindowKindChange = onWidgetWindowKindChange,
-                usageDisplayMode = usageDisplayMode,
-                onUsageDisplayModeChange = onUsageDisplayModeChange,
-                usageProgressStyle = usageProgressStyle,
-                onUsageProgressStyleChange = onUsageProgressStyleChange,
-                usageResetStyle = usageResetStyle,
-                onUsageResetStyleChange = onUsageResetStyleChange,
-                overviewKinds = overviewKinds,
-                isDirty = isDirty,
-                onSave = onSave,
-                updatedAtEpochMs = updatedAtEpochMs,
-            )
+            SessionLoggedOutContent(state = state)
         }
         return
     }
 
     BackHandler(
-        enabled = authPanel == SessionAuthPanel.API_KEY ||
-            (authPanel == SessionAuthPanel.CHOOSE && isConfigured),
+        enabled = state.authPanel == SessionAuthPanel.API_KEY ||
+            (state.authPanel == SessionAuthPanel.CHOOSE && state.isConfigured),
     ) {
-        onAuthPanelChange(
-            if (authPanel == SessionAuthPanel.API_KEY) {
+        state.onAuthPanelChange(
+            if (state.authPanel == SessionAuthPanel.API_KEY) {
                 SessionAuthPanel.CHOOSE
             } else {
                 SessionAuthPanel.SUMMARY
@@ -139,7 +110,7 @@ fun ColumnScope.SessionPlatformConfigContent(
     }
 
     AuthPanelSwitcher(
-        targetState = authPanel,
+        targetState = state.authPanel,
         label = "sessionAuthPanel",
         isForward = { initial, target ->
             target == SessionAuthPanel.API_KEY ||
@@ -147,299 +118,149 @@ fun ColumnScope.SessionPlatformConfigContent(
         },
     ) { panel ->
         when (panel) {
-            SessionAuthPanel.SUMMARY -> if (isConfigured) {
+            SessionAuthPanel.SUMMARY -> if (state.isConfigured) {
                 SessionConfiguredContent(
-                    settings = settings,
-                    windows = windows,
-                    widgetWindowKind = widgetWindowKind,
-                    onWidgetWindowKindChange = onWidgetWindowKindChange,
-                    usageDisplayMode = usageDisplayMode,
-                    onUsageDisplayModeChange = onUsageDisplayModeChange,
-                    usageProgressStyle = usageProgressStyle,
-                    onUsageProgressStyleChange = onUsageProgressStyleChange,
-                    usageResetStyle = usageResetStyle,
-                    onUsageResetStyleChange = onUsageResetStyleChange,
-                    overviewKinds = overviewKinds,
-                    notice = notice,
-                    isBusy = isBusy,
-                    isSaving = isSaving,
-                    isDirty = isDirty,
-                    onChangeAuthMethod = { onAuthPanelChange(SessionAuthPanel.CHOOSE) },
-                    onLogout = onLogout,
-                    onSave = onSave,
-                    platformName = platformName,
-                    updatedAtEpochMs = updatedAtEpochMs,
+                    state = state,
+                    onChangeAuthMethod = { state.onAuthPanelChange(SessionAuthPanel.CHOOSE) },
                 )
             } else {
-                SessionAuthChoice(
-                    settings = settings,
-                    isConfigured = isConfigured,
-                    isBusy = isBusy,
-                    isSaving = isSaving,
-                    onAuthPanelChange = onAuthPanelChange,
-                    onLogin = onLogin,
-                    platformName = platformName,
-                    windows = windows,
-                    widgetWindowKind = widgetWindowKind,
-                    onWidgetWindowKindChange = onWidgetWindowKindChange,
-                    usageDisplayMode = usageDisplayMode,
-                    onUsageDisplayModeChange = onUsageDisplayModeChange,
-                    usageProgressStyle = usageProgressStyle,
-                    onUsageProgressStyleChange = onUsageProgressStyleChange,
-                    usageResetStyle = usageResetStyle,
-                    onUsageResetStyleChange = onUsageResetStyleChange,
-                    overviewKinds = overviewKinds,
-                    isDirty = isDirty,
-                    onSave = onSave,
-                    updatedAtEpochMs = updatedAtEpochMs,
-                )
+                SessionAuthChoice(state = state)
             }
-            SessionAuthPanel.CHOOSE -> SessionAuthChoice(
-                settings = settings,
-                isConfigured = isConfigured,
-                isBusy = isBusy,
-                isSaving = isSaving,
-                onAuthPanelChange = onAuthPanelChange,
-                onLogin = onLogin,
-                platformName = platformName,
-                windows = windows,
-                widgetWindowKind = widgetWindowKind,
-                onWidgetWindowKindChange = onWidgetWindowKindChange,
-                usageDisplayMode = usageDisplayMode,
-                onUsageDisplayModeChange = onUsageDisplayModeChange,
-                usageProgressStyle = usageProgressStyle,
-                onUsageProgressStyleChange = onUsageProgressStyleChange,
-                usageResetStyle = usageResetStyle,
-                onUsageResetStyleChange = onUsageResetStyleChange,
-                overviewKinds = overviewKinds,
-                isDirty = isDirty,
-                onSave = onSave,
-                updatedAtEpochMs = updatedAtEpochMs,
-            )
+            SessionAuthPanel.CHOOSE -> SessionAuthChoice(state = state)
             SessionAuthPanel.API_KEY -> ApiKeyAuthEditor(
                 title = stringResource(R.string.session_auth_api_title),
-                apiKey = draftApiKey,
-                onApiKeyChange = onDraftApiKeyChange,
-                hasApiKey = settings.apiKey.isNotBlank(),
+                apiKey = state.draftApiKey,
+                onApiKeyChange = state.onDraftApiKeyChange,
+                hasApiKey = state.settings.apiKey.isNotBlank(),
                 configuredLabel = stringResource(R.string.session_auth_configured),
                 apiKeyLabel = stringResource(R.string.session_api_key_label),
                 apiKeyHint = stringResource(R.string.session_api_key_hint),
-                isBusy = isBusy,
+                isBusy = state.isBusy,
                 backLabel = stringResource(R.string.session_auth_back),
                 saveLabel = stringResource(R.string.session_auth_save_and_use),
-                onBack = { onAuthPanelChange(SessionAuthPanel.CHOOSE) },
-                onSave = onSave,
-                saveEnabled = draftApiKey.isNotBlank() && !isBusy,
+                onBack = { state.onAuthPanelChange(SessionAuthPanel.CHOOSE) },
+                onSave = state.onSave,
+                saveEnabled = state.draftApiKey.isNotBlank() && !state.isBusy,
             )
         }
     }
 }
 
+@Suppress("FunctionNaming")
 @Composable
 private fun ColumnScope.SessionLoggedOutContent(
-    notice: String?,
-    error: String?,
-    isBusy: Boolean,
-    isSaving: Boolean,
-    onLogin: () -> Unit,
-    platformName: String,
-    windows: List<QuotaWindow>,
-    widgetWindowKind: UsageWindowKind,
-    onWidgetWindowKindChange: (UsageWindowKind) -> Unit,
-    usageDisplayMode: UsageDisplayMode,
-    onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
-    usageProgressStyle: UsageProgressStyle,
-    onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
-    usageResetStyle: UsageResetStyle,
-    onUsageResetStyleChange: (UsageResetStyle) -> Unit,
-    overviewKinds: List<QuotaWindowKind>,
-    isDirty: Boolean,
-    onSave: () -> Unit,
-    updatedAtEpochMs: Long,
+    state: SessionPlatformConfigState,
 ) {
     AuthAccountCard {
         AuthStatusLine(
             status = stringResource(R.string.session_not_logged_in),
-            error = error,
+            error = state.error,
         )
-        SessionNotice(notice)
+        SessionNotice(state.notice)
         SessionActions(
-            isBusy = isBusy,
-            onLogin = onLogin,
+            isBusy = state.isBusy,
+            onLogin = state.onLogin,
         )
     }
     Spacer(modifier = Modifier.height(12.dp))
-    SessionWidgetPrefs(
-        windows = windows,
-        widgetWindowKind = widgetWindowKind,
-        onWidgetWindowKindChange = onWidgetWindowKindChange,
-        usageDisplayMode = usageDisplayMode,
-        onUsageDisplayModeChange = onUsageDisplayModeChange,
-        usageProgressStyle = usageProgressStyle,
-        onUsageProgressStyleChange = onUsageProgressStyleChange,
-        usageResetStyle = usageResetStyle,
-        onUsageResetStyleChange = onUsageResetStyleChange,
-        overviewKinds = overviewKinds,
-        isBusy = isBusy,
-        isSaving = isSaving,
-        isDirty = isDirty,
-        onSave = onSave,
-        platformName = platformName,
-        updatedAtEpochMs = updatedAtEpochMs,
-    )
+    SessionWidgetPrefs(state = state)
 }
 
+@Suppress("FunctionNaming")
 @Composable
 private fun ColumnScope.SessionAuthChoice(
-    settings: SessionPlatformSettings,
-    isConfigured: Boolean,
-    isBusy: Boolean,
-    isSaving: Boolean,
-    onAuthPanelChange: (SessionAuthPanel) -> Unit,
-    onLogin: () -> Unit,
-    platformName: String,
-    windows: List<QuotaWindow>,
-    widgetWindowKind: UsageWindowKind,
-    onWidgetWindowKindChange: (UsageWindowKind) -> Unit,
-    usageDisplayMode: UsageDisplayMode,
-    onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
-    usageProgressStyle: UsageProgressStyle,
-    onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
-    usageResetStyle: UsageResetStyle,
-    onUsageResetStyleChange: (UsageResetStyle) -> Unit,
-    overviewKinds: List<QuotaWindowKind>,
-    isDirty: Boolean,
-    onSave: () -> Unit,
-    updatedAtEpochMs: Long,
+    state: SessionPlatformConfigState,
 ) {
     AuthMethodChoiceList(
         options = listOf(
             AuthMethodOption(
                 title = stringResource(R.string.session_auth_web_title),
                 subtitle = stringResource(R.string.session_auth_web_hint),
-                configured = settings.accessToken.isNotBlank() &&
-                    settings.refreshToken.isNotBlank(),
-                onClick = onLogin,
+                configured = state.settings.accessToken.isNotBlank() &&
+                    state.settings.refreshToken.isNotBlank(),
+                onClick = state.onLogin,
             ),
             AuthMethodOption(
                 title = stringResource(R.string.session_auth_api_title),
                 subtitle = stringResource(R.string.session_api_key_hint),
-                configured = settings.apiKey.isNotBlank(),
-                onClick = { onAuthPanelChange(SessionAuthPanel.API_KEY) },
+                configured = state.settings.apiKey.isNotBlank(),
+                onClick = { state.onAuthPanelChange(SessionAuthPanel.API_KEY) },
             ),
         ),
-        canCancelEdit = isConfigured,
-        isBusy = isBusy,
+        canCancelEdit = state.isConfigured,
+        isBusy = state.isBusy,
         backLabel = stringResource(R.string.session_auth_back),
         configuredLabel = stringResource(R.string.session_auth_configured),
-        onBack = { onAuthPanelChange(SessionAuthPanel.SUMMARY) },
+        onBack = { state.onAuthPanelChange(SessionAuthPanel.SUMMARY) },
     )
-    if (!isConfigured) {
+    if (!state.isConfigured) {
         Spacer(modifier = Modifier.height(12.dp))
-        SessionWidgetPrefs(
-            windows = windows,
-            widgetWindowKind = widgetWindowKind,
-            onWidgetWindowKindChange = onWidgetWindowKindChange,
-            usageDisplayMode = usageDisplayMode,
-            onUsageDisplayModeChange = onUsageDisplayModeChange,
-            usageProgressStyle = usageProgressStyle,
-            onUsageProgressStyleChange = onUsageProgressStyleChange,
-            usageResetStyle = usageResetStyle,
-            onUsageResetStyleChange = onUsageResetStyleChange,
-            overviewKinds = overviewKinds,
-            isBusy = isBusy,
-            isSaving = isSaving,
-            isDirty = isDirty,
-            onSave = onSave,
-            platformName = platformName,
-            updatedAtEpochMs = updatedAtEpochMs,
-        )
+        SessionWidgetPrefs(state = state)
     }
 }
 
 /** Widget settings shown before an account is connected, saved with the draft prefs. */
+@Suppress("FunctionNaming")
 @Composable
 private fun ColumnScope.SessionWidgetPrefs(
-    windows: List<QuotaWindow>,
-    widgetWindowKind: UsageWindowKind,
-    onWidgetWindowKindChange: (UsageWindowKind) -> Unit,
-    usageDisplayMode: UsageDisplayMode,
-    onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
-    usageProgressStyle: UsageProgressStyle,
-    onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
-    usageResetStyle: UsageResetStyle,
-    onUsageResetStyleChange: (UsageResetStyle) -> Unit,
-    overviewKinds: List<QuotaWindowKind>,
-    isBusy: Boolean,
-    isSaving: Boolean,
-    isDirty: Boolean,
-    onSave: () -> Unit,
-    platformName: String,
-    updatedAtEpochMs: Long,
+    state: SessionPlatformConfigState,
 ) {
-    val windowKindChoices = availableUsageWindowKinds(windows)
+    val prefs = state.usagePrefs
+    val windowKindChoices = availableUsageWindowKinds(prefs.windows)
     UsageDisplayPrefsSection(
-        windows = windows,
-        widgetWindowKind = widgetWindowKind,
-        onWidgetWindowKindChange = onWidgetWindowKindChange,
-        usageDisplayMode = usageDisplayMode,
-        onUsageDisplayModeChange = onUsageDisplayModeChange,
-        usageProgressStyle = usageProgressStyle,
-        onUsageProgressStyleChange = onUsageProgressStyleChange,
-        usageResetStyle = usageResetStyle,
-        onUsageResetStyleChange = onUsageResetStyleChange,
-        enabled = !isBusy,
+        windows = prefs.windows,
+        widgetWindowKind = prefs.widgetWindowKind,
+        onWidgetWindowKindChange = prefs.onWidgetWindowKindChange,
+        usageDisplayMode = prefs.usageDisplayMode,
+        onUsageDisplayModeChange = prefs.onUsageDisplayModeChange,
+        usageProgressStyle = prefs.usageProgressStyle,
+        onUsageProgressStyleChange = prefs.onUsageProgressStyleChange,
+        usageResetStyle = prefs.usageResetStyle,
+        onUsageResetStyleChange = prefs.onUsageResetStyleChange,
+        enabled = !state.isBusy,
         windowKindChoices = windowKindChoices,
         showWindowKindPicker = windowKindChoices.size >= 2,
-        overviewKinds = overviewKinds,
-        platformName = platformName,
-        updatedAtEpochMs = updatedAtEpochMs,
+        overviewKinds = prefs.overviewKinds,
+        platformName = state.platformName,
+        updatedAtEpochMs = prefs.updatedAtEpochMs,
     )
-    Spacer(modifier = Modifier.height(12.dp))
     SaveAction(
         label = stringResource(R.string.session_save_prefs),
-        enabled = isDirty,
-        busy = isSaving,
-        onClick = onSave,
+        enabled = state.isDirty,
+        busy = state.isSaving,
+        onClick = state.onSave,
+        topSpacing = 12.dp,
     )
 }
 
+@Suppress("FunctionNaming")
 @Composable
 private fun ColumnScope.SessionConfiguredContent(
-    settings: SessionPlatformSettings,
-    windows: List<QuotaWindow>,
-    widgetWindowKind: UsageWindowKind,
-    onWidgetWindowKindChange: (UsageWindowKind) -> Unit,
-    usageDisplayMode: UsageDisplayMode,
-    onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
-    usageProgressStyle: UsageProgressStyle,
-    onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
-    usageResetStyle: UsageResetStyle,
-    onUsageResetStyleChange: (UsageResetStyle) -> Unit,
-    overviewKinds: List<QuotaWindowKind>,
-    notice: String? = null,
-    isBusy: Boolean,
-    isSaving: Boolean,
-    isDirty: Boolean,
+    state: SessionPlatformConfigState,
     onChangeAuthMethod: (() -> Unit)? = null,
-    onLogout: () -> Unit,
-    onSave: () -> Unit,
-    platformName: String = "",
-    updatedAtEpochMs: Long = 0L,
 ) {
-    val usingApiKey = settings.apiKey.isNotBlank() && settings.accountLabel.isBlank()
-    val title = if (usingApiKey) {
-        stringResource(
-            R.string.auth_current_method,
-            stringResource(R.string.session_api_key_label),
-        )
-    } else {
-        stringResource(
-            R.string.session_account_logged_in,
-            settings.accountLabel.ifBlank { stringResource(R.string.session_account_unknown) },
-        )
+    val settings = state.settings
+    val prefs = state.usagePrefs
+    val effectiveMethod = settings.authMethod ?: when {
+        state.platformId == PlatformIds.CLINE && settings.apiKey.isNotBlank() ->
+            SessionAuthMethod.API_KEY
+        state.platformId == PlatformIds.COMMAND_CODE -> SessionAuthMethod.API_KEY
+        else -> SessionAuthMethod.WEB
     }
-    val subtitle = settings.plan
+    val methodLabel = when (effectiveMethod) {
+        SessionAuthMethod.API_KEY -> stringResource(R.string.session_api_key_label)
+        SessionAuthMethod.WEB -> if (state.platformId == PlatformIds.ANTIGRAVITY) {
+            stringResource(R.string.auth_method_google_oauth)
+        } else {
+            stringResource(R.string.session_auth_web_title)
+        }
+    }
+    val title = stringResource(R.string.auth_current_method, methodLabel)
+    val subtitle = stringResource(
+        R.string.session_account_logged_in,
+        settings.accountLabel.ifBlank { stringResource(R.string.session_account_unknown) },
+    )
+    val detail = settings.plan
         .takeIf { it.isNotBlank() }
         ?.let { stringResource(R.string.session_plan, it) }
     AuthConfiguredPanel(
@@ -451,27 +272,30 @@ private fun ColumnScope.SessionConfiguredContent(
             null
         },
         onChangeAuthMethod = onChangeAuthMethod,
-        extraContent = { SessionNotice(notice) },
-        windows = windows,
-        widgetWindowKind = widgetWindowKind,
-        onWidgetWindowKindChange = onWidgetWindowKindChange,
-        usageDisplayMode = usageDisplayMode,
-        onUsageDisplayModeChange = onUsageDisplayModeChange,
-        usageProgressStyle = usageProgressStyle,
-        onUsageProgressStyleChange = onUsageProgressStyleChange,
-        usageResetStyle = usageResetStyle,
-        onUsageResetStyleChange = onUsageResetStyleChange,
-        windowKindChoices = availableUsageWindowKinds(windows),
-        overviewKinds = overviewKinds,
-        isBusy = isBusy,
-        isDirty = isDirty,
-        saveBusy = isSaving,
+        extraContent = {
+            AuthDetailLine(detail)
+            SessionNotice(state.notice)
+        },
+        windows = prefs.windows,
+        widgetWindowKind = prefs.widgetWindowKind,
+        onWidgetWindowKindChange = prefs.onWidgetWindowKindChange,
+        usageDisplayMode = prefs.usageDisplayMode,
+        onUsageDisplayModeChange = prefs.onUsageDisplayModeChange,
+        usageProgressStyle = prefs.usageProgressStyle,
+        onUsageProgressStyleChange = prefs.onUsageProgressStyleChange,
+        usageResetStyle = prefs.usageResetStyle,
+        onUsageResetStyleChange = prefs.onUsageResetStyleChange,
+        windowKindChoices = availableUsageWindowKinds(prefs.windows),
+        overviewKinds = prefs.overviewKinds,
+        isBusy = state.isBusy,
+        isDirty = state.isDirty,
+        saveBusy = state.isSaving,
         logoutLabel = stringResource(R.string.session_logout),
         saveLabel = stringResource(R.string.session_save_prefs),
-        onLogout = onLogout,
-        onSave = onSave,
-        platformName = platformName,
-        updatedAtEpochMs = updatedAtEpochMs,
+        onLogout = state.onLogout,
+        onSave = state.onSave,
+        platformName = state.platformName,
+        updatedAtEpochMs = prefs.updatedAtEpochMs,
     )
 }
 

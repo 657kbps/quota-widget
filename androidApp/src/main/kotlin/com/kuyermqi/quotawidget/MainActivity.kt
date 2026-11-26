@@ -7,6 +7,7 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +25,7 @@ import com.kuyermqi.quotawidget.refresh.displayState
 import com.kuyermqi.quotawidget.ui.FocusPlatformRequest
 import com.kuyermqi.quotawidget.ui.HomeScreen
 import com.kuyermqi.quotawidget.ui.UpdateAvailableDialog
+import com.kuyermqi.quotawidget.ui.components.LocalShowWidgetUpdatedAt
 import com.kuyermqi.quotawidget.ui.home.HomeViewModel
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
@@ -76,6 +78,7 @@ class MainActivity : LocaleAwareActivity() {
                 appSettings.darkThemeMode,
                 appSettings.themeColorMode,
                 appSettings.customSeedColorArgb,
+                appSettings.showWidgetUpdatedAt,
             ) {
                 WidgetSyncCoordinator.syncWidgets(this@MainActivity, "app_theme")
             }
@@ -85,6 +88,9 @@ class MainActivity : LocaleAwareActivity() {
                 themeColorMode = appSettings.themeColorMode,
                 seedColor = Color(appSettings.customSeedColorArgb),
             ) {
+                CompositionLocalProvider(
+                    LocalShowWidgetUpdatedAt provides appSettings.showWidgetUpdatedAt,
+                ) {
                 updateAvailability?.let { update ->
                     UpdateAvailableDialog(
                         versionName = update.versionName,
@@ -134,6 +140,7 @@ class MainActivity : LocaleAwareActivity() {
                     onDismissOemBackgroundTip = { showOemBackgroundTip = false },
                     focusPlatformRequest = focusPlatformRequest,
                 )
+                }
             }
         }
     }

@@ -50,6 +50,7 @@ data class AppSettings(
     val refreshIntervalMinutes: Int = DEFAULT_REFRESH_INTERVAL_MINUTES,
     val checkForUpdatesOnLaunch: Boolean = true,
     val appLanguage: AppLanguage = AppLanguage.FollowSystem,
+    val showWidgetUpdatedAt: Boolean = true,
 ) {
     init {
         require(refreshIntervalMinutes in ALLOWED_REFRESH_INTERVAL_MINUTES) {
@@ -260,12 +261,64 @@ enum class UsageProgressStyle {
      * percent widgets draw a pill track under the large value.
      */
     CAPSULE,
+    /** Full 360° circular ring around the percent value (standard layout). */
+    RING,
+    /** 8-segment 360° circular ring around the percent value (standard layout). */
+    RING_SEGMENTED,
+    /** 270° open gauge arc around the percent value (standard layout). */
+    GAUGE,
+    /** 6-segment 270° open gauge arc around the percent value (standard layout). */
+    GAUGE_SEGMENTED,
     ;
+
+    val isCircular: Boolean
+        get() = this == RING || this == RING_SEGMENTED || this == GAUGE || this == GAUGE_SEGMENTED
+
+    val isGauge: Boolean
+        get() = this == GAUGE || this == GAUGE_SEGMENTED
+
+    val isSegmented: Boolean
+        get() = this == RING_SEGMENTED || this == GAUGE_SEGMENTED
+
+    fun withSegmented(segmented: Boolean): UsageProgressStyle = when (this) {
+        RING, RING_SEGMENTED -> if (segmented) RING_SEGMENTED else RING
+        GAUGE, GAUGE_SEGMENTED -> if (segmented) GAUGE_SEGMENTED else GAUGE
+        BAR, CAPSULE -> this
+    }
+
+    /** Linear style used by multi-row layouts (e.g. Overview) that do not render rings. */
+    fun toLinearFallback(): UsageProgressStyle = when (this) {
+        BAR, CAPSULE -> this
+        RING, RING_SEGMENTED, GAUGE, GAUGE_SEGMENTED -> BAR
+    }
 
     companion object {
         fun fromStorage(value: String?): UsageProgressStyle =
             entries.find { it.name == value } ?: BAR
     }
+}
+
+/** Primary progress style family shown in the segmented selector. */
+enum class UsageProgressBaseStyle {
+    BAR,
+    CAPSULE,
+    RING,
+    GAUGE,
+    ;
+
+    fun toProgressStyle(segmented: Boolean): UsageProgressStyle = when (this) {
+        BAR -> UsageProgressStyle.BAR
+        CAPSULE -> UsageProgressStyle.CAPSULE
+        RING -> if (segmented) UsageProgressStyle.RING_SEGMENTED else UsageProgressStyle.RING
+        GAUGE -> if (segmented) UsageProgressStyle.GAUGE_SEGMENTED else UsageProgressStyle.GAUGE
+    }
+}
+
+fun UsageProgressStyle.toBaseStyle(): UsageProgressBaseStyle = when (this) {
+    UsageProgressStyle.BAR -> UsageProgressBaseStyle.BAR
+    UsageProgressStyle.CAPSULE -> UsageProgressBaseStyle.CAPSULE
+    UsageProgressStyle.RING, UsageProgressStyle.RING_SEGMENTED -> UsageProgressBaseStyle.RING
+    UsageProgressStyle.GAUGE, UsageProgressStyle.GAUGE_SEGMENTED -> UsageProgressBaseStyle.GAUGE
 }
 
 @Serializable
@@ -531,12 +584,11 @@ fun formatNewApiWidgetFooter(
     snapshot: QuotaSnapshot,
     expiredLabel: String,
     updatedAtText: String,
-): String =
-    if (snapshot.tokenExpired) {
-        "$expiredLabel · $updatedAtText"
-    } else {
-        updatedAtText
-    }
+): String = when {
+    snapshot.tokenExpired && updatedAtText.isNotBlank() -> "$expiredLabel · $updatedAtText"
+    snapshot.tokenExpired -> expiredLabel
+    else -> updatedAtText
+}
 
 /** Used-percent value passed into progress tracks for NewAPI (empty pool → 0 for both modes). */
 fun newApiUsageProgressUsedPercent(

@@ -5,15 +5,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -54,15 +50,11 @@ fun ColumnScope.ApiKeyUsageConfigContent(
     updatedAtEpochMs: Long = 0L,
 ) {
     AuthAccountCard {
-        OutlinedTextField(
+        SecretOutlinedTextField(
             value = apiKey,
             onValueChange = onApiKeyChange,
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(stringResource(R.string.api_key_label)) },
-            supportingText = { Text(apiKeyHint) },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            label = stringResource(R.string.api_key_label),
+            supportingText = apiKeyHint,
             enabled = !isSaving,
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -121,11 +113,11 @@ fun ColumnScope.ApiKeyUsageConfigContent(
             color = MaterialTheme.colorScheme.error,
         )
     }
-    Spacer(modifier = Modifier.height(12.dp))
     SaveAction(
         label = stringResource(R.string.action_save),
         enabled = isDirty,
         busy = isSaving,
         onClick = onSave,
+        topSpacing = 12.dp,
     )
 }

@@ -345,6 +345,10 @@ class NewApiUsageClientTest {
             "令牌已过期 · 更新于刚才",
             formatNewApiWidgetFooter(snapshot, "令牌已过期", "更新于刚才"),
         )
+        assertEquals(
+            "令牌已过期",
+            formatNewApiWidgetFooter(snapshot, "令牌已过期", ""),
+        )
     }
 
     @Test

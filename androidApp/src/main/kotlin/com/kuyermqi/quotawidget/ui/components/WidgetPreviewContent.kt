@@ -63,6 +63,7 @@ import com.kuyermqi.quotawidget.widget.ResetMoment
 import com.kuyermqi.quotawidget.widget.WidgetDateFormatter
 import com.kuyermqi.quotawidget.widget.balanceTitleFontSize
 import com.kuyermqi.quotawidget.widget.compactBalanceTitleFontSize
+import com.kuyermqi.quotawidget.widget.usage.deepenedCapsuleFillColor
 
 private enum class DeepSeekPreviewLayout {
     STANDARD,
@@ -75,32 +76,27 @@ internal fun DeepSeekWidgetPreviewCard(
     currency: CurrencyPreference,
     updatedAtEpochMs: Long,
 ) {
-    val context = LocalContext.current
     var selectedLayout by remember { mutableStateOf(DeepSeekPreviewLayout.STANDARD) }
     val previewBalance = balance.ifBlank {
         formatBalance(currency, "12.50")
     }
     val labelStandard = stringResource(R.string.usage_preview_layout_standard)
     val labelCompact = stringResource(R.string.usage_preview_layout_compact)
-    val updatedLabel = if (updatedAtEpochMs > 0L) {
-        stringResource(
-            R.string.widget_updated_at,
-            WidgetDateFormatter.formatUpdatedAt(context, updatedAtEpochMs),
-        )
-    } else {
-        stringResource(R.string.usage_preview_updated_sample)
-    }
+    val updatedLabel = previewUpdatedLabel(updatedAtEpochMs, compact = false)
+    val compactUpdatedLabel = previewUpdatedLabel(updatedAtEpochMs, compact = true)
 
-    WidgetPreviewCard(
-        options = DeepSeekPreviewLayout.entries,
-        selectedOption = selectedLayout,
-        labelOf = { layout ->
-            when (layout) {
-                DeepSeekPreviewLayout.STANDARD -> labelStandard
-                DeepSeekPreviewLayout.COMPACT -> labelCompact
-            }
-        },
-        onOptionSelected = { selectedLayout = it },
+    WidgetTabPreviewCard(
+        tabState = WidgetTabHeaderState(
+            tabs = DeepSeekPreviewLayout.entries,
+            selectedTab = selectedLayout,
+            tabLabelOf = { layout ->
+                when (layout) {
+                    DeepSeekPreviewLayout.STANDARD -> labelStandard
+                    DeepSeekPreviewLayout.COMPACT -> labelCompact
+                }
+            },
+            onTabSelected = { selectedLayout = it },
+        ),
         widgetModifier = { layout ->
             when (layout) {
                 DeepSeekPreviewLayout.STANDARD -> Modifier
@@ -118,7 +114,7 @@ internal fun DeepSeekWidgetPreviewCard(
             DeepSeekPreviewLayout.STANDARD ->
                 DeepSeekStandardBalancePreview(previewBalance, updatedLabel)
             DeepSeekPreviewLayout.COMPACT ->
-                DeepSeekCompactBalancePreview(previewBalance, updatedLabel)
+                DeepSeekCompactBalancePreview(previewBalance, compactUpdatedLabel)
         }
     }
 }
@@ -141,13 +137,15 @@ private fun DeepSeekStandardBalancePreview(
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
         )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = updatedLabel,
-            style = previewTextStyle(12.sp, lineHeight = 14.sp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-        )
+        if (updatedLabel.isNotBlank()) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = updatedLabel,
+                style = previewTextStyle(12.sp, lineHeight = 14.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -169,13 +167,15 @@ private fun DeepSeekCompactBalancePreview(
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
             )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = updatedLabel,
-                style = previewTextStyle(11.sp, lineHeight = 13.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-            )
+            if (updatedLabel.isNotBlank()) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = updatedLabel,
+                    style = previewTextStyle(10.sp, lineHeight = 12.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
         }
         Box(
             modifier = Modifier.size(34.dp),
@@ -245,22 +245,27 @@ internal fun UsageWindowBar(
     val labelText = if (resetText != null) "$label · $resetText" else label
     val scheme = MaterialTheme.colorScheme
     Column(modifier = Modifier.fillMaxWidth()) {
-        when (usageProgressStyle) {
+        when (usageProgressStyle.toLinearFallback()) {
             UsageProgressStyle.CAPSULE -> {
                 val shape = RoundedCornerShape(8.dp)
-                val fillColor = if (nearLimit) scheme.error else scheme.primary
-                val trackColor =
-                    if (nearLimit) scheme.errorContainer else scheme.primaryContainer
-                val contentColor = if (nearLimit) {
-                    if (progress < CapsuleTextOnFillThreshold) {
-                        scheme.onErrorContainer
+                val fillColor = Color(
+                    if (nearLimit) {
+                        deepenedCapsuleFillColor(
+                            containerArgb = scheme.errorContainer.toArgb(),
+                            accentArgb = scheme.error.toArgb(),
+                        )
                     } else {
-                        scheme.onError
-                    }
-                } else if (progress < CapsuleTextOnFillThreshold) {
-                    scheme.onPrimaryContainer
+                        deepenedCapsuleFillColor(
+                            containerArgb = scheme.primaryContainer.toArgb(),
+                            accentArgb = scheme.primary.toArgb(),
+                        )
+                    },
+                )
+                val trackColor = scheme.surface
+                val contentColor = if (nearLimit) {
+                    scheme.onErrorContainer
                 } else {
-                    scheme.onPrimary
+                    scheme.onSurface
                 }
                 Box(
                     modifier = Modifier
@@ -300,7 +305,12 @@ internal fun UsageWindowBar(
                     }
                 }
             }
-            UsageProgressStyle.BAR -> {
+            UsageProgressStyle.BAR,
+            UsageProgressStyle.RING,
+            UsageProgressStyle.RING_SEGMENTED,
+            UsageProgressStyle.GAUGE,
+            UsageProgressStyle.GAUGE_SEGMENTED,
+            -> {
                 val barFill = if (nearLimit) scheme.error else scheme.primary
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -329,7 +339,7 @@ internal fun UsageWindowBar(
                         .fillMaxWidth()
                         .height(6.dp),
                     color = barFill,
-                    trackColor = scheme.surfaceVariant,
+                    trackColor = previewLinearTrackColor(),
                     gapSize = 0.dp,
                     drawStopIndicator = {},
                 )
@@ -361,12 +371,20 @@ internal fun resolvePreviewResetEpochMs(
 }
 
 @Composable
-internal fun formatResetAtLabel(moment: ResetMoment): String = when (moment) {
-    is ResetMoment.Today -> stringResource(R.string.widget_resets_at, moment.time)
-    is ResetMoment.Tomorrow ->
-        stringResource(R.string.widget_resets_at_tomorrow, moment.time)
-    is ResetMoment.Later ->
-        stringResource(R.string.widget_resets_at_date, moment.date, moment.time)
+internal fun formatResetAtLabel(moment: ResetMoment, circular: Boolean = false): String = when (moment) {
+    is ResetMoment.Today -> stringResource(
+        if (circular) R.string.widget_circular_resets_at else R.string.widget_resets_at,
+        moment.time,
+    )
+    is ResetMoment.Tomorrow -> stringResource(
+        if (circular) R.string.widget_circular_resets_at_tomorrow else R.string.widget_resets_at_tomorrow,
+        moment.time,
+    )
+    is ResetMoment.Later -> stringResource(
+        if (circular) R.string.widget_circular_resets_at_date else R.string.widget_resets_at_date,
+        moment.date,
+        moment.time,
+    )
 }
 
 internal fun previewTextStyle(
@@ -388,9 +406,6 @@ private fun capsulePreviewTextStyle(weight: FontWeight): TextStyle = TextStyle(
     fontWeight = weight,
     platformStyle = PlatformTextStyle(includeFontPadding = false),
 )
-
-/** Prefer on-container text until most of the bar is filled (mirrors Glance capsule). */
-private const val CapsuleTextOnFillThreshold = 0.45f
 
 /**
  * Mirrors Glance Material3 [androidx.glance.material3.ColorProviders] widgetBackground

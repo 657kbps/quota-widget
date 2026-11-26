@@ -70,6 +70,7 @@
     <string name="app_settings_theme_color_custom">Personnalisée</string>
     <string name="app_settings_theme_color_choose">Choisir une couleur</string>
     <string name="app_settings_refresh_interval">Intervalle d\'actualisation automatique</string>
+    <string name="app_settings_show_updated_at">Afficher l\'heure de mise à jour</string>
     <string name="app_settings_refresh_interval_minutes">%1$d min</string>
     <string name="app_settings_refresh_interval_hours">%1$d h</string>
     <string name="app_settings_check_updates_on_launch">Rechercher des mises à jour au démarrage</string>
@@ -123,11 +124,13 @@
     <string name="usage_progress_style_label">Style de barre de progression</string>
     <string name="usage_progress_style_bar">Standard</string>
     <string name="usage_progress_style_capsule">Capsule</string>
+    <string name="usage_progress_style_ring">Anneau</string>
+    <string name="usage_progress_style_gauge">Jauge</string>
+    <string name="usage_progress_segmented_toggle_title">Gradué</string>
     <string name="usage_reset_style_footer">Une ligne</string>
     <string name="usage_reset_style_stacked">Deux lignes</string>
     <string name="usage_reset_style_pill">Capsule</string>
     <string name="usage_reset_toggle_title">Afficher l\'heure de réinitialisation</string>
-    <string name="usage_preview_title">Aperçu du widget</string>
     <string name="usage_preview_layout_standard">Standard</string>
     <string name="usage_preview_layout_compact">Compact</string>
     <string name="usage_preview_layout_overview">Vue d\'ensemble</string>
@@ -136,6 +139,11 @@
     <string name="widget_resets_at">Réinitialisation à %1$s</string>
     <string name="widget_resets_at_tomorrow">Réinitialisation demain à %1$s</string>
     <string name="widget_resets_at_date">Réinitialisation le %1$s à %2$s</string>
+    <string name="widget_circular_updated_sample">MàJ à l\'instant</string>
+    <string name="widget_circular_updated_at">MàJ %1$s</string>
+    <string name="widget_circular_resets_at">Réinit. %1$s</string>
+    <string name="widget_circular_resets_at_tomorrow">Réinit. demain %1$s</string>
+    <string name="widget_circular_resets_at_date">Réinit. %1$s %2$s</string>
     <string name="usage_remaining_rolling">Restant glissant %1$s</string>
     <string name="usage_remaining_weekly">Restant hebdomadaire %1$s</string>
     <string name="usage_remaining_monthly">Restant mensuel %1$s</string>
@@ -154,6 +162,7 @@
     <string name="codex_logout">Se déconnecter</string>
     <string name="codex_status_logged_out">Non connecté</string>
     <string name="codex_login_failed">Connexion incomplète. Veuillez réessayer.</string>
+    <string name="auth_method_google_oauth">Google OAuth</string>
     <string name="action_save">Enregistrer</string>
     <string name="unsaved_changes_title">Enregistrer les modifications ?</string>
     <string name="unsaved_changes_message">Vos modifications n\'ont pas encore été enregistrées.</string>
@@ -279,5 +288,7 @@
     <string name="widget_updated_never">Jamais actualisé</string>
     <string name="widget_date_time_pattern">d MMM HH:mm</string>
     <string name="widget_date_pattern">d MMM</string>
+    <string name="widget_circular_date_time_pattern">d/M HH:mm</string>
+    <string name="widget_circular_date_pattern">d/M</string>
     <string name="widget_time_pattern">HH:mm</string>
 </resources>

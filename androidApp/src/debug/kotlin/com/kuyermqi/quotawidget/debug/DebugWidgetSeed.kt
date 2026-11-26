@@ -1,6 +1,9 @@
 package com.kuyermqi.quotawidget.debug
 
 import com.kuyermqi.quotawidget.QuotaWidgetApp
+import com.kuyermqi.quotawidget.domain.AppLanguage
+import com.kuyermqi.quotawidget.domain.CurrencyPreference
+import com.kuyermqi.quotawidget.domain.DarkThemeMode
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
@@ -11,8 +14,10 @@ import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.settings.CodexSettings
+import com.kuyermqi.quotawidget.settings.DeepSeekSettings
 import com.kuyermqi.quotawidget.settings.KimiCodeSettings
 import com.kuyermqi.quotawidget.settings.MagpieSettings
+import com.kuyermqi.quotawidget.settings.NewApiSettings
 import com.kuyermqi.quotawidget.settings.OpenCodeGoSettings
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.settings.ZhipuSettings
@@ -20,17 +25,39 @@ import com.kuyermqi.quotawidget.util.currentTimeMillis
 
 /** Debug-only fake snapshots for screenshotting the widget layouts. */
 object DebugWidgetSeed {
-    suspend fun seed(app: QuotaWidgetApp) {
+    private const val FAKE_KEY = "debug-fake-key"
+
+    suspend fun seed(
+        app: QuotaWidgetApp,
+        progressStyle: UsageProgressStyle? = null,
+        resetStyle: UsageResetStyle? = null,
+        styleOverrides: Map<String, UsageProgressStyle> = emptyMap(),
+        language: AppLanguage? = null,
+        darkThemeMode: DarkThemeMode? = null,
+    ) {
         val repo = app.settingsRepository
         val now = currentTimeMillis()
 
+        fun style(platformId: String, fallback: UsageProgressStyle): UsageProgressStyle =
+            styleOverrides[platformId] ?: progressStyle ?: fallback
+
+        if (language != null || darkThemeMode != null) {
+            val current = repo.getAppSettings()
+            repo.saveAppSettings(
+                current.copy(
+                    appLanguage = language ?: current.appLanguage,
+                    darkThemeMode = darkThemeMode ?: current.darkThemeMode,
+                ),
+            )
+        }
+
         repo.saveOpenCodeGoSettings(
             OpenCodeGoSettings(
-                apiKey = "debug-fake-key",
+                apiKey = FAKE_KEY,
                 widgetWindowKind = UsageWindowKind.ROLLING,
                 usageDisplayMode = UsageDisplayMode.USED,
-                usageProgressStyle = UsageProgressStyle.BAR,
-                usageResetStyle = UsageResetStyle.FOOTER,
+                usageProgressStyle = style(PlatformIds.OPENCODE_GO, UsageProgressStyle.BAR),
+                usageResetStyle = resetStyle ?: UsageResetStyle.FOOTER,
             ),
         )
         repo.saveWidgetSuccess(
@@ -48,11 +75,11 @@ object DebugWidgetSeed {
 
         repo.saveKimiCodeSettings(
             KimiCodeSettings(
-                apiKey = "debug-fake-key",
+                apiKey = FAKE_KEY,
                 widgetWindowKind = UsageWindowKind.ROLLING,
                 usageDisplayMode = UsageDisplayMode.USED,
-                usageProgressStyle = UsageProgressStyle.BAR,
-                usageResetStyle = UsageResetStyle.FOOTER_STACKED,
+                usageProgressStyle = style(PlatformIds.KIMI_CODE, UsageProgressStyle.BAR),
+                usageResetStyle = resetStyle ?: UsageResetStyle.FOOTER_STACKED,
             ),
         )
         repo.saveWidgetSuccess(
@@ -70,11 +97,11 @@ object DebugWidgetSeed {
         repo.saveMagpieSettings(
             MagpieSettings(
                 baseUrl = "http://127.0.0.1:9/",
-                apiKey = "debug-fake-key",
+                apiKey = FAKE_KEY,
                 widgetWindowKind = UsageWindowKind.ROLLING,
                 usageDisplayMode = UsageDisplayMode.USED,
-                usageProgressStyle = UsageProgressStyle.BAR,
-                usageResetStyle = UsageResetStyle.PILL,
+                usageProgressStyle = style(PlatformIds.MAGPIE, UsageProgressStyle.BAR),
+                usageResetStyle = resetStyle ?: UsageResetStyle.PILL,
             ),
         )
         repo.saveWidgetSuccess(
@@ -95,10 +122,12 @@ object DebugWidgetSeed {
                 accessToken = "debug-fake-token",
                 refreshToken = "debug-fake-refresh",
                 accountId = "debug-fake-account",
+                email = "codex@example.com",
+                planType = "plus",
                 widgetWindowKind = UsageWindowKind.WEEKLY,
                 usageDisplayMode = UsageDisplayMode.USED,
-                usageProgressStyle = UsageProgressStyle.CAPSULE,
-                usageResetStyle = UsageResetStyle.PILL,
+                usageProgressStyle = style(PlatformIds.CODEX, UsageProgressStyle.CAPSULE),
+                usageResetStyle = resetStyle ?: UsageResetStyle.PILL,
             ),
         )
         repo.saveWidgetSuccess(
@@ -115,11 +144,11 @@ object DebugWidgetSeed {
 
         repo.saveZhipuSettings(
             ZhipuSettings(
-                apiKey = "debug-fake-key",
+                apiKey = FAKE_KEY,
                 widgetWindowKind = UsageWindowKind.ROLLING,
                 usageDisplayMode = UsageDisplayMode.USED,
-                usageProgressStyle = UsageProgressStyle.CAPSULE,
-                usageResetStyle = UsageResetStyle.FOOTER,
+                usageProgressStyle = style(PlatformIds.ZHIPU, UsageProgressStyle.CAPSULE),
+                usageResetStyle = resetStyle ?: UsageResetStyle.FOOTER,
             ),
         )
         repo.saveWidgetSuccess(
@@ -137,14 +166,14 @@ object DebugWidgetSeed {
         repo.saveSessionSettings(
             PlatformIds.COMMAND_CODE,
             SessionPlatformSettings(
-                apiKey = "debug-fake-key",
+                apiKey = FAKE_KEY,
                 accountId = "debug-account",
                 email = "dev@example.com",
                 plan = "Pro",
                 widgetWindowKind = UsageWindowKind.MONTHLY,
                 usageDisplayMode = UsageDisplayMode.USED,
-                usageProgressStyle = UsageProgressStyle.BAR,
-                usageResetStyle = UsageResetStyle.PILL,
+                usageProgressStyle = style(PlatformIds.COMMAND_CODE, UsageProgressStyle.BAR),
+                usageResetStyle = resetStyle ?: UsageResetStyle.PILL,
             ),
         )
         repo.saveWidgetSuccess(
@@ -159,17 +188,128 @@ object DebugWidgetSeed {
                 ),
             ),
         )
+
+        repo.saveSessionSettings(
+            PlatformIds.CLINE,
+            SessionPlatformSettings(
+                accessToken = "debug-fake-token",
+                refreshToken = "debug-fake-refresh",
+                apiKey = FAKE_KEY,
+                email = "cline@example.com",
+                plan = "Pro",
+                widgetWindowKind = UsageWindowKind.ROLLING,
+                usageDisplayMode = UsageDisplayMode.USED,
+                usageProgressStyle = style(PlatformIds.CLINE, UsageProgressStyle.BAR),
+                usageResetStyle = resetStyle ?: UsageResetStyle.FOOTER,
+            ),
+        )
+        repo.saveWidgetSuccess(
+            PlatformIds.CLINE,
+            snapshot(
+                PlatformIds.CLINE,
+                now,
+                listOf(
+                    window(QuotaWindowKind.FIVE_HOUR, 31.0, minutes(4 * 60 + 5)),
+                    window(QuotaWindowKind.WEEKLY, 45.0, minutes(6 * 24 * 60)),
+                    window(QuotaWindowKind.MONTHLY, 12.0, minutes(21 * 24 * 60)),
+                ),
+            ),
+        )
+
+        repo.saveSessionSettings(
+            PlatformIds.WORKBUDDY,
+            SessionPlatformSettings(
+                accessToken = "debug-fake-token",
+                refreshToken = "debug-fake-refresh",
+                apiKey = FAKE_KEY,
+                uid = "debug-uid",
+                email = "buddy@example.com",
+                plan = "Team",
+                widgetWindowKind = UsageWindowKind.MONTHLY,
+                usageDisplayMode = UsageDisplayMode.USED,
+                usageProgressStyle = style(PlatformIds.WORKBUDDY, UsageProgressStyle.CAPSULE),
+                usageResetStyle = resetStyle ?: UsageResetStyle.PILL,
+            ),
+        )
+        repo.saveWidgetSuccess(
+            PlatformIds.WORKBUDDY,
+            snapshot(
+                PlatformIds.WORKBUDDY,
+                now,
+                listOf(
+                    window(QuotaWindowKind.MONTHLY, 27.0, minutes(13 * 24 * 60 + 6 * 60)),
+                ),
+            ),
+        )
+
+        repo.saveSessionSettings(
+            PlatformIds.ANTIGRAVITY,
+            SessionPlatformSettings(
+                accessToken = "debug-fake-token",
+                refreshToken = "debug-fake-refresh",
+                apiKey = FAKE_KEY,
+                projectId = "debug-project",
+                email = "gravity@example.com",
+                widgetWindowKind = UsageWindowKind.ROLLING,
+                usageDisplayMode = UsageDisplayMode.USED,
+                usageProgressStyle = style(PlatformIds.ANTIGRAVITY, UsageProgressStyle.BAR),
+                usageResetStyle = resetStyle ?: UsageResetStyle.HIDDEN,
+            ),
+        )
+        repo.saveWidgetSuccess(
+            PlatformIds.ANTIGRAVITY,
+            snapshot(
+                PlatformIds.ANTIGRAVITY,
+                now,
+                listOf(
+                    window(QuotaWindowKind.FIVE_HOUR, 73.0, minutes(2 * 60 + 18)),
+                    window(QuotaWindowKind.WEEKLY, 58.0, minutes(6 * 24 * 60)),
+                ),
+            ),
+        )
+
+        repo.saveNewApiSettings(
+            NewApiSettings(
+                baseUrl = "http://127.0.0.1:9/",
+                apiKey = FAKE_KEY,
+                usageDisplayMode = UsageDisplayMode.USED,
+                usageProgressStyle = style(PlatformIds.NEW_API, UsageProgressStyle.BAR),
+            ),
+        )
+        repo.saveWidgetSuccess(
+            PlatformIds.NEW_API,
+            snapshot(
+                PlatformIds.NEW_API,
+                now,
+                listOf(window(QuotaWindowKind.TOKEN, 43.0, 0L)),
+                primaryDisplay = "$23.45",
+            ),
+        )
+
+        repo.saveDeepSeekSettings(
+            DeepSeekSettings(apiKey = FAKE_KEY, currency = CurrencyPreference.CNY),
+        )
+        repo.saveWidgetSuccess(
+            PlatformIds.DEEPSEEK,
+            snapshot(
+                PlatformIds.DEEPSEEK,
+                now,
+                emptyList(),
+                primaryDisplay = "¥78.20",
+            ),
+        )
     }
 
     private fun snapshot(
         platformId: String,
         nowEpochMs: Long,
         windows: List<QuotaWindow>,
+        primaryDisplay: String = "",
     ): QuotaSnapshot = QuotaSnapshot(
         platformId = platformId,
         platformName = PlatformRegistry.displayName(platformId),
         windows = windows,
-        primaryDisplay = "",
+        primaryDisplay = primaryDisplay,
         updatedAtEpochMs = nowEpochMs,
     )
 

@@ -9,6 +9,7 @@ import com.kuyermqi.quotawidget.cline.ClineClient
 import com.kuyermqi.quotawidget.codex.CodexOAuth
 import com.kuyermqi.quotawidget.codex.CodexUsageClient
 import com.kuyermqi.quotawidget.commandcode.CommandCodeClient
+import com.kuyermqi.quotawidget.debug.shouldSkipRefreshForDebugFake
 import com.kuyermqi.quotawidget.deepseek.DeepSeekBalanceClient
 import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.kimi.KimiCodeUsageClient
@@ -95,6 +96,9 @@ class QuotaWidgetApp : Application() {
                 KimiCodeQuotaProvider(KimiCodeUsageClient(httpClient)),
                 ZhipuQuotaProvider(ZhipuUsageClient(httpClient)),
             ) + sessionQuotaProviders(httpClient),
+            shouldSkipRefresh = { platformId ->
+                shouldSkipRefreshForDebugFake(settingsRepository, platformId)
+            },
         )
         updateCheckInteractor = UpdateCheckInteractor(
             settingsRepository = settingsRepository,

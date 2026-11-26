@@ -95,11 +95,24 @@ class CommandCodeClient(
         }
         val subscription = suspendRunCatching { fetchSubscription(settings.apiKey) }.getOrNull()
         val parsed = parseCredits(credits, subscription)
+        val identity = if (settings.email.isBlank() && settings.accountId.isBlank()) {
+            suspendRunCatching { fetchIdentity(settings.apiKey) }.getOrNull()
+        } else {
+            null
+        }
+        val resolvedEmail = settings.email.ifBlank { identity?.email.orEmpty() }
+        val resolvedAccountId = settings.accountId.ifBlank {
+            identity?.email?.ifBlank { identity.userName }.orEmpty()
+        }
         if (parsed.windows.isEmpty()) {
             if (parsed.balance <= 0.0) {
                 throw QuotaUnavailableException("Command Code 未返回可用的额度信息")
             }
-            val next = settings.copy(plan = parsed.plan)
+            val next = settings.copy(
+                email = resolvedEmail,
+                accountId = resolvedAccountId,
+                plan = parsed.plan.ifBlank { identity?.plan.orEmpty() }.ifBlank { settings.plan },
+            )
             if (next != settings) save(next)
             return QuotaSnapshot(
                 platformId = PlatformIds.COMMAND_CODE,
@@ -109,7 +122,11 @@ class CommandCodeClient(
                 updatedAtEpochMs = currentTimeMillis(),
             )
         }
-        val next = settings.copy(plan = parsed.plan.ifBlank { settings.plan })
+        val next = settings.copy(
+            email = resolvedEmail,
+            accountId = resolvedAccountId,
+            plan = parsed.plan.ifBlank { identity?.plan.orEmpty() }.ifBlank { settings.plan },
+        )
         if (next != settings) save(next)
         val primary = formatUsagePrimaryDisplay(parsed.windows, NeutralUsageLabels)
         return QuotaSnapshot(

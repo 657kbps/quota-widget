@@ -16,24 +16,39 @@ sealed interface ResetMoment {
 }
 
 object WidgetDateFormatter {
-    fun formatUpdatedAt(context: Context, epochMs: Long): String {
+    fun formatUpdatedAt(context: Context, epochMs: Long, circular: Boolean = false): String {
         if (epochMs <= 0L) return context.getString(R.string.widget_updated_never)
+        val patternRes = if (circular) {
+            R.string.widget_circular_date_time_pattern
+        } else {
+            R.string.widget_date_time_pattern
+        }
         return Instant.ofEpochMilli(epochMs)
             .atZone(ZoneId.systemDefault())
-            .format(formatter(context, R.string.widget_date_time_pattern))
+            .format(formatter(context, patternRes))
     }
 
     /** Buckets [resetAtEpochMs] by local calendar day relative to [nowEpochMs]. */
-    fun resetMoment(context: Context, resetAtEpochMs: Long, nowEpochMs: Long): ResetMoment {
+    fun resetMoment(
+        context: Context,
+        resetAtEpochMs: Long,
+        nowEpochMs: Long,
+        circular: Boolean = false,
+    ): ResetMoment {
         val zone = ZoneId.systemDefault()
         val reset = Instant.ofEpochMilli(resetAtEpochMs).atZone(zone)
         val today = Instant.ofEpochMilli(nowEpochMs).atZone(zone).toLocalDate()
         val time = reset.format(formatter(context, R.string.widget_time_pattern))
+        val datePatternRes = if (circular) {
+            R.string.widget_circular_date_pattern
+        } else {
+            R.string.widget_date_pattern
+        }
         return when (reset.toLocalDate()) {
             today -> ResetMoment.Today(time)
             today.plusDays(1) -> ResetMoment.Tomorrow(time)
             else -> ResetMoment.Later(
-                date = reset.format(formatter(context, R.string.widget_date_pattern)),
+                date = reset.format(formatter(context, datePatternRes)),
                 time = time,
             )
         }
