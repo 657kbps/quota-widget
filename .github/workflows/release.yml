@@ -15,7 +15,12 @@ permissions:
   contents: write
 
 jobs:
+  ci:
+    name: CI gate
+    uses: ./.github/workflows/ci.yml
+
   release:
+    needs: ci
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -33,14 +38,23 @@ jobs:
       - name: Resolve version
         id: version
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            VERSION="${{ inputs.version }}"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            VERSION="$INPUT_VERSION"
           else
             VERSION="${GITHUB_REF_NAME#v}"
           fi
+          # Only plain version names reach the Gradle properties and the APK file name.
+          if [[ ! "$VERSION" =~ ^[0-9]+(\.[0-9]+)*([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid version name: '$VERSION'"
+            exit 1
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Resolved version=$VERSION versionCode=${{ github.run_number }}"
+          echo "Resolved version=$VERSION versionCode=$RUN_NUMBER"
 
       - name: Decode release keystore
         env:
@@ -54,6 +68,8 @@ jobs:
 
       - name: Build release APK
         env:
+          VERSION_NAME: ${{ steps.version.outputs.version }}
+          VERSION_CODE: ${{ github.run_number }}
           RELEASE_STORE_FILE: ${{ github.workspace }}/release.keystore
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
@@ -61,16 +77,22 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew :androidApp:assembleRelease \
-            -PversionName="${{ steps.version.outputs.version }}" \
-            -PversionCode="${{ github.run_number }}"
+            -PversionName="$VERSION_NAME" \
+            -PversionCode="$VERSION_CODE"
+
+      - name: Remove decoded keystore
+        if: always()
+        shell: bash
+        run: rm -f "$GITHUB_WORKSPACE/release.keystore"
 
       - name: Prepare artifact
         id: artifact
         shell: bash
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.version }}
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
           SRC="$(ls androidApp/build/outputs/apk/release/*.apk | head -n 1)"
-          DEST="quota-widget-${VERSION}-release.apk"
+          DEST="quota-widget-${VERSION_NAME}-release.apk"
           cp "$SRC" "$DEST"
           echo "path=$DEST" >> "$GITHUB_OUTPUT"
 

@@ -69,7 +69,17 @@
 
 # 本地可用 debug 签名打 release（仅开发验证 R8，勿发布）
 ./gradlew :androidApp:assembleRelease -PallowDebugReleaseSigning=true
+
+# 静态检查（规则：config/detekt/detekt.yml；存量违规：config/detekt/baseline-*.xml）
+./gradlew :shared:detekt :androidApp:detekt verifyMaxFileLines
+
+# 全量门禁（与 .github/workflows/ci.yml 一致；push 到 main 与 PR 自动执行，release 复用同一工作流）
+./gradlew :shared:allTests :shared:detekt :androidApp:detekt verifyMaxFileLines \
+    :androidApp:lintDebug :androidApp:assembleRelease -PallowDebugReleaseSigning=true
 ```
+
+`detekt` 无单文件行数规则，超长文件由根工程的 `verifyMaxFileLines`（上限 800 行）拦截；
+基线只容纳存量违规，新代码违规必须直接修。
 
 Windows 可用 `.\gradlew.bat` 替代 `./gradlew`。
 

@@ -10,6 +10,7 @@ androidx-core = "1.18.0"
 androidx-datastore = "1.1.7"
 androidx-lifecycle = "2.10.0"
 androidx-work = "2.10.3"
+detekt = "1.23.8"
 glance = "1.1.1"
 kotlin = "2.3.21"
 kotlinx-coroutines = "1.10.2"
@@ -51,5 +52,6 @@ material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "m
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

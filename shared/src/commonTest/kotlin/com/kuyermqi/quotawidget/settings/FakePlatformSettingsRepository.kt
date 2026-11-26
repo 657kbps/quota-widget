@@ -73,6 +73,9 @@ class FakePlatformSettingsRepository(
     /** Every [saveWidgetError] call as `platformId to kind`, oldest first. */
     val widgetErrorSaves = mutableListOf<Pair<String, WidgetErrorKind>>()
 
+    /** Platform ids of every [saveWidgetSuccess] call, oldest first. */
+    val widgetSuccessSaves = mutableListOf<String>()
+
     override fun observeDeepSeekSettings(): Flow<DeepSeekSettings> = deepSeekFlow.asStateFlow()
     override suspend fun getDeepSeekSettings(): DeepSeekSettings = deepSeekFlow.value
     override suspend fun saveDeepSeekSettings(settings: DeepSeekSettings) {
@@ -351,6 +354,7 @@ class FakePlatformSettingsRepository(
     }
 
     override suspend fun saveWidgetSuccess(platformId: String, snapshot: QuotaSnapshot) {
+        widgetSuccessSaves += platformId
         widgetFlow(platformId).value = WidgetDisplayState.Success(snapshot)
     }
 

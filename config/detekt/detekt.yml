@@ -1,0 +1,31 @@
+# Static analysis gate for `shared` and `androidApp`.
+# Everything else keeps the detekt defaults; findings that predate this gate live in
+# `baseline-<module>.xml` and only new violations fail the build.
+
+build:
+  maxIssues: 0
+
+complexity:
+  LongMethod:
+    threshold: 120
+  CyclomaticComplexMethod:
+    threshold: 25
+  CognitiveComplexMethod:
+    active: true
+    threshold: 25
+  LargeClass:
+    threshold: 800
+  NestedBlockDepth:
+    threshold: 5
+  LongParameterList:
+    ignoreDefaultParameters: true
+
+exceptions:
+  SwallowedException:
+    active: true
+  TooGenericExceptionCaught:
+    active: true
+
+style:
+  MaxLineLength:
+    maxLineLength: 120

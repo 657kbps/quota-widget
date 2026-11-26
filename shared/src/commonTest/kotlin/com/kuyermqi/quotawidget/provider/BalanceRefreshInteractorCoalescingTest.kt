@@ -18,6 +18,7 @@ import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -63,6 +64,43 @@ class BalanceRefreshInteractorCoalescingTest {
             assertIs<BalanceRefreshResult.Completed>(firstResult).state,
         )
         assertEquals("￥1.00", success.snapshot.primaryDisplay)
+    }
+
+    @Test
+    fun samePlatformConcurrently_writesExactlyOneWidgetResult() = runTest {
+        val repo = FakePlatformSettingsRepository(deepSeek = DeepSeekSettings(apiKey = "sk-test"))
+        val started = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        var fetchCount = 0
+        val provider = object : QuotaProvider {
+            override val platform: QuotaPlatform = PlatformRegistry.find(PlatformIds.DEEPSEEK)!!
+
+            override suspend fun isConfigured(repo: PlatformSettingsRepository): Boolean =
+                repo.getDeepSeekSettings().apiKey.isNotBlank()
+
+            override suspend fun fetch(repo: PlatformSettingsRepository): QuotaSnapshot {
+                fetchCount++
+                started.complete(Unit)
+                release.await()
+                return deepSeekSnapshot("3.00")
+            }
+        }
+        val interactor = BalanceRefreshInteractor(repo, listOf(provider))
+
+        val callers = List(3) { async { interactor.refresh(PlatformIds.DEEPSEEK) } }
+        started.await()
+        runCurrent()
+        assertEquals(1, fetchCount)
+
+        release.complete(Unit)
+        val results = callers.awaitAll()
+
+        assertEquals(1, fetchCount)
+        assertEquals(listOf(PlatformIds.DEEPSEEK), repo.widgetSuccessSaves)
+        assertEquals(results.first(), results[1])
+        assertEquals(results.first(), results[2])
+        val state = assertIs<WidgetDisplayState.Success>(repo.getWidgetState(PlatformIds.DEEPSEEK))
+        assertEquals("￥3.00", state.snapshot.primaryDisplay)
     }
 
     @Test

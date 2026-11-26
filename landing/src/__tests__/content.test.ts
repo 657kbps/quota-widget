@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { COPY, PROVIDERS } from '@/data/content';
 import { FALLBACK_RELEASE } from '@/hooks/useLatestRelease';
 import { resolveLocale, resolveSystemLocale, SUPPORTED_LOCALES } from '@/lib/i18n';
+import { parseGradleVersionName, resolveFallbackVersion, UNKNOWN_VERSION } from '@/lib/version';
 import { useLandingStore } from '@/store/landingStore';
 
 describe('Quota Widget landing content & i18n', () => {
@@ -58,10 +59,19 @@ describe('Quota Widget landing content & i18n', () => {
     expect(useLandingStore.getState().localePreference).toBe('system');
   });
 
-  it('derives fallback release version from androidApp/build.gradle.kts', () => {
+  it('uses the version Vite injects from androidApp/build.gradle.kts', () => {
     const gradle = readFileSync(resolve(process.cwd(), '../androidApp/build.gradle.kts'), 'utf8');
-    const match = gradle.match(/versionName\s*=.*?"([^"]+)"/);
-    expect(match?.[1]).toBeTruthy();
-    expect(FALLBACK_RELEASE.version).toBe(`v${match?.[1]}`);
+    const versionName = parseGradleVersionName(gradle);
+    expect(versionName).toMatch(/^\d+\.\d+\.\d+$/);
+    // The define reaches both the build and this test run, so the placeholder tracks the app.
+    expect(FALLBACK_RELEASE.version).toBe(`v${versionName}`);
+    expect(resolveFallbackVersion('  v1.2.3  ')).toBe('v1.2.3');
+  });
+
+  it('never invents a release number when __APP_VERSION__ is missing', () => {
+    expect(resolveFallbackVersion(undefined)).toBe(UNKNOWN_VERSION);
+    expect(resolveFallbackVersion('')).toBe(UNKNOWN_VERSION);
+    expect(resolveFallbackVersion('   ')).toBe(UNKNOWN_VERSION);
+    expect(parseGradleVersionName('')).toBeUndefined();
   });
 });
