@@ -17,6 +17,12 @@ private const val LINE_HEIGHT_FACTOR = 1.2f
 private const val WIDTH_SAFETY_FACTOR = 0.95f
 private const val MULTI_LINE_WIDTH_SAFETY_FACTOR = 0.94f
 private const val MULTI_LINE_FIT_STEP_SP = 1f
+private const val CJK_SYMBOLS_START = 0x3000
+private const val CJK_SYMBOLS_END = 0x303F
+private const val HALFWIDTH_FULLWIDTH_START = 0xFF00
+private const val HALFWIDTH_FULLWIDTH_END = 0xFFEF
+private val CJK_SYMBOLS_AND_PUNCT_RANGE = CJK_SYMBOLS_START..CJK_SYMBOLS_END
+private val HALFWIDTH_FULLWIDTH_RANGE = HALFWIDTH_FULLWIDTH_START..HALFWIDTH_FULLWIDTH_END
 
 internal data class TextFitBounds(
     val maxWidth: Dp,
@@ -97,15 +103,15 @@ internal fun fitMultiLineTextSize(
         heightPx = (bounds.maxHeight.value * metrics.density).toInt().coerceAtLeast(1),
         maxLines = maxLines,
     )
-    val words = text.split(' ', '\n').filter { it.isNotEmpty() }
+    val unbreakableTokens = extractUnbreakableTokens(text)
     val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         typeface = if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
     }
     var resultSp = bounds.minSp
-    var candidateSp = bounds.maxSp
+    var candidateSp = bounds.maxSp.coerceAtLeast(bounds.minSp)
     while (candidateSp > bounds.minSp) {
         paint.textSize = candidateSp * metrics.scaledDensity
-        if (fitsMultiLineCandidate(paint, text, words, measureBox)) {
+        if (fitsMultiLineCandidate(paint, text, unbreakableTokens, measureBox)) {
             resultSp = candidateSp
             break
         }
@@ -123,16 +129,48 @@ private data class MultiLineMeasureBox(
 private fun fitsMultiLineCandidate(
     paint: TextPaint,
     text: String,
-    words: List<String>,
+    unbreakableTokens: List<String>,
     box: MultiLineMeasureBox,
 ): Boolean {
-    if (words.any { paint.measureText(it) > box.widthPx }) return false
+    if (unbreakableTokens.any { paint.measureText(it) > box.widthPx }) return false
     val layout = StaticLayout.Builder
         .obtain(text, 0, text.length, paint, box.widthPx)
         .setMaxLines(Int.MAX_VALUE)
         .setIncludePad(true)
         .build()
     return layout.lineCount <= box.maxLines && layout.height <= box.heightPx
+}
+
+private fun extractUnbreakableTokens(text: String): List<String> {
+    val tokens = mutableListOf<String>()
+    val current = StringBuilder()
+    for (ch in text) {
+        if (isWrappableBoundaryChar(ch)) {
+            if (current.isNotEmpty()) {
+                tokens += current.toString()
+                current.clear()
+            }
+        } else {
+            current.append(ch)
+        }
+    }
+    if (current.isNotEmpty()) {
+        tokens += current.toString()
+    }
+    return tokens
+}
+
+private fun isWrappableBoundaryChar(ch: Char): Boolean {
+    if (ch.isWhitespace()) return true
+    val code = ch.code
+    val script = Character.UnicodeScript.of(code)
+    return script == Character.UnicodeScript.HAN ||
+        script == Character.UnicodeScript.HIRAGANA ||
+        script == Character.UnicodeScript.KATAKANA ||
+        script == Character.UnicodeScript.HANGUL ||
+        code in CJK_SYMBOLS_AND_PUNCT_RANGE ||
+        code in HALFWIDTH_FULLWIDTH_RANGE ||
+        ch == '…'
 }
 
 internal fun measureBoldWidthPerPx(text: String): Float = measureTextWidthPerPx(text, bold = true)
