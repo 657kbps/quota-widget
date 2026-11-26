@@ -70,6 +70,7 @@
     <string name="app_settings_theme_color_custom">Свой</string>
     <string name="app_settings_theme_color_choose">Выбрать цвет</string>
     <string name="app_settings_refresh_interval">Интервал автообновления</string>
+    <string name="app_settings_show_updated_at">Показывать время обновления</string>
     <string name="app_settings_refresh_interval_minutes">%1$d мин</string>
     <string name="app_settings_refresh_interval_hours">%1$d ч</string>
     <string name="app_settings_check_updates_on_launch">Проверять обновления при запуске</string>

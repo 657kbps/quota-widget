@@ -133,7 +133,7 @@ private fun NewApiBalanceWidgetContent(
                 is WidgetDisplayState.Success -> {
                     val balance = formatNewApiBalanceTitle(state.snapshot, usageDisplayMode)
                         ?: contextString(R.string.usage_unavailable)
-                    val updated = updatedAtLabel(state.snapshot.updatedAtEpochMs)
+                    val updated = updatedAtLabel(state.snapshot.updatedAtEpochMs).orEmpty()
                     BalanceBlock(
                         title = balance,
                         subtitle = formatNewApiWidgetFooter(
@@ -193,7 +193,7 @@ Triple(contextString(R.string.widget_needs_reauth), null, 26.sp)
                 is WidgetDisplayState.Success -> {
                     val primary = formatNewApiBalanceTitle(state.snapshot, usageDisplayMode)
                         ?: contextString(R.string.usage_unavailable)
-                    val updated = updatedAtLabel(state.snapshot.updatedAtEpochMs)
+                    val updated = updatedAtLabel(state.snapshot.updatedAtEpochMs).orEmpty()
                     Triple(
                         primary,
                         formatNewApiWidgetFooter(

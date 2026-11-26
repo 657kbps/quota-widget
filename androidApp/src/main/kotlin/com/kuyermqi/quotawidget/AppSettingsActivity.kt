@@ -34,6 +34,7 @@ class AppSettingsActivity : LocaleAwareActivity() {
                 appSettings.darkThemeMode,
                 appSettings.themeColorMode,
                 appSettings.customSeedColorArgb,
+                appSettings.showWidgetUpdatedAt,
             ) {
                 WidgetSyncCoordinator.syncWidgets(this@AppSettingsActivity, "app_theme")
             }

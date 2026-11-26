@@ -50,6 +50,7 @@ data class AppSettings(
     val refreshIntervalMinutes: Int = DEFAULT_REFRESH_INTERVAL_MINUTES,
     val checkForUpdatesOnLaunch: Boolean = true,
     val appLanguage: AppLanguage = AppLanguage.FollowSystem,
+    val showWidgetUpdatedAt: Boolean = true,
 ) {
     init {
         require(refreshIntervalMinutes in ALLOWED_REFRESH_INTERVAL_MINUTES) {
@@ -583,12 +584,11 @@ fun formatNewApiWidgetFooter(
     snapshot: QuotaSnapshot,
     expiredLabel: String,
     updatedAtText: String,
-): String =
-    if (snapshot.tokenExpired) {
-        "$expiredLabel · $updatedAtText"
-    } else {
-        updatedAtText
-    }
+): String = when {
+    snapshot.tokenExpired && updatedAtText.isNotBlank() -> "$expiredLabel · $updatedAtText"
+    snapshot.tokenExpired -> expiredLabel
+    else -> updatedAtText
+}
 
 /** Used-percent value passed into progress tracks for NewAPI (empty pool → 0 for both modes). */
 fun newApiUsageProgressUsedPercent(

@@ -341,6 +341,23 @@ fun AppSettingsScreen(
                             }
                         }
                     }
+                    SettingsRowDivider()
+                    SettingsRow(
+                        title = stringResource(R.string.app_settings_show_updated_at),
+                        trailing = {
+                            Switch(
+                                checked = appSettings.showWidgetUpdatedAt,
+                                onCheckedChange = null,
+                            )
+                        },
+                        modifier = Modifier.toggleable(
+                            value = appSettings.showWidgetUpdatedAt,
+                            role = Role.Switch,
+                            onValueChange = { enabled ->
+                                save(appSettings.copy(showWidgetUpdatedAt = enabled))
+                            },
+                        ),
+                    )
                 }
 
                 SettingsSection(

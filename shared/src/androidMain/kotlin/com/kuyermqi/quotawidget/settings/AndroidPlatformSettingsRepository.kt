@@ -529,6 +529,7 @@ class AndroidPlatformSettingsRepository(
             prefs[SettingsKeys.THEME_COLOR_MODE] = settings.themeColorMode.name
             prefs[SettingsKeys.CUSTOM_SEED_COLOR_ARGB] = settings.customSeedColorArgb
             prefs[SettingsKeys.REFRESH_INTERVAL_MINUTES] = settings.refreshIntervalMinutes
+            prefs[SettingsKeys.SHOW_WIDGET_UPDATED_AT] = settings.showWidgetUpdatedAt
             prefs[SettingsKeys.CHECK_FOR_UPDATES_ON_LAUNCH] = settings.checkForUpdatesOnLaunch
             prefs[SettingsKeys.APP_LANGUAGE] = settings.appLanguage.name
         }

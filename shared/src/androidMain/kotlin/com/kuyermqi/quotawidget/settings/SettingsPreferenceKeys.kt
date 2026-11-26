@@ -93,6 +93,7 @@ internal object SettingsKeys {
     val THEME_COLOR_MODE = stringPreferencesKey("theme_color_mode")
     val CUSTOM_SEED_COLOR_ARGB = intPreferencesKey("custom_seed_color_argb")
     val REFRESH_INTERVAL_MINUTES = intPreferencesKey("refresh_interval_minutes")
+    val SHOW_WIDGET_UPDATED_AT = booleanPreferencesKey("show_widget_updated_at")
     val CHECK_FOR_UPDATES_ON_LAUNCH = booleanPreferencesKey("check_for_updates_on_launch")
     val APP_LANGUAGE = stringPreferencesKey("app_language")
     val UPDATE_IGNORED_VERSION = stringPreferencesKey("update_ignored_version")

@@ -40,6 +40,7 @@ internal fun Preferences.toAppSettings(): AppSettings {
             ?: DEFAULT_REFRESH_INTERVAL_MINUTES,
         checkForUpdatesOnLaunch = this[SettingsKeys.CHECK_FOR_UPDATES_ON_LAUNCH] ?: true,
         appLanguage = AppLanguage.fromStorage(this[SettingsKeys.APP_LANGUAGE]),
+        showWidgetUpdatedAt = this[SettingsKeys.SHOW_WIDGET_UPDATED_AT] ?: true,
     )
 }
 

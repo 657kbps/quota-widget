@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,6 +68,8 @@ import com.kuyermqi.quotawidget.widget.compactBalanceTitleFontSize
 import com.kuyermqi.quotawidget.widget.usage.progressTrackColorArgb
 
 private const val COMPACT_PILL_PREVIEW_MAX_PERCENT_SP = 22f
+
+internal val LocalShowWidgetUpdatedAt = staticCompositionLocalOf { true }
 
 internal data class WidgetTabHeaderState<T>(
     val tabs: List<T>,
@@ -278,6 +281,7 @@ internal fun previewUpdatedLabel(
     updatedAtEpochMs: Long,
     compact: Boolean = false,
 ): String {
+    if (!LocalShowWidgetUpdatedAt.current) return ""
     val context = LocalContext.current
     return when {
         updatedAtEpochMs > 0L && compact -> stringResource(

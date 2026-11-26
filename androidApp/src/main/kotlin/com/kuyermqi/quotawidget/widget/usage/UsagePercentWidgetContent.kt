@@ -208,7 +208,7 @@ internal fun UsagePercentSuccessBlock(
     val updatedText = updatedAtLabel(
         snapshot.updatedAtEpochMs,
         compact = compact || renderCircular,
-    )
+    ).orEmpty()
     val updatedFooter = if (snapshot.platformId == PlatformIds.NEW_API) {
         formatNewApiWidgetFooter(
             snapshot = snapshot,

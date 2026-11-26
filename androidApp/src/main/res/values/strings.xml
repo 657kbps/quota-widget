@@ -71,6 +71,7 @@
     <string name="app_settings_theme_color_custom">Custom</string>
     <string name="app_settings_theme_color_choose">Choose color</string>
     <string name="app_settings_refresh_interval">Auto-refresh interval</string>
+    <string name="app_settings_show_updated_at">Show update time</string>
     <string name="app_settings_refresh_interval_minutes">%1$d min</string>
     <string name="app_settings_refresh_interval_hours">%1$d h</string>
     <string name="app_settings_check_updates_on_launch">Check for updates on launch</string>

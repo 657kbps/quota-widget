@@ -70,6 +70,7 @@
     <string name="app_settings_theme_color_custom">自定义</string>
     <string name="app_settings_theme_color_choose">选择颜色</string>
     <string name="app_settings_refresh_interval">自动更新间隔</string>
+    <string name="app_settings_show_updated_at">显示更新时间</string>
     <string name="app_settings_refresh_interval_minutes">%1$d 分钟</string>
     <string name="app_settings_refresh_interval_hours">%1$d 小时</string>
     <string name="app_settings_check_updates_on_launch">启动时检查更新</string>

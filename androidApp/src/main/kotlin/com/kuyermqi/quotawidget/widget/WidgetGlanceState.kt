@@ -75,6 +75,7 @@ object WidgetGlanceState {
     val themeColorModeKey = stringPreferencesKey("qw_theme_color_mode")
     val seedColorKey = intPreferencesKey("qw_seed_color")
     val appLanguageKey = stringPreferencesKey("qw_app_language")
+    val showUpdatedAtKey = booleanPreferencesKey("qw_show_updated_at")
     private val cardKeyScheme = UsageDisplayPrefKeyScheme(
         // Historical "qw_opencode" prefix: these names are persisted in widget state.
         prefixOf = { platformId ->
@@ -303,6 +304,9 @@ object WidgetGlanceState {
     fun Preferences.toAppLanguage(): AppLanguage =
         this[appLanguageKey]?.let { AppLanguage.fromStorage(it) } ?: AppLocale.current()
 
+    fun Preferences.toShowWidgetUpdatedAt(): Boolean =
+        this[showUpdatedAtKey] ?: true
+
     private fun Preferences.cardPrefs(platformId: String): UsageDisplayPrefs =
         toUsageDisplayPrefs(platformId, cardKeyScheme)
 
@@ -423,6 +427,7 @@ object WidgetGlanceState {
         this[themeColorModeKey] = appSettings.themeColorMode.name
         this[seedColorKey] = appSettings.customSeedColorArgb
         this[appLanguageKey] = appSettings.appLanguage.name
+        this[showUpdatedAtKey] = appSettings.showWidgetUpdatedAt
         if (card != null) {
             applyWidgetCardSettings(platformId, cardKeyScheme, card)
         }
