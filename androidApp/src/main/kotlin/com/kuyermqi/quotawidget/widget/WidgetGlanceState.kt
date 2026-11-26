@@ -41,8 +41,12 @@ import com.kuyermqi.quotawidget.locale.AppLocale
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
-import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
+import com.kuyermqi.quotawidget.settings.UsageDisplayPrefField
+import com.kuyermqi.quotawidget.settings.UsageDisplayPrefKeyScheme
+import com.kuyermqi.quotawidget.settings.UsageDisplayPrefs
 import com.kuyermqi.quotawidget.settings.WidgetCardSettings
+import com.kuyermqi.quotawidget.settings.applyWidgetCardSettings
+import com.kuyermqi.quotawidget.settings.toUsageDisplayPrefs
 
 /**
  * Glance [update] often recomposes without re-entering [GlanceAppWidget.provideGlance].
@@ -71,40 +75,18 @@ object WidgetGlanceState {
     val themeColorModeKey = stringPreferencesKey("qw_theme_color_mode")
     val seedColorKey = intPreferencesKey("qw_seed_color")
     val appLanguageKey = stringPreferencesKey("qw_app_language")
-    val openCodeWindowKindKey = stringPreferencesKey("qw_opencode_window_kind")
-    val openCodeUsageDisplayModeKey = stringPreferencesKey("qw_opencode_usage_display")
-    val openCodeUsageProgressStyleKey = stringPreferencesKey("qw_opencode_usage_progress_style")
-    val openCodeUsageResetStyleKey = stringPreferencesKey("qw_opencode_usage_reset_style")
-    val codexWindowKindKey = stringPreferencesKey("qw_codex_window_kind")
-    val codexUsageDisplayModeKey = stringPreferencesKey("qw_codex_usage_display")
-    val codexUsageProgressStyleKey = stringPreferencesKey("qw_codex_usage_progress_style")
-    val codexUsageResetStyleKey = stringPreferencesKey("qw_codex_usage_reset_style")
-    val newApiUsageDisplayModeKey = stringPreferencesKey("qw_new_api_usage_display")
-    val newApiUsageProgressStyleKey = stringPreferencesKey("qw_new_api_usage_progress_style")
-    val magpieWindowKindKey = stringPreferencesKey("qw_magpie_window_kind")
-    val magpieUsageDisplayModeKey = stringPreferencesKey("qw_magpie_usage_display")
-    val magpieUsageProgressStyleKey = stringPreferencesKey("qw_magpie_usage_progress_style")
-    val magpieUsageResetStyleKey = stringPreferencesKey("qw_magpie_usage_reset_style")
-    val kimiCodeWindowKindKey = stringPreferencesKey("qw_kimi_code_window_kind")
-    val kimiCodeUsageDisplayModeKey = stringPreferencesKey("qw_kimi_code_usage_display")
-    val kimiCodeUsageProgressStyleKey = stringPreferencesKey("qw_kimi_code_usage_progress_style")
-    val kimiCodeUsageResetStyleKey = stringPreferencesKey("qw_kimi_code_usage_reset_style")
-    val zhipuWindowKindKey = stringPreferencesKey("qw_zhipu_window_kind")
-    val zhipuUsageDisplayModeKey = stringPreferencesKey("qw_zhipu_usage_display")
-    val zhipuUsageProgressStyleKey = stringPreferencesKey("qw_zhipu_usage_progress_style")
-    val zhipuUsageResetStyleKey = stringPreferencesKey("qw_zhipu_usage_reset_style")
-
-    private fun sessionWindowKindKey(platformId: String) =
-        stringPreferencesKey("qw_${platformId}_window_kind")
-
-    private fun sessionUsageDisplayModeKey(platformId: String) =
-        stringPreferencesKey("qw_${platformId}_usage_display")
-
-    private fun sessionUsageProgressStyleKey(platformId: String) =
-        stringPreferencesKey("qw_${platformId}_usage_progress_style")
-
-    private fun sessionUsageResetStyleKey(platformId: String) =
-        stringPreferencesKey("qw_${platformId}_usage_reset_style")
+    private val cardKeyScheme = UsageDisplayPrefKeyScheme(
+        // Historical "qw_opencode" prefix: these names are persisted in widget state.
+        prefixOf = { platformId ->
+            if (platformId == PlatformIds.OPENCODE_GO) "qw_opencode" else "qw_$platformId"
+        },
+        tokens = mapOf(
+            UsageDisplayPrefField.WINDOW_KIND to "window_kind",
+            UsageDisplayPrefField.DISPLAY_MODE to "usage_display",
+            UsageDisplayPrefField.PROGRESS_STYLE to "usage_progress_style",
+            UsageDisplayPrefField.RESET_STYLE to "usage_reset_style",
+        ),
+    )
 
     private object Status {
         const val NOT_CONFIGURED = "not_configured"
@@ -321,99 +303,68 @@ object WidgetGlanceState {
     fun Preferences.toAppLanguage(): AppLanguage =
         this[appLanguageKey]?.let { AppLanguage.fromStorage(it) } ?: AppLocale.current()
 
-    fun Preferences.toOpenCodeUsageWindowKind(): UsageWindowKind =
-        UsageWindowKind.fromStorage(this[openCodeWindowKindKey])
+    private fun Preferences.cardPrefs(platformId: String): UsageDisplayPrefs =
+        toUsageDisplayPrefs(platformId, cardKeyScheme)
 
-    fun Preferences.toOpenCodeUsageDisplayMode(): UsageDisplayMode =
-        UsageDisplayMode.fromStorage(this[openCodeUsageDisplayModeKey])
+    fun Preferences.toOpenCodeUsageWindowKind(): UsageWindowKind = cardPrefs(PlatformIds.OPENCODE_GO).windowKind
+
+    fun Preferences.toOpenCodeUsageDisplayMode(): UsageDisplayMode = cardPrefs(PlatformIds.OPENCODE_GO).usageDisplayMode
 
     fun Preferences.toOpenCodeUsageProgressStyle(): UsageProgressStyle =
-        UsageProgressStyle.fromStorage(this[openCodeUsageProgressStyleKey])
+        cardPrefs(PlatformIds.OPENCODE_GO).usageProgressStyle
 
-    fun Preferences.toOpenCodeUsageResetStyle(): UsageResetStyle =
-        UsageResetStyle.fromStorage(this[openCodeUsageResetStyleKey])
+    fun Preferences.toOpenCodeUsageResetStyle(): UsageResetStyle = cardPrefs(PlatformIds.OPENCODE_GO).usageResetStyle
 
-    fun Preferences.toCodexUsageWindowKind(): UsageWindowKind =
-        this[codexWindowKindKey]
-            ?.let { UsageWindowKind.fromStorage(it) }
-            ?: UsageWindowKind.WEEKLY
+    fun Preferences.toCodexUsageWindowKind(): UsageWindowKind = cardPrefs(PlatformIds.CODEX).windowKind
 
-    fun Preferences.toCodexUsageDisplayMode(): UsageDisplayMode =
-        UsageDisplayMode.fromStorage(this[codexUsageDisplayModeKey])
+    fun Preferences.toCodexUsageDisplayMode(): UsageDisplayMode = cardPrefs(PlatformIds.CODEX).usageDisplayMode
 
-    fun Preferences.toCodexUsageProgressStyle(): UsageProgressStyle =
-        UsageProgressStyle.fromStorage(this[codexUsageProgressStyleKey])
+    fun Preferences.toCodexUsageProgressStyle(): UsageProgressStyle = cardPrefs(PlatformIds.CODEX).usageProgressStyle
 
-    fun Preferences.toCodexUsageResetStyle(): UsageResetStyle =
-        UsageResetStyle.fromStorage(this[codexUsageResetStyleKey])
+    fun Preferences.toCodexUsageResetStyle(): UsageResetStyle = cardPrefs(PlatformIds.CODEX).usageResetStyle
 
-    fun Preferences.toNewApiUsageDisplayMode(): UsageDisplayMode =
-        UsageDisplayMode.fromStorage(this[newApiUsageDisplayModeKey])
+    fun Preferences.toNewApiUsageDisplayMode(): UsageDisplayMode = cardPrefs(PlatformIds.NEW_API).usageDisplayMode
 
-    fun Preferences.toNewApiUsageProgressStyle(): UsageProgressStyle =
-        UsageProgressStyle.fromStorage(this[newApiUsageProgressStyleKey])
+    fun Preferences.toNewApiUsageProgressStyle(): UsageProgressStyle = cardPrefs(PlatformIds.NEW_API).usageProgressStyle
 
-    fun Preferences.toMagpieUsageWindowKind(): UsageWindowKind =
-        UsageWindowKind.fromStorage(this[magpieWindowKindKey])
+    fun Preferences.toMagpieUsageWindowKind(): UsageWindowKind = cardPrefs(PlatformIds.MAGPIE).windowKind
 
-    fun Preferences.toMagpieUsageDisplayMode(): UsageDisplayMode =
-        UsageDisplayMode.fromStorage(this[magpieUsageDisplayModeKey])
+    fun Preferences.toMagpieUsageDisplayMode(): UsageDisplayMode = cardPrefs(PlatformIds.MAGPIE).usageDisplayMode
 
-    fun Preferences.toMagpieUsageProgressStyle(): UsageProgressStyle =
-        UsageProgressStyle.fromStorage(this[magpieUsageProgressStyleKey])
+    fun Preferences.toMagpieUsageProgressStyle(): UsageProgressStyle = cardPrefs(PlatformIds.MAGPIE).usageProgressStyle
 
-    fun Preferences.toMagpieUsageResetStyle(): UsageResetStyle =
-        UsageResetStyle.fromStorage(this[magpieUsageResetStyleKey])
+    fun Preferences.toMagpieUsageResetStyle(): UsageResetStyle = cardPrefs(PlatformIds.MAGPIE).usageResetStyle
 
-    fun Preferences.toKimiCodeUsageWindowKind(): UsageWindowKind =
-        UsageWindowKind.fromStorage(this[kimiCodeWindowKindKey])
+    fun Preferences.toKimiCodeUsageWindowKind(): UsageWindowKind = cardPrefs(PlatformIds.KIMI_CODE).windowKind
 
-    fun Preferences.toKimiCodeUsageDisplayMode(): UsageDisplayMode =
-        UsageDisplayMode.fromStorage(this[kimiCodeUsageDisplayModeKey])
+    fun Preferences.toKimiCodeUsageDisplayMode(): UsageDisplayMode = cardPrefs(PlatformIds.KIMI_CODE).usageDisplayMode
 
     fun Preferences.toKimiCodeUsageProgressStyle(): UsageProgressStyle =
-        UsageProgressStyle.fromStorage(this[kimiCodeUsageProgressStyleKey])
+        cardPrefs(PlatformIds.KIMI_CODE).usageProgressStyle
 
-    fun Preferences.toKimiCodeUsageResetStyle(): UsageResetStyle =
-        UsageResetStyle.fromStorage(this[kimiCodeUsageResetStyleKey])
+    fun Preferences.toKimiCodeUsageResetStyle(): UsageResetStyle = cardPrefs(PlatformIds.KIMI_CODE).usageResetStyle
 
-    fun Preferences.toZhipuUsageWindowKind(): UsageWindowKind =
-        UsageWindowKind.fromStorage(this[zhipuWindowKindKey])
+    fun Preferences.toZhipuUsageWindowKind(): UsageWindowKind = cardPrefs(PlatformIds.ZHIPU).windowKind
 
-    fun Preferences.toZhipuUsageDisplayMode(): UsageDisplayMode =
-        UsageDisplayMode.fromStorage(this[zhipuUsageDisplayModeKey])
+    fun Preferences.toZhipuUsageDisplayMode(): UsageDisplayMode = cardPrefs(PlatformIds.ZHIPU).usageDisplayMode
 
-    fun Preferences.toZhipuUsageProgressStyle(): UsageProgressStyle =
-        UsageProgressStyle.fromStorage(this[zhipuUsageProgressStyleKey])
+    fun Preferences.toZhipuUsageProgressStyle(): UsageProgressStyle = cardPrefs(PlatformIds.ZHIPU).usageProgressStyle
 
-    fun Preferences.toZhipuUsageResetStyle(): UsageResetStyle =
-        UsageResetStyle.fromStorage(this[zhipuUsageResetStyleKey])
+    fun Preferences.toZhipuUsageResetStyle(): UsageResetStyle = cardPrefs(PlatformIds.ZHIPU).usageResetStyle
 
-    fun Preferences.toSessionUsageWindowKind(platformId: String): UsageWindowKind =
-        this[sessionWindowKindKey(platformId)]
-            ?.let { UsageWindowKind.fromStorage(it) }
-            ?: SessionPlatformSettings.defaultWindowKind(platformId)
+    fun Preferences.toSessionUsageWindowKind(platformId: String): UsageWindowKind = cardPrefs(platformId).windowKind
 
     fun Preferences.toSessionUsageDisplayMode(platformId: String): UsageDisplayMode =
-        UsageDisplayMode.fromStorage(this[sessionUsageDisplayModeKey(platformId)])
+        cardPrefs(platformId).usageDisplayMode
 
     fun Preferences.toSessionUsageProgressStyle(platformId: String): UsageProgressStyle =
-        UsageProgressStyle.fromStorage(this[sessionUsageProgressStyleKey(platformId)])
+        cardPrefs(platformId).usageProgressStyle
 
     fun Preferences.toSessionUsageResetStyle(platformId: String): UsageResetStyle =
-        UsageResetStyle.fromStorage(this[sessionUsageResetStyleKey(platformId)])
+        cardPrefs(platformId).usageResetStyle
 
     /** Display mode the platform's card uses; also drives the rebuilt usage summary. */
-    fun Preferences.usageDisplayModeFor(platformId: String): UsageDisplayMode = when (platformId) {
-        PlatformIds.OPENCODE_GO -> toOpenCodeUsageDisplayMode()
-        PlatformIds.CODEX -> toCodexUsageDisplayMode()
-        PlatformIds.NEW_API -> toNewApiUsageDisplayMode()
-        PlatformIds.MAGPIE -> toMagpieUsageDisplayMode()
-        PlatformIds.KIMI_CODE -> toKimiCodeUsageDisplayMode()
-        PlatformIds.ZHIPU -> toZhipuUsageDisplayMode()
-        in PlatformIds.sessionPlatforms -> toSessionUsageDisplayMode(platformId)
-        else -> UsageDisplayMode.USED
-    }
+    fun Preferences.usageDisplayModeFor(platformId: String): UsageDisplayMode = cardPrefs(platformId).usageDisplayMode
 
     fun Preferences.toDisplayState(): WidgetDisplayState {
         return when (this[statusKey]) {
@@ -473,7 +424,7 @@ object WidgetGlanceState {
         this[seedColorKey] = appSettings.customSeedColorArgb
         this[appLanguageKey] = appSettings.appLanguage.name
         if (card != null) {
-            writeCardSettings(platformId, card)
+            applyWidgetCardSettings(platformId, cardKeyScheme, card)
         }
         when (display) {
             WidgetDisplayState.NotConfigured -> {
@@ -511,54 +462,6 @@ object WidgetGlanceState {
                     this[usedDisplayKey] = display.snapshot.usedDisplay
                 }
                 remove(errorKey)
-            }
-        }
-    }
-
-    private fun MutablePreferences.writeCardSettings(
-        platformId: String,
-        card: WidgetCardSettings,
-    ) {
-        when (platformId) {
-            PlatformIds.OPENCODE_GO -> {
-                card.windowKind?.let { this[openCodeWindowKindKey] = it.name }
-                this[openCodeUsageDisplayModeKey] = card.usageDisplayMode.name
-                this[openCodeUsageProgressStyleKey] = card.usageProgressStyle.name
-                card.usageResetStyle?.let { this[openCodeUsageResetStyleKey] = it.name }
-            }
-            PlatformIds.CODEX -> {
-                card.windowKind?.let { this[codexWindowKindKey] = it.name }
-                this[codexUsageDisplayModeKey] = card.usageDisplayMode.name
-                this[codexUsageProgressStyleKey] = card.usageProgressStyle.name
-                card.usageResetStyle?.let { this[codexUsageResetStyleKey] = it.name }
-            }
-            PlatformIds.NEW_API -> {
-                this[newApiUsageDisplayModeKey] = card.usageDisplayMode.name
-                this[newApiUsageProgressStyleKey] = card.usageProgressStyle.name
-            }
-            PlatformIds.MAGPIE -> {
-                card.windowKind?.let { this[magpieWindowKindKey] = it.name }
-                this[magpieUsageDisplayModeKey] = card.usageDisplayMode.name
-                this[magpieUsageProgressStyleKey] = card.usageProgressStyle.name
-                card.usageResetStyle?.let { this[magpieUsageResetStyleKey] = it.name }
-            }
-            PlatformIds.KIMI_CODE -> {
-                card.windowKind?.let { this[kimiCodeWindowKindKey] = it.name }
-                this[kimiCodeUsageDisplayModeKey] = card.usageDisplayMode.name
-                this[kimiCodeUsageProgressStyleKey] = card.usageProgressStyle.name
-                card.usageResetStyle?.let { this[kimiCodeUsageResetStyleKey] = it.name }
-            }
-            PlatformIds.ZHIPU -> {
-                card.windowKind?.let { this[zhipuWindowKindKey] = it.name }
-                this[zhipuUsageDisplayModeKey] = card.usageDisplayMode.name
-                this[zhipuUsageProgressStyleKey] = card.usageProgressStyle.name
-                card.usageResetStyle?.let { this[zhipuUsageResetStyleKey] = it.name }
-            }
-            in PlatformIds.sessionPlatforms -> {
-                card.windowKind?.let { this[sessionWindowKindKey(platformId)] = it.name }
-                this[sessionUsageDisplayModeKey(platformId)] = card.usageDisplayMode.name
-                this[sessionUsageProgressStyleKey(platformId)] = card.usageProgressStyle.name
-                card.usageResetStyle?.let { this[sessionUsageResetStyleKey(platformId)] = it.name }
             }
         }
     }
