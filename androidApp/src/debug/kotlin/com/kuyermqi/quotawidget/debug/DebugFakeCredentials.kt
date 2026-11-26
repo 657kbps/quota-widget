@@ -10,16 +10,18 @@ internal suspend fun shouldSkipRefreshForDebugFake(
     repo: PlatformSettingsRepository,
     platformId: String,
 ): Boolean {
-    val credential = when (platformId) {
-        PlatformIds.DEEPSEEK -> repo.getDeepSeekSettings().apiKey
-        PlatformIds.OPENCODE_GO -> repo.getOpenCodeGoSettings().apiKey
-        PlatformIds.CODEX -> repo.getCodexSettings().accessToken
-        PlatformIds.NEW_API -> repo.getNewApiSettings().apiKey
-        PlatformIds.MAGPIE -> repo.getMagpieSettings().apiKey
-        PlatformIds.KIMI_CODE -> repo.getKimiCodeSettings().apiKey
-        PlatformIds.ZHIPU -> repo.getZhipuSettings().apiKey
-        in PlatformIds.sessionPlatforms -> repo.getSessionSettings(platformId).apiKey
-        else -> ""
+    val credentials = when (platformId) {
+        PlatformIds.DEEPSEEK -> listOf(repo.getDeepSeekSettings().apiKey)
+        PlatformIds.OPENCODE_GO -> repo.getOpenCodeGoSettings().let { listOf(it.apiKey, it.authCookie) }
+        PlatformIds.CODEX -> repo.getCodexSettings().accessToken.let(::listOf)
+        PlatformIds.NEW_API -> listOf(repo.getNewApiSettings().apiKey)
+        PlatformIds.MAGPIE -> listOf(repo.getMagpieSettings().apiKey)
+        PlatformIds.KIMI_CODE -> listOf(repo.getKimiCodeSettings().apiKey)
+        PlatformIds.ZHIPU -> listOf(repo.getZhipuSettings().apiKey)
+        in PlatformIds.sessionPlatforms -> repo.getSessionSettings(platformId).let {
+            listOf(it.apiKey, it.accessToken, it.refreshToken)
+        }
+        else -> emptyList()
     }
-    return credential.startsWith(DEBUG_FAKE_CREDENTIAL_PREFIX)
+    return credentials.any { it.startsWith(DEBUG_FAKE_CREDENTIAL_PREFIX) }
 }

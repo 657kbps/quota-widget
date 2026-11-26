@@ -365,9 +365,14 @@ fun sessionPlatformHomeEffects(
             state.isSaving = true
             try {
                 state.error = null
+                val credentialsChanged = state.supportsApiKey &&
+                    state.draftApiKey.isNotBlank() &&
+                    state.draftApiKey != state.settings.apiKey
                 state.savePrefs(settingsRepository)
                 if (state.isConfigured) {
-                    settingsRepository.saveWidgetLoading(state.platformId)
+                    if (credentialsChanged || state.widgetState !is WidgetDisplayState.Success) {
+                        settingsRepository.saveWidgetLoading(state.platformId)
+                    }
                     val refreshed = withContext(Dispatchers.IO) {
                         onRefreshPlatform(state.platformId)
                     }
