@@ -226,7 +226,7 @@ fun ColumnScope.ZhipuHomeContent(
                         WidgetDisplayState.NeedsReauth -> msgInvalidKey
                         else -> null
                     }
-                    WidgetSyncCoordinator.syncWidgets(context, "zhipu_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "zhipu_save", PlatformIds.ZHIPU)
                 } finally {
                     state.isSaving = false
                 }

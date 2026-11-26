@@ -206,7 +206,7 @@ fun codexHomeEffects(
             if (draftInvalid) {
                 state.draftWindowKind = preferred
             }
-            WidgetSyncCoordinator.syncWidgets(context, "codex_window_clamp")
+            WidgetSyncCoordinator.syncWidgets(context, "codex_window_clamp", PlatformIds.CODEX)
         } else {
             // Settings valid; only draft is out of range (e.g. dirty pick no longer offered).
             state.draftWindowKind = state.settings.widgetWindowKind
@@ -286,7 +286,7 @@ fun codexHomeEffects(
                         state.error = null
                     }
                 }
-                WidgetSyncCoordinator.syncWidgets(context, "codex_login")
+                WidgetSyncCoordinator.syncWidgets(context, "codex_login", PlatformIds.CODEX)
             } finally {
                 state.isBusy = false
             }
@@ -356,7 +356,7 @@ fun ColumnScope.CodexHomeContent(
                         keepUsageProgressStyle = state.draftUsageProgressStyle,
                         keepUsageResetStyle = state.draftUsageResetStyle,
                     )
-                    WidgetSyncCoordinator.syncWidgets(context, "codex_logout")
+                    WidgetSyncCoordinator.syncWidgets(context, "codex_logout", PlatformIds.CODEX)
                 } finally {
                     state.isBusy = false
                 }
@@ -401,7 +401,7 @@ fun ColumnScope.CodexHomeContent(
                             state.error = null
                         }
                     }
-                    WidgetSyncCoordinator.syncWidgets(context, "codex_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "codex_save", PlatformIds.CODEX)
                 } finally {
                     state.isSaving = false
                     state.isBusy = false

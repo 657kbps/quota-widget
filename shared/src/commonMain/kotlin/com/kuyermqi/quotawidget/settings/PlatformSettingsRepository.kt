@@ -245,6 +245,19 @@ interface PlatformSettingsRepository {
 
     fun observeWidgetState(platformId: String): Flow<WidgetDisplayState>
     suspend fun getWidgetState(platformId: String): WidgetDisplayState
+
+    /**
+     * The subset of [platformIds] that has usable credentials, in the same order. Reads the
+     * stored key material once and never decrypts a secret.
+     */
+    suspend fun configuredPlatformIds(platformIds: List<String>): List<String>
+
+    /**
+     * Widget display state, refresh phase and card settings of [platformIds], decoded from a
+     * single settings read. The result always contains an entry for every requested id.
+     */
+    suspend fun getWidgetRenderSnapshot(platformIds: Set<String>): WidgetRenderSnapshot
+
     suspend fun saveWidgetSuccess(platformId: String, snapshot: QuotaSnapshot)
     suspend fun saveWidgetError(platformId: String, message: String)
     suspend fun saveWidgetLoading(platformId: String)

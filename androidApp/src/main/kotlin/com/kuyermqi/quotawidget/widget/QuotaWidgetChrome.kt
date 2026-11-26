@@ -50,7 +50,6 @@ import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.locale.AppLocale
-import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.ui.platformNameRes
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toAppLanguage
@@ -94,7 +93,7 @@ internal suspend fun GlanceAppWidget.providePlatformGlance(
         app.settingsRepository,
         platformId,
     )
-    maybeRefreshIfConfigured(context, app, platformId)
+    maybeRefreshIfConfigured(context, repoDisplay, platformId)
     Log.i(TAG, "provideGlance id=$id platform=$platformId repo=${repoDisplay::class.simpleName}")
     provideContent {
         val prefs = currentState<Preferences>()
@@ -137,32 +136,11 @@ internal suspend fun GlanceAppWidget.providePlatformGlance(
     }
 }
 
-internal suspend fun maybeRefreshIfConfigured(
+internal fun maybeRefreshIfConfigured(
     context: Context,
-    app: QuotaWidgetApp,
+    state: WidgetDisplayState,
     platformId: String,
 ) {
-    val configured = when (platformId) {
-        PlatformIds.DEEPSEEK ->
-            app.settingsRepository.getDeepSeekSettings().apiKey.isNotBlank()
-        PlatformIds.OPENCODE_GO ->
-            app.settingsRepository.getOpenCodeGoSettings().isConfigured
-        PlatformIds.CODEX ->
-            app.settingsRepository.getCodexSettings().isConfigured
-        PlatformIds.NEW_API ->
-            app.settingsRepository.getNewApiSettings().isConfigured
-        PlatformIds.MAGPIE ->
-            app.settingsRepository.getMagpieSettings().isConfigured
-        PlatformIds.KIMI_CODE ->
-            app.settingsRepository.getKimiCodeSettings().isConfigured
-        PlatformIds.ZHIPU ->
-            app.settingsRepository.getZhipuSettings().isConfigured
-        in PlatformIds.sessionPlatforms ->
-            app.settingsRepository.getSessionSettings(platformId).isConfiguredFor(platformId)
-        else -> false
-    }
-    if (!configured) return
-    val state = app.settingsRepository.getWidgetState(platformId)
     if (state !is WidgetDisplayState.Loading) return
     Log.i(TAG, "provideGlance enqueue refresh; platform=$platformId configured but no quota yet")
     WorkManager.getInstance(context).enqueueUniqueWork(

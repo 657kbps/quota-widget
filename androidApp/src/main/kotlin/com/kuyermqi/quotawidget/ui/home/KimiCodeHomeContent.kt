@@ -226,7 +226,7 @@ fun ColumnScope.KimiCodeHomeContent(
                         WidgetDisplayState.NeedsReauth -> msgInvalidKey
                         else -> null
                     }
-                    WidgetSyncCoordinator.syncWidgets(context, "kimi_code_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "kimi_code_save", PlatformIds.KIMI_CODE)
                 } finally {
                     state.isSaving = false
                 }

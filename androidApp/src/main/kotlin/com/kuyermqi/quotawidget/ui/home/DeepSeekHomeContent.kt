@@ -152,7 +152,7 @@ fun ColumnScope.DeepSeekHomeContent(
                         is WidgetDisplayState.Error -> result.message
                         else -> null
                     }
-                    WidgetSyncCoordinator.syncWidgets(context, "deepseek_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "deepseek_save", PlatformIds.DEEPSEEK)
                 } finally {
                     state.isSaving = false
                 }

@@ -28,23 +28,19 @@ import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
-import com.kuyermqi.quotawidget.domain.QuotaWindow
-import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.ServiceRegion
 import com.kuyermqi.quotawidget.domain.ThemeColorMode
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
-import com.kuyermqi.quotawidget.domain.decodeQuotaWindows
 import com.kuyermqi.quotawidget.domain.encodeQuotaWindows
-import com.kuyermqi.quotawidget.domain.formatBalance
 import com.kuyermqi.quotawidget.magpie.decodeMagpieProviders
 import com.kuyermqi.quotawidget.magpie.encodeMagpieProviders
 import com.kuyermqi.quotawidget.platform.PlatformIds
-import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.refresh.isRefreshPhaseStale
 import com.kuyermqi.quotawidget.refresh.shouldResetRefreshPhase
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
@@ -75,7 +71,7 @@ class AndroidPlatformSettingsRepository(
     private val settingsWriteMutex = Mutex()
 
     override fun observeDeepSeekSettings(): Flow<DeepSeekSettings> =
-        dataStore.data.map { prefs -> prefs.toDeepSeekSettings() }
+        dataStore.data.map { prefs -> prefs.toDeepSeekSettings() }.distinctUntilChanged()
 
     override suspend fun getDeepSeekSettings(): DeepSeekSettings =
         dataStore.data.first().toDeepSeekSettings()
@@ -85,12 +81,12 @@ class AndroidPlatformSettingsRepository(
             if (settings.apiKey.isBlank()) {
                 prefs.remove(Keys.API_KEY_ENCRYPTED)
                 prefs.clearWidgetPayload(PlatformIds.DEEPSEEK)
-                prefs[widgetStatusKey(PlatformIds.DEEPSEEK)] = Status.NOT_CONFIGURED
+                prefs[widgetStatusKey(PlatformIds.DEEPSEEK)] = StoredWidgetStatus.NOT_CONFIGURED
             } else {
                 prefs[Keys.API_KEY_ENCRYPTED] = encrypt(settings.apiKey, API_KEY_AD)
                 val status = prefs[widgetStatusKey(PlatformIds.DEEPSEEK)]
-                if (status == null || status == Status.NOT_CONFIGURED) {
-                    prefs[widgetStatusKey(PlatformIds.DEEPSEEK)] = Status.LOADING
+                if (status == null || status == StoredWidgetStatus.NOT_CONFIGURED) {
+                    prefs[widgetStatusKey(PlatformIds.DEEPSEEK)] = StoredWidgetStatus.LOADING
                 }
             }
             prefs[Keys.CURRENCY] = settings.currency.name
@@ -98,7 +94,7 @@ class AndroidPlatformSettingsRepository(
     }
 
     override fun observeOpenCodeGoSettings(): Flow<OpenCodeGoSettings> =
-        dataStore.data.map { prefs -> prefs.toOpenCodeGoSettings() }
+        dataStore.data.map { prefs -> prefs.toOpenCodeGoSettings() }.distinctUntilChanged()
 
     override suspend fun getOpenCodeGoSettings(): OpenCodeGoSettings =
         dataStore.data.first().toOpenCodeGoSettings()
@@ -117,7 +113,7 @@ class AndroidPlatformSettingsRepository(
                 prefs.remove(Keys.OPENCODE_API_KEY_ENC)
                 prefs.remove(Keys.OPENCODE_AUTH_METHOD)
                 prefs.clearWidgetPayload(PlatformIds.OPENCODE_GO)
-                prefs[widgetStatusKey(PlatformIds.OPENCODE_GO)] = Status.NOT_CONFIGURED
+                prefs[widgetStatusKey(PlatformIds.OPENCODE_GO)] = StoredWidgetStatus.NOT_CONFIGURED
             } else {
                 if (settings.workspaceId.isBlank()) {
                     prefs.remove(Keys.OPENCODE_WORKSPACE_ID)
@@ -143,10 +139,10 @@ class AndroidPlatformSettingsRepository(
                 val status = prefs[widgetStatusKey(PlatformIds.OPENCODE_GO)]
                 if (credentialsChanged ||
                     status == null ||
-                    status == Status.NOT_CONFIGURED ||
-                    status == Status.NEEDS_REAUTH
+                    status == StoredWidgetStatus.NOT_CONFIGURED ||
+                    status == StoredWidgetStatus.NEEDS_REAUTH
                 ) {
-                    prefs[widgetStatusKey(PlatformIds.OPENCODE_GO)] = Status.LOADING
+                    prefs[widgetStatusKey(PlatformIds.OPENCODE_GO)] = StoredWidgetStatus.LOADING
                 }
             }
             prefs[Keys.OPENCODE_WIDGET_WINDOW] = settings.widgetWindowKind.name
@@ -169,7 +165,7 @@ class AndroidPlatformSettingsRepository(
     }
 
     override fun observeCodexSettings(): Flow<CodexSettings> =
-        dataStore.data.map { prefs -> prefs.toCodexSettings() }
+        dataStore.data.map { prefs -> prefs.toCodexSettings() }.distinctUntilChanged()
 
     override suspend fun getCodexSettings(): CodexSettings =
         dataStore.data.first().toCodexSettings()
@@ -203,7 +199,7 @@ class AndroidPlatformSettingsRepository(
             remove(Keys.CODEX_EMAIL)
             remove(Keys.CODEX_PLAN_TYPE)
             clearWidgetPayload(PlatformIds.CODEX)
-            this[widgetStatusKey(PlatformIds.CODEX)] = Status.NOT_CONFIGURED
+            this[widgetStatusKey(PlatformIds.CODEX)] = StoredWidgetStatus.NOT_CONFIGURED
         } else {
             this[Keys.CODEX_ACCESS_ENC] = encrypt(settings.accessToken, CODEX_ACCESS_AD)
             this[Keys.CODEX_REFRESH_ENC] = encrypt(settings.refreshToken, CODEX_REFRESH_AD)
@@ -226,10 +222,10 @@ class AndroidPlatformSettingsRepository(
             }
             val status = this[widgetStatusKey(PlatformIds.CODEX)]
             if (status == null ||
-                status == Status.NOT_CONFIGURED ||
-                status == Status.NEEDS_REAUTH
+                status == StoredWidgetStatus.NOT_CONFIGURED ||
+                status == StoredWidgetStatus.NEEDS_REAUTH
             ) {
-                this[widgetStatusKey(PlatformIds.CODEX)] = Status.LOADING
+                this[widgetStatusKey(PlatformIds.CODEX)] = StoredWidgetStatus.LOADING
             }
         }
         this[Keys.CODEX_WIDGET_WINDOW] = settings.widgetWindowKind.name
@@ -251,7 +247,7 @@ class AndroidPlatformSettingsRepository(
     }
 
     override fun observeNewApiSettings(): Flow<NewApiSettings> =
-        dataStore.data.map { prefs -> prefs.toNewApiSettings() }
+        dataStore.data.map { prefs -> prefs.toNewApiSettings() }.distinctUntilChanged()
 
     override suspend fun getNewApiSettings(): NewApiSettings =
         dataStore.data.first().toNewApiSettings()
@@ -262,16 +258,16 @@ class AndroidPlatformSettingsRepository(
                 prefs.remove(Keys.NEW_API_BASE_URL)
                 prefs.remove(Keys.NEW_API_KEY_ENC)
                 prefs.clearWidgetPayload(PlatformIds.NEW_API)
-                prefs[widgetStatusKey(PlatformIds.NEW_API)] = Status.NOT_CONFIGURED
+                prefs[widgetStatusKey(PlatformIds.NEW_API)] = StoredWidgetStatus.NOT_CONFIGURED
             } else {
                 prefs[Keys.NEW_API_BASE_URL] = settings.baseUrl.trim().trimEnd('/')
                 prefs[Keys.NEW_API_KEY_ENC] = encrypt(settings.apiKey, NEW_API_KEY_AD)
                 val status = prefs[widgetStatusKey(PlatformIds.NEW_API)]
                 if (status == null ||
-                    status == Status.NOT_CONFIGURED ||
-                    status == Status.NEEDS_REAUTH
+                    status == StoredWidgetStatus.NOT_CONFIGURED ||
+                    status == StoredWidgetStatus.NEEDS_REAUTH
                 ) {
-                    prefs[widgetStatusKey(PlatformIds.NEW_API)] = Status.LOADING
+                    prefs[widgetStatusKey(PlatformIds.NEW_API)] = StoredWidgetStatus.LOADING
                 }
             }
             prefs[Keys.NEW_API_USAGE_DISPLAY] = settings.usageDisplayMode.name
@@ -293,7 +289,7 @@ class AndroidPlatformSettingsRepository(
     }
 
     override fun observeMagpieSettings(): Flow<MagpieSettings> =
-        dataStore.data.map { prefs -> prefs.toMagpieSettings() }
+        dataStore.data.map { prefs -> prefs.toMagpieSettings() }.distinctUntilChanged()
 
     override suspend fun getMagpieSettings(): MagpieSettings =
         dataStore.data.first().toMagpieSettings()
@@ -324,7 +320,7 @@ class AndroidPlatformSettingsRepository(
             remove(Keys.MAGPIE_PROVIDERS)
             remove(Keys.MAGPIE_SELECTED_PROVIDER)
             clearWidgetPayload(PlatformIds.MAGPIE)
-            this[widgetStatusKey(PlatformIds.MAGPIE)] = Status.NOT_CONFIGURED
+            this[widgetStatusKey(PlatformIds.MAGPIE)] = StoredWidgetStatus.NOT_CONFIGURED
         } else {
             this[Keys.MAGPIE_BASE_URL] = settings.baseUrl.trim().trimEnd('/')
             this[Keys.MAGPIE_KEY_ENC] = encrypt(settings.apiKey, MAGPIE_KEY_AD)
@@ -336,10 +332,10 @@ class AndroidPlatformSettingsRepository(
             }
             val status = this[widgetStatusKey(PlatformIds.MAGPIE)]
             if (status == null ||
-                status == Status.NOT_CONFIGURED ||
-                status == Status.NEEDS_REAUTH
+                status == StoredWidgetStatus.NOT_CONFIGURED ||
+                status == StoredWidgetStatus.NEEDS_REAUTH
             ) {
-                this[widgetStatusKey(PlatformIds.MAGPIE)] = Status.LOADING
+                this[widgetStatusKey(PlatformIds.MAGPIE)] = StoredWidgetStatus.LOADING
             }
         }
         this[Keys.MAGPIE_WIDGET_WINDOW] = settings.widgetWindowKind.name
@@ -361,7 +357,7 @@ class AndroidPlatformSettingsRepository(
     }
 
     override fun observeKimiCodeSettings(): Flow<KimiCodeSettings> =
-        dataStore.data.map { prefs -> prefs.toKimiCodeSettings() }
+        dataStore.data.map { prefs -> prefs.toKimiCodeSettings() }.distinctUntilChanged()
 
     override suspend fun getKimiCodeSettings(): KimiCodeSettings =
         dataStore.data.first().toKimiCodeSettings()
@@ -371,15 +367,15 @@ class AndroidPlatformSettingsRepository(
             if (!settings.isConfigured) {
                 prefs.remove(Keys.KIMI_CODE_API_KEY_ENC)
                 prefs.clearWidgetPayload(PlatformIds.KIMI_CODE)
-                prefs[widgetStatusKey(PlatformIds.KIMI_CODE)] = Status.NOT_CONFIGURED
+                prefs[widgetStatusKey(PlatformIds.KIMI_CODE)] = StoredWidgetStatus.NOT_CONFIGURED
             } else {
                 prefs[Keys.KIMI_CODE_API_KEY_ENC] = encrypt(settings.apiKey, KIMI_CODE_KEY_AD)
                 val status = prefs[widgetStatusKey(PlatformIds.KIMI_CODE)]
                 if (status == null ||
-                    status == Status.NOT_CONFIGURED ||
-                    status == Status.NEEDS_REAUTH
+                    status == StoredWidgetStatus.NOT_CONFIGURED ||
+                    status == StoredWidgetStatus.NEEDS_REAUTH
                 ) {
-                    prefs[widgetStatusKey(PlatformIds.KIMI_CODE)] = Status.LOADING
+                    prefs[widgetStatusKey(PlatformIds.KIMI_CODE)] = StoredWidgetStatus.LOADING
                 }
             }
             prefs[Keys.KIMI_CODE_REGION] = settings.region.name
@@ -404,7 +400,7 @@ class AndroidPlatformSettingsRepository(
     }
 
     override fun observeZhipuSettings(): Flow<ZhipuSettings> =
-        dataStore.data.map { prefs -> prefs.toZhipuSettings() }
+        dataStore.data.map { prefs -> prefs.toZhipuSettings() }.distinctUntilChanged()
 
     override suspend fun getZhipuSettings(): ZhipuSettings =
         dataStore.data.first().toZhipuSettings()
@@ -414,15 +410,15 @@ class AndroidPlatformSettingsRepository(
             if (!settings.isConfigured) {
                 prefs.remove(Keys.ZHIPU_API_KEY_ENC)
                 prefs.clearWidgetPayload(PlatformIds.ZHIPU)
-                prefs[widgetStatusKey(PlatformIds.ZHIPU)] = Status.NOT_CONFIGURED
+                prefs[widgetStatusKey(PlatformIds.ZHIPU)] = StoredWidgetStatus.NOT_CONFIGURED
             } else {
                 prefs[Keys.ZHIPU_API_KEY_ENC] = encrypt(settings.apiKey, ZHIPU_KEY_AD)
                 val status = prefs[widgetStatusKey(PlatformIds.ZHIPU)]
                 if (status == null ||
-                    status == Status.NOT_CONFIGURED ||
-                    status == Status.NEEDS_REAUTH
+                    status == StoredWidgetStatus.NOT_CONFIGURED ||
+                    status == StoredWidgetStatus.NEEDS_REAUTH
                 ) {
-                    prefs[widgetStatusKey(PlatformIds.ZHIPU)] = Status.LOADING
+                    prefs[widgetStatusKey(PlatformIds.ZHIPU)] = StoredWidgetStatus.LOADING
                 }
             }
             prefs[Keys.ZHIPU_REGION] = settings.region.name
@@ -447,7 +443,7 @@ class AndroidPlatformSettingsRepository(
     }
 
     override fun observeSessionSettings(platformId: String): Flow<SessionPlatformSettings> =
-        dataStore.data.map { prefs -> prefs.toSessionSettings(platformId) }
+        dataStore.data.map { prefs -> prefs.toSessionSettings(platformId) }.distinctUntilChanged()
 
     override suspend fun getSessionSettings(platformId: String): SessionPlatformSettings =
         dataStore.data.first().toSessionSettings(platformId)
@@ -496,7 +492,7 @@ class AndroidPlatformSettingsRepository(
             remove(sessionUidKey(platformId))
             remove(sessionEnterpriseIdKey(platformId))
             clearWidgetPayload(platformId)
-            this[widgetStatusKey(platformId)] = Status.NOT_CONFIGURED
+            this[widgetStatusKey(platformId)] = StoredWidgetStatus.NOT_CONFIGURED
         } else {
             putEncrypted(this, sessionAccessKey(platformId), settings.accessToken, platformId, "access")
             putEncrypted(this, sessionRefreshKey(platformId), settings.refreshToken, platformId, "refresh")
@@ -516,10 +512,10 @@ class AndroidPlatformSettingsRepository(
             val status = this[widgetStatusKey(platformId)]
             if (credentialsChanged ||
                 status == null ||
-                status == Status.NOT_CONFIGURED ||
-                status == Status.NEEDS_REAUTH
+                status == StoredWidgetStatus.NOT_CONFIGURED ||
+                status == StoredWidgetStatus.NEEDS_REAUTH
             ) {
-                this[widgetStatusKey(platformId)] = Status.LOADING
+                this[widgetStatusKey(platformId)] = StoredWidgetStatus.LOADING
             }
         }
         this[sessionWidgetWindowKey(platformId)] = settings.widgetWindowKind.name
@@ -542,11 +538,33 @@ class AndroidPlatformSettingsRepository(
     }
 
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =
-        dataStore.data.map { prefs -> prefs.toWidgetState(platformId) }
+        dataStore.data.map { prefs -> prefs.toWidgetState(platformId) }.distinctUntilChanged()
 
     override suspend fun getWidgetState(platformId: String): WidgetDisplayState {
         ensureLegacyMigrated()
         return dataStore.data.first().toWidgetState(platformId)
+    }
+
+    override suspend fun configuredPlatformIds(platformIds: List<String>): List<String> {
+        val prefs = dataStore.data.first()
+        return platformIds.filter { platformId -> prefs.isConfigured(platformId) }
+    }
+
+    override suspend fun getWidgetRenderSnapshot(
+        platformIds: Set<String>,
+    ): WidgetRenderSnapshot {
+        ensureLegacyMigrated()
+        val prefs = dataStore.data.first()
+        return WidgetRenderSnapshot.of(
+            platformIds = platformIds,
+            appSettings = prefs.toAppSettings(),
+        ) { platformId ->
+            WidgetPlatformRenderState(
+                display = prefs.toWidgetState(platformId),
+                phase = prefs.toRefreshIconPhase(platformId),
+                card = prefs.toWidgetCardSettings(platformId),
+            )
+        }
     }
 
     private suspend fun ensureLegacyMigrated() {
@@ -556,7 +574,7 @@ class AndroidPlatformSettingsRepository(
     override suspend fun saveWidgetSuccess(platformId: String, snapshot: QuotaSnapshot) {
         editSettings { prefs ->
             prefs.migrateLegacyWidgetIfNeeded()
-            prefs[widgetStatusKey(platformId)] = Status.SUCCESS
+            prefs[widgetStatusKey(platformId)] = StoredWidgetStatus.SUCCESS
             prefs[widgetPlatformIdKey(platformId)] = snapshot.platformId
             prefs[widgetPlatformNameKey(platformId)] = snapshot.platformName
             prefs[widgetCurrencyKey(platformId)] = snapshot.currency.name
@@ -580,7 +598,7 @@ class AndroidPlatformSettingsRepository(
     override suspend fun saveWidgetError(platformId: String, message: String) {
         editSettings { prefs ->
             prefs.migrateLegacyWidgetIfNeeded()
-            prefs[widgetStatusKey(platformId)] = Status.ERROR
+            prefs[widgetStatusKey(platformId)] = StoredWidgetStatus.ERROR
             prefs[widgetErrorKey(platformId)] = message
         }
     }
@@ -588,7 +606,7 @@ class AndroidPlatformSettingsRepository(
     override suspend fun saveWidgetLoading(platformId: String) {
         editSettings { prefs ->
             prefs.migrateLegacyWidgetIfNeeded()
-            prefs[widgetStatusKey(platformId)] = Status.LOADING
+            prefs[widgetStatusKey(platformId)] = StoredWidgetStatus.LOADING
             prefs.remove(widgetErrorKey(platformId))
         }
     }
@@ -596,7 +614,7 @@ class AndroidPlatformSettingsRepository(
     override suspend fun saveWidgetNotConfigured(platformId: String) {
         editSettings { prefs ->
             prefs.migrateLegacyWidgetIfNeeded()
-            prefs[widgetStatusKey(platformId)] = Status.NOT_CONFIGURED
+            prefs[widgetStatusKey(platformId)] = StoredWidgetStatus.NOT_CONFIGURED
             prefs.clearWidgetPayload(platformId)
         }
     }
@@ -604,17 +622,13 @@ class AndroidPlatformSettingsRepository(
     override suspend fun saveWidgetNeedsReauth(platformId: String) {
         editSettings { prefs ->
             prefs.migrateLegacyWidgetIfNeeded()
-            prefs[widgetStatusKey(platformId)] = Status.NEEDS_REAUTH
+            prefs[widgetStatusKey(platformId)] = StoredWidgetStatus.NEEDS_REAUTH
             prefs.remove(widgetErrorKey(platformId))
         }
     }
 
-    override suspend fun getRefreshIconPhase(platformId: String): RefreshIconPhase {
-        val prefs = dataStore.data.first()
-        return RefreshIconPhase.fromStorage(
-            prefs[refreshPhaseKey(platformId)] ?: prefs[Keys.LEGACY_REFRESH_ICON_PHASE],
-        )
-    }
+    override suspend fun getRefreshIconPhase(platformId: String): RefreshIconPhase =
+        dataStore.data.first().toRefreshIconPhase(platformId)
 
     override suspend fun setRefreshIconPhase(platformId: String, phase: RefreshIconPhase) {
         editSettings { prefs ->
@@ -702,7 +716,7 @@ class AndroidPlatformSettingsRepository(
     }
 
     override fun observeAppSettings(): Flow<AppSettings> =
-        dataStore.data.map { prefs -> prefs.toAppSettings() }
+        dataStore.data.map { prefs -> prefs.toAppSettings() }.distinctUntilChanged()
 
     override suspend fun getAppSettings(): AppSettings =
         dataStore.data.first().toAppSettings()
@@ -900,85 +914,170 @@ class AndroidPlatformSettingsRepository(
     }
 
     private fun Preferences.isConfigured(platformId: String): Boolean =
+        isPlatformConfiguredWithStoredCredentials(platformId, toStoredCredentialPresence(platformId))
+
+    /**
+     * Which credential fields are stored for [platformId], read without decrypting them.
+     */
+    private fun Preferences.toStoredCredentialPresence(platformId: String): StoredCredentialPresence =
         when (platformId) {
-            PlatformIds.DEEPSEEK -> toDeepSeekSettings().apiKey.isNotBlank()
-            PlatformIds.OPENCODE_GO -> toOpenCodeGoSettings().isConfigured
-            PlatformIds.CODEX -> toCodexSettings().isConfigured
-            PlatformIds.NEW_API -> toNewApiSettings().isConfigured
-            PlatformIds.MAGPIE -> toMagpieSettings().isConfigured
-            PlatformIds.KIMI_CODE -> toKimiCodeSettings().isConfigured
-            PlatformIds.ZHIPU -> toZhipuSettings().isConfigured
-            in PlatformIds.sessionPlatforms -> toSessionSettings(platformId).isConfiguredFor(platformId)
-            else -> false
+            PlatformIds.DEEPSEEK -> StoredCredentialPresence(
+                hasApiKey = this[Keys.API_KEY_ENCRYPTED].isStored(),
+            )
+            PlatformIds.OPENCODE_GO -> StoredCredentialPresence(
+                hasWorkspaceId = !this[Keys.OPENCODE_WORKSPACE_ID].isNullOrBlank(),
+                hasAuthCookie = this[Keys.OPENCODE_AUTH_COOKIE_ENC].isStored(),
+                hasApiKey = this[Keys.OPENCODE_API_KEY_ENC].isStored(),
+                openCodeAuthMethod = this[Keys.OPENCODE_AUTH_METHOD]?.let { stored ->
+                    runCatching { OpenCodeAuthMethod.valueOf(stored) }.getOrNull()
+                },
+            )
+            PlatformIds.CODEX -> StoredCredentialPresence(
+                hasAccessToken = this[Keys.CODEX_ACCESS_ENC].isStored(),
+                hasRefreshToken = this[Keys.CODEX_REFRESH_ENC].isStored(),
+                hasAccountId = !this[Keys.CODEX_ACCOUNT_ID].isNullOrBlank(),
+            )
+            PlatformIds.NEW_API -> StoredCredentialPresence(
+                hasBaseUrl = !this[Keys.NEW_API_BASE_URL].isNullOrBlank(),
+                hasApiKey = this[Keys.NEW_API_KEY_ENC].isStored(),
+            )
+            PlatformIds.MAGPIE -> StoredCredentialPresence(
+                hasBaseUrl = !this[Keys.MAGPIE_BASE_URL].isNullOrBlank(),
+                hasApiKey = this[Keys.MAGPIE_KEY_ENC].isStored(),
+            )
+            PlatformIds.KIMI_CODE -> StoredCredentialPresence(
+                hasApiKey = this[Keys.KIMI_CODE_API_KEY_ENC].isStored(),
+            )
+            PlatformIds.ZHIPU -> StoredCredentialPresence(
+                hasApiKey = this[Keys.ZHIPU_API_KEY_ENC].isStored(),
+            )
+            in PlatformIds.sessionPlatforms -> StoredCredentialPresence(
+                hasAccessToken = this[sessionAccessKey(platformId)].isStored(),
+                hasRefreshToken = this[sessionRefreshKey(platformId)].isStored(),
+                hasApiKey = this[sessionApiKey(platformId)].isStored(),
+            )
+            else -> StoredCredentialPresence()
         }
 
-    private fun Preferences.toWidgetState(platformId: String): WidgetDisplayState {
-        if (!isConfigured(platformId)) {
-            return WidgetDisplayState.NotConfigured
-        }
-        val status = this[widgetStatusKey(platformId)]
-            ?: if (platformId == PlatformIds.DEEPSEEK) this[Keys.LEGACY_WIDGET_STATUS] else null
-        return when (status) {
-            Status.LOADING -> WidgetDisplayState.Loading
-            Status.NEEDS_REAUTH -> WidgetDisplayState.NeedsReauth
-            Status.ERROR -> WidgetDisplayState.Error(
-                this[widgetErrorKey(platformId)]
-                    ?: this[Keys.LEGACY_WIDGET_ERROR]
-                    ?: "刷新失败",
-            )
-            Status.SUCCESS -> {
-                val storedPlatformId = this[widgetPlatformIdKey(platformId)]
-                    ?: this[Keys.LEGACY_WIDGET_PLATFORM_ID]
-                    ?: platformId
-                val currency = CurrencyPreference.fromStorage(
-                    this[widgetCurrencyKey(platformId)] ?: this[Keys.LEGACY_WIDGET_CURRENCY],
-                )
-                val total = this[widgetTotalKey(platformId)]
-                    ?: this[Keys.LEGACY_WIDGET_TOTAL]
-                    ?: "0"
-                val primary = this[widgetFormattedKey(platformId)]
-                    ?: this[Keys.LEGACY_WIDGET_FORMATTED]
-                    ?: if (platformId == PlatformIds.DEEPSEEK) {
-                        formatBalance(currency, total)
-                    } else {
-                        ""
-                    }
-                val windows = decodeQuotaWindows(
-                    this[widgetWindowsKey(platformId)] ?: this[Keys.LEGACY_WIDGET_WINDOWS],
-                ) ?: defaultWindows(platformId)
-                WidgetDisplayState.Success(
-                    QuotaSnapshot(
-                        platformId = storedPlatformId,
-                        platformName = this[widgetPlatformNameKey(platformId)]
-                            ?: this[Keys.LEGACY_WIDGET_PLATFORM_NAME]
-                            ?: PlatformRegistry.displayName(platformId),
-                        windows = windows,
-                        primaryDisplay = primary,
-                        updatedAtEpochMs = this[widgetUpdatedAtKey(platformId)]
-                            ?: this[Keys.LEGACY_WIDGET_UPDATED_AT]
-                            ?: 0L,
-                        currency = currency,
-                        totalBalance = total,
-                        unlimitedQuota = this[widgetUnlimitedKey(platformId)] == true,
-                        usedDisplay = this[widgetUsedDisplayKey(platformId)].orEmpty(),
-                        emptyLimitedQuota = this[widgetEmptyLimitedQuotaKey(platformId)] == true,
-                        tokenExpired = this[widgetTokenExpiredKey(platformId)] == true,
-                        quotaOverspent = this[widgetQuotaOverspentKey(platformId)] == true,
-                    ),
-                )
-            }
-            else -> WidgetDisplayState.Loading
-        }
-    }
+    private fun String?.isStored(): Boolean = !isNullOrBlank()
 
-    private fun defaultWindows(platformId: String): List<QuotaWindow> =
+    private fun Preferences.toWidgetState(platformId: String): WidgetDisplayState =
+        toStoredWidgetRecord(platformId).toWidgetDisplayState()
+
+    private fun Preferences.toStoredWidgetRecord(platformId: String): StoredWidgetRecord =
+        StoredWidgetRecord(
+            platformId = platformId,
+            configured = isConfigured(platformId),
+            status = this[widgetStatusKey(platformId)]
+                ?: if (platformId == PlatformIds.DEEPSEEK) {
+                    this[Keys.LEGACY_WIDGET_STATUS]
+                } else {
+                    null
+                },
+            error = this[widgetErrorKey(platformId)] ?: this[Keys.LEGACY_WIDGET_ERROR],
+            payloadPlatformId = this[widgetPlatformIdKey(platformId)]
+                ?: this[Keys.LEGACY_WIDGET_PLATFORM_ID],
+            payloadPlatformName = this[widgetPlatformNameKey(platformId)]
+                ?: this[Keys.LEGACY_WIDGET_PLATFORM_NAME],
+            currency = this[widgetCurrencyKey(platformId)] ?: this[Keys.LEGACY_WIDGET_CURRENCY],
+            total = this[widgetTotalKey(platformId)] ?: this[Keys.LEGACY_WIDGET_TOTAL],
+            formatted = this[widgetFormattedKey(platformId)] ?: this[Keys.LEGACY_WIDGET_FORMATTED],
+            windows = this[widgetWindowsKey(platformId)] ?: this[Keys.LEGACY_WIDGET_WINDOWS],
+            updatedAtEpochMs = this[widgetUpdatedAtKey(platformId)]
+                ?: this[Keys.LEGACY_WIDGET_UPDATED_AT],
+            unlimitedQuota = this[widgetUnlimitedKey(platformId)] == true,
+            usedDisplay = this[widgetUsedDisplayKey(platformId)].orEmpty(),
+            emptyLimitedQuota = this[widgetEmptyLimitedQuotaKey(platformId)] == true,
+            tokenExpired = this[widgetTokenExpiredKey(platformId)] == true,
+            quotaOverspent = this[widgetQuotaOverspentKey(platformId)] == true,
+        )
+
+    private fun Preferences.toRefreshIconPhase(platformId: String): RefreshIconPhase =
+        RefreshIconPhase.fromStorage(
+            this[refreshPhaseKey(platformId)] ?: this[Keys.LEGACY_REFRESH_ICON_PHASE],
+        )
+
+    private fun Preferences.toWidgetCardSettings(platformId: String): WidgetCardSettings? =
         when (platformId) {
-            PlatformIds.DEEPSEEK -> listOf(QuotaWindow(kind = QuotaWindowKind.BALANCE))
-            PlatformIds.NEW_API -> listOf(
-                QuotaWindow(kind = QuotaWindowKind.BALANCE),
-                QuotaWindow(kind = QuotaWindowKind.TOKEN),
+            PlatformIds.OPENCODE_GO -> WidgetCardSettings(
+                usageDisplayMode = UsageDisplayMode.fromStorage(
+                    this[Keys.OPENCODE_USAGE_DISPLAY],
+                ),
+                usageProgressStyle = UsageProgressStyle.fromStorage(
+                    this[Keys.OPENCODE_USAGE_PROGRESS_STYLE],
+                ),
+                windowKind = UsageWindowKind.fromStorage(this[Keys.OPENCODE_WIDGET_WINDOW]),
+                usageResetStyle = UsageResetStyle.fromStorage(
+                    this[Keys.OPENCODE_USAGE_RESET_STYLE],
+                ),
             )
-            else -> emptyList()
+            PlatformIds.CODEX -> WidgetCardSettings(
+                usageDisplayMode = UsageDisplayMode.fromStorage(this[Keys.CODEX_USAGE_DISPLAY]),
+                usageProgressStyle = UsageProgressStyle.fromStorage(
+                    this[Keys.CODEX_USAGE_PROGRESS_STYLE],
+                ),
+                windowKind = this[Keys.CODEX_WIDGET_WINDOW]
+                    ?.let { UsageWindowKind.fromStorage(it) }
+                    ?: UsageWindowKind.WEEKLY,
+                usageResetStyle = UsageResetStyle.fromStorage(
+                    this[Keys.CODEX_USAGE_RESET_STYLE],
+                ),
+            )
+            PlatformIds.NEW_API -> WidgetCardSettings(
+                usageDisplayMode = UsageDisplayMode.fromStorage(
+                    this[Keys.NEW_API_USAGE_DISPLAY],
+                ),
+                usageProgressStyle = UsageProgressStyle.fromStorage(
+                    this[Keys.NEW_API_USAGE_PROGRESS_STYLE],
+                ),
+            )
+            PlatformIds.MAGPIE -> WidgetCardSettings(
+                usageDisplayMode = UsageDisplayMode.fromStorage(this[Keys.MAGPIE_USAGE_DISPLAY]),
+                usageProgressStyle = UsageProgressStyle.fromStorage(
+                    this[Keys.MAGPIE_USAGE_PROGRESS_STYLE],
+                ),
+                windowKind = UsageWindowKind.fromStorage(this[Keys.MAGPIE_WIDGET_WINDOW]),
+                usageResetStyle = UsageResetStyle.fromStorage(
+                    this[Keys.MAGPIE_USAGE_RESET_STYLE],
+                ),
+            )
+            PlatformIds.KIMI_CODE -> WidgetCardSettings(
+                usageDisplayMode = UsageDisplayMode.fromStorage(
+                    this[Keys.KIMI_CODE_USAGE_DISPLAY],
+                ),
+                usageProgressStyle = UsageProgressStyle.fromStorage(
+                    this[Keys.KIMI_CODE_USAGE_PROGRESS_STYLE],
+                ),
+                windowKind = UsageWindowKind.fromStorage(this[Keys.KIMI_CODE_WIDGET_WINDOW]),
+                usageResetStyle = UsageResetStyle.fromStorage(
+                    this[Keys.KIMI_CODE_USAGE_RESET_STYLE],
+                ),
+            )
+            PlatformIds.ZHIPU -> WidgetCardSettings(
+                usageDisplayMode = UsageDisplayMode.fromStorage(this[Keys.ZHIPU_USAGE_DISPLAY]),
+                usageProgressStyle = UsageProgressStyle.fromStorage(
+                    this[Keys.ZHIPU_USAGE_PROGRESS_STYLE],
+                ),
+                windowKind = UsageWindowKind.fromStorage(this[Keys.ZHIPU_WIDGET_WINDOW]),
+                usageResetStyle = UsageResetStyle.fromStorage(
+                    this[Keys.ZHIPU_USAGE_RESET_STYLE],
+                ),
+            )
+            in PlatformIds.sessionPlatforms -> WidgetCardSettings(
+                usageDisplayMode = UsageDisplayMode.fromStorage(
+                    this[sessionUsageDisplayKey(platformId)],
+                ),
+                usageProgressStyle = UsageProgressStyle.fromStorage(
+                    this[sessionUsageProgressStyleKey(platformId)],
+                ),
+                windowKind = this[sessionWidgetWindowKey(platformId)]
+                    ?.let { UsageWindowKind.fromStorage(it) }
+                    ?: SessionPlatformSettings.defaultWindowKind(platformId),
+                usageResetStyle = UsageResetStyle.fromStorage(
+                    this[sessionUsageResetStyleKey(platformId)],
+                ),
+            )
+            else -> null
         }
 
     /**
@@ -1152,14 +1251,6 @@ class AndroidPlatformSettingsRepository(
         val CHECK_FOR_UPDATES_ON_LAUNCH = booleanPreferencesKey("check_for_updates_on_launch")
         val APP_LANGUAGE = stringPreferencesKey("app_language")
         val UPDATE_IGNORED_VERSION = stringPreferencesKey("update_ignored_version")
-    }
-
-    private object Status {
-        const val NOT_CONFIGURED = "not_configured"
-        const val LOADING = "loading"
-        const val SUCCESS = "success"
-        const val ERROR = "error"
-        const val NEEDS_REAUTH = "needs_reauth"
     }
 
     companion object {

@@ -60,10 +60,11 @@ class BalanceRefreshInteractor(
     }
 
     /**
-     * Platform ids that currently have usable credentials, in provider order.
+     * Platform ids that currently have usable credentials, in provider order. Judged from the
+     * stored key material so the refresh schedule gate stays decrypt-free.
      */
     suspend fun configuredPlatformIds(): List<String> =
-        providers.filter { it.isConfigured(settingsRepository) }.map { it.platform.id }
+        settingsRepository.configuredPlatformIds(providers.map { it.platform.id })
 
     /**
      * Fetches quota for [platformId] without forcing a loading placeholder,

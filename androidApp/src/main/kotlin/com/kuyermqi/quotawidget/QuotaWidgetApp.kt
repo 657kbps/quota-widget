@@ -37,7 +37,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
 class QuotaWidgetApp : Application() {
@@ -59,20 +58,13 @@ class QuotaWidgetApp : Application() {
         private set
 
     override fun onCreate() {
-        // Prefs first (sync), then DataStore — must finish before any Activity draws.
+        // SharedPreferences mirrors first (synchronous), then DataStore: the observers below
+        // correct a mirror that a killed process left behind before its collector ran.
         AppNightMode.apply(this, AppNightMode.storedMode(this))
+        AppLocale.apply(this, AppLocale.storedLanguage(this))
         super.onCreate()
         instance = this
         settingsRepository = AndroidPlatformSettingsRepository(this)
-        // One-shot bootstrap so upgrades (prefs empty, DataStore has mode) don't flash.
-        runBlocking {
-            val appSettings = settingsRepository.getAppSettings()
-            AppLocale.update(appSettings.appLanguage)
-            AppNightMode.apply(
-                this@QuotaWidgetApp,
-                appSettings.darkThemeMode,
-            )
-        }
         refreshInteractor = BalanceRefreshInteractor(
             settingsRepository = settingsRepository,
             providers = listOf(
@@ -112,7 +104,7 @@ class QuotaWidgetApp : Application() {
                 .distinctUntilChanged()
                 .collect { language ->
                     val changed = withContext(Dispatchers.Main.immediate) {
-                        AppLocale.update(language).also { changed ->
+                        AppLocale.apply(this@QuotaWidgetApp, language).also { changed ->
                             if (changed) AppLocale.recreateActivities()
                         }
                     }

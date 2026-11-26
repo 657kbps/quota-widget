@@ -44,7 +44,7 @@ object WidgetRefreshCoordinator {
 
         settings.setRefreshStartedAtEpochMs(platformId, System.currentTimeMillis())
         settings.setRefreshIconPhase(platformId, RefreshIconPhase.Spinning)
-        WidgetSyncCoordinator.syncWidgets(context, "spinning-pre-enqueue")
+        WidgetSyncCoordinator.syncWidgets(context, "spinning-pre-enqueue", platformId)
         Log.i(TAG, "beginUserRefresh enqueued user work platform=$platformId")
 
         WorkManager.getInstance(context).enqueueUniqueWork(
@@ -69,7 +69,7 @@ object WidgetRefreshCoordinator {
         Log.i(TAG, "runUserRefresh start platform=$platformId")
         return try {
             settings.setRefreshIconPhaseIfStartedAt(platformId, startedAt, RefreshIconPhase.Spinning)
-            WidgetSyncCoordinator.syncWidgets(context, "spinning")
+            WidgetSyncCoordinator.syncWidgets(context, "spinning", platformId)
 
             val result = app.refreshInteractor.refresh(platformId)
             logResult(platformId, result)
@@ -97,7 +97,7 @@ object WidgetRefreshCoordinator {
                 }
                 settings.setRefreshIconPhaseIfStartedAt(platformId, startedAt, RefreshIconPhase.Idle)
                 Log.i(TAG, "runUserRefresh finally phase=Idle platform=$platformId")
-                WidgetSyncCoordinator.syncWidgets(context, "idle")
+                WidgetSyncCoordinator.syncWidgets(context, "idle", platformId)
             }
         }
     }

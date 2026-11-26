@@ -290,7 +290,7 @@ fun ColumnScope.MagpieHomeContent(
                         }
                         else -> Unit
                     }
-                    WidgetSyncCoordinator.syncWidgets(context, "magpie_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "magpie_save", PlatformIds.MAGPIE)
                 } finally {
                     state.isSaving = false
                 }

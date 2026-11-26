@@ -249,7 +249,7 @@ fun ColumnScope.NewApiHomeContent(
                         is WidgetDisplayState.Error -> result.message
                         else -> null
                     }
-                    WidgetSyncCoordinator.syncWidgets(context, "new_api_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "new_api_save", PlatformIds.NEW_API)
                 } finally {
                     state.isSaving = false
                 }

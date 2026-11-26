@@ -12,10 +12,10 @@ import kotlinx.coroutines.sync.withLock
 object WidgetSyncCoordinator {
     private val widgetUpdateMutex = Mutex()
 
-    suspend fun syncWidgets(context: Context, reason: String) {
+    suspend fun syncWidgets(context: Context, reason: String, platformId: String? = null) {
         val appContext = context.applicationContext
         widgetUpdateMutex.withLock {
-            WidgetGlanceState.syncAndUpdate(appContext, reason)
+            WidgetGlanceState.syncAndUpdate(appContext, reason, platformId)
         }
         RefreshScheduleGate.sync(appContext)
     }

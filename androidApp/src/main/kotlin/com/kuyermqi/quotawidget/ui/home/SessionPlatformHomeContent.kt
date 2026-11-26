@@ -301,7 +301,7 @@ fun sessionPlatformHomeEffects(
                     onRefreshPlatform(state.platformId)
                 }
                 handleRefreshResult(state, settingsRepository, refreshed, reauthMessage)
-                WidgetSyncCoordinator.syncWidgets(context, "session_login")
+                WidgetSyncCoordinator.syncWidgets(context, "session_login", state.platformId)
             } catch (e: Exception) {
                 state.error = e.message ?: loginFailed
             }
@@ -359,7 +359,7 @@ fun sessionPlatformHomeEffects(
                 }
                 state.lastDisplay = null
                 state.error = null
-                WidgetSyncCoordinator.syncWidgets(context, "session_logout")
+                WidgetSyncCoordinator.syncWidgets(context, "session_logout", state.platformId)
             } catch (e: Exception) {
                 state.error = e.message
             } finally {
@@ -385,7 +385,7 @@ fun sessionPlatformHomeEffects(
                         state.authPanel = SessionAuthPanel.SUMMARY
                     }
                 }
-                WidgetSyncCoordinator.syncWidgets(context, "session_save")
+                WidgetSyncCoordinator.syncWidgets(context, "session_save", state.platformId)
             } catch (e: Exception) {
                 state.error = e.message
             } finally {

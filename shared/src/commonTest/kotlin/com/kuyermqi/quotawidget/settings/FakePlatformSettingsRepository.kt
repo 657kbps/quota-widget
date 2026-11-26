@@ -266,6 +266,89 @@ class FakePlatformSettingsRepository(
     override suspend fun getWidgetState(platformId: String): WidgetDisplayState =
         widgetFlow(platformId).value
 
+    override suspend fun configuredPlatformIds(platformIds: List<String>): List<String> =
+        platformIds.filter { platformId ->
+            when (platformId) {
+                PlatformIds.DEEPSEEK -> deepSeekFlow.value.apiKey.isNotBlank()
+                PlatformIds.OPENCODE_GO -> openCodeFlow.value.isConfigured
+                PlatformIds.CODEX -> codexFlow.value.isConfigured
+                PlatformIds.NEW_API -> newApiFlow.value.isConfigured
+                PlatformIds.MAGPIE -> magpieFlow.value.isConfigured
+                PlatformIds.KIMI_CODE -> kimiCodeFlow.value.isConfigured
+                PlatformIds.ZHIPU -> zhipuFlow.value.isConfigured
+                in PlatformIds.sessionPlatforms ->
+                    sessionFlow(platformId).value.isConfiguredFor(platformId)
+                else -> false
+            }
+        }
+
+    override suspend fun getWidgetRenderSnapshot(platformIds: Set<String>): WidgetRenderSnapshot =
+        WidgetRenderSnapshot.of(platformIds, appSettingsFlow.value) { platformId ->
+            WidgetPlatformRenderState(
+                display = widgetFlow(platformId).value,
+                phase = refreshPhases[platformId] ?: RefreshIconPhase.Idle,
+                card = cardSettings(platformId),
+            )
+        }
+
+    private fun cardSettings(platformId: String): WidgetCardSettings? = when (platformId) {
+        PlatformIds.OPENCODE_GO -> openCodeFlow.value.let { settings ->
+            WidgetCardSettings(
+                usageDisplayMode = settings.usageDisplayMode,
+                usageProgressStyle = settings.usageProgressStyle,
+                windowKind = settings.widgetWindowKind,
+                usageResetStyle = settings.usageResetStyle,
+            )
+        }
+        PlatformIds.CODEX -> codexFlow.value.let { settings ->
+            WidgetCardSettings(
+                usageDisplayMode = settings.usageDisplayMode,
+                usageProgressStyle = settings.usageProgressStyle,
+                windowKind = settings.widgetWindowKind,
+                usageResetStyle = settings.usageResetStyle,
+            )
+        }
+        PlatformIds.NEW_API -> newApiFlow.value.let { settings ->
+            WidgetCardSettings(
+                usageDisplayMode = settings.usageDisplayMode,
+                usageProgressStyle = settings.usageProgressStyle,
+            )
+        }
+        PlatformIds.MAGPIE -> magpieFlow.value.let { settings ->
+            WidgetCardSettings(
+                usageDisplayMode = settings.usageDisplayMode,
+                usageProgressStyle = settings.usageProgressStyle,
+                windowKind = settings.widgetWindowKind,
+                usageResetStyle = settings.usageResetStyle,
+            )
+        }
+        PlatformIds.KIMI_CODE -> kimiCodeFlow.value.let { settings ->
+            WidgetCardSettings(
+                usageDisplayMode = settings.usageDisplayMode,
+                usageProgressStyle = settings.usageProgressStyle,
+                windowKind = settings.widgetWindowKind,
+                usageResetStyle = settings.usageResetStyle,
+            )
+        }
+        PlatformIds.ZHIPU -> zhipuFlow.value.let { settings ->
+            WidgetCardSettings(
+                usageDisplayMode = settings.usageDisplayMode,
+                usageProgressStyle = settings.usageProgressStyle,
+                windowKind = settings.widgetWindowKind,
+                usageResetStyle = settings.usageResetStyle,
+            )
+        }
+        in PlatformIds.sessionPlatforms -> sessionFlow(platformId).value.let { settings ->
+            WidgetCardSettings(
+                usageDisplayMode = settings.usageDisplayMode,
+                usageProgressStyle = settings.usageProgressStyle,
+                windowKind = settings.widgetWindowKind,
+                usageResetStyle = settings.usageResetStyle,
+            )
+        }
+        else -> null
+    }
+
     override suspend fun saveWidgetSuccess(platformId: String, snapshot: QuotaSnapshot) {
         widgetFlow(platformId).value = WidgetDisplayState.Success(snapshot)
     }

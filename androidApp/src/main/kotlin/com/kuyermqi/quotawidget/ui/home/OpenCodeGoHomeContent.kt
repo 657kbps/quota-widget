@@ -291,7 +291,7 @@ fun openCodeGoHomeEffects(
                         state.authPanel = OpenCodeAuthPanel.SUMMARY
                     }
                 }
-                WidgetSyncCoordinator.syncWidgets(context, "opencode_login")
+                WidgetSyncCoordinator.syncWidgets(context, "opencode_login", PlatformIds.OPENCODE_GO)
             } finally {
                 state.isBusy = false
             }
@@ -391,7 +391,7 @@ fun ColumnScope.OpenCodeGoHomeContent(
                         keepUsageProgressStyle = state.draftUsageProgressStyle,
                         keepUsageResetStyle = state.draftUsageResetStyle,
                     )
-                    WidgetSyncCoordinator.syncWidgets(context, "opencode_logout")
+                    WidgetSyncCoordinator.syncWidgets(context, "opencode_logout", PlatformIds.OPENCODE_GO)
                 } finally {
                     state.isBusy = false
                 }
@@ -464,7 +464,7 @@ fun ColumnScope.OpenCodeGoHomeContent(
                             }
                         }
                     }
-                    WidgetSyncCoordinator.syncWidgets(context, "opencode_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "opencode_save", PlatformIds.OPENCODE_GO)
                 } finally {
                     state.isSaving = false
                     state.isBusy = false
