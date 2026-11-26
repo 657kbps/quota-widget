@@ -123,11 +123,13 @@
     <string name="usage_progress_style_label">进度条样式</string>
     <string name="usage_progress_style_bar">正常</string>
     <string name="usage_progress_style_capsule">胶囊</string>
+    <string name="usage_progress_style_ring">圆环</string>
+    <string name="usage_progress_style_gauge">仪表弧</string>
+    <string name="usage_progress_segmented_toggle_title">分段刻度</string>
     <string name="usage_reset_style_footer">单行</string>
     <string name="usage_reset_style_stacked">两行</string>
     <string name="usage_reset_style_pill">胶囊</string>
     <string name="usage_reset_toggle_title">显示重置时间</string>
-    <string name="usage_preview_title">小组件预览</string>
     <string name="usage_preview_layout_standard">标准</string>
     <string name="usage_preview_layout_compact">紧凑</string>
     <string name="usage_preview_layout_overview">总览</string>
@@ -136,6 +138,11 @@
     <string name="widget_resets_at">重置于 %1$s</string>
     <string name="widget_resets_at_tomorrow">重置于明天 %1$s</string>
     <string name="widget_resets_at_date">重置于 %1$s %2$s</string>
+    <string name="widget_circular_updated_sample">刚刚更新</string>
+    <string name="widget_circular_updated_at">%1$s 更新</string>
+    <string name="widget_circular_resets_at">%1$s 重置</string>
+    <string name="widget_circular_resets_at_tomorrow">明天 %1$s 重置</string>
+    <string name="widget_circular_resets_at_date">%1$s %2$s 重置</string>
     <string name="usage_remaining_rolling">滚动余量 %1$s</string>
     <string name="usage_remaining_weekly">每周余量 %1$s</string>
     <string name="usage_remaining_monthly">每月余量 %1$s</string>
@@ -280,5 +287,7 @@
     <string name="widget_updated_never">尚未更新</string>
     <string name="widget_date_time_pattern">M月d日 HH:mm</string>
     <string name="widget_date_pattern">M月d日</string>
+    <string name="widget_circular_date_time_pattern">M/d HH:mm</string>
+    <string name="widget_circular_date_pattern">M/d</string>
     <string name="widget_time_pattern">HH:mm</string>
 </resources>

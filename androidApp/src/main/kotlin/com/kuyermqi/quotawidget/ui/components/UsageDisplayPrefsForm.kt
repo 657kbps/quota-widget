@@ -1,7 +1,10 @@
 package com.kuyermqi.quotawidget.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -9,23 +12,25 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -34,15 +39,26 @@ import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageProgressBaseStyle
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
+import com.kuyermqi.quotawidget.domain.toBaseStyle
 
 private val RESET_VISIBLE_STYLES = listOf(
     UsageResetStyle.FOOTER,
     UsageResetStyle.FOOTER_STACKED,
     UsageResetStyle.PILL,
 )
+
+private val COMPACT_RESET_VISIBLE_STYLES = listOf(
+    UsageResetStyle.FOOTER,
+    UsageResetStyle.PILL,
+)
+
+private val PREFS_CONTROL_ROW_MIN_HEIGHT = 40.dp
+private val PREFS_LABEL_TO_CONTROL_GAP = 2.dp
+private val PREFS_SECTION_GAP = 8.dp
 
 internal val SAMPLE_PREVIEW_WINDOWS = listOf(
     QuotaWindow(
@@ -72,9 +88,31 @@ private val SAMPLE_PREVIEW_OVERVIEW_KINDS = listOf(
     QuotaWindowKind.MONTHLY,
 )
 
+internal enum class WidgetConfigTab {
+    STANDARD,
+    COMPACT,
+    OVERVIEW,
+}
+
+private data class UsageTabSettingsModel(
+    val widgetWindowKind: UsageWindowKind,
+    val onWidgetWindowKindChange: (UsageWindowKind) -> Unit,
+    val usageDisplayMode: UsageDisplayMode,
+    val onUsageDisplayModeChange: (UsageDisplayMode) -> Unit,
+    val usageProgressStyle: UsageProgressStyle,
+    val onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
+    val usageResetStyle: UsageResetStyle,
+    val onUsageResetStyleChange: (UsageResetStyle) -> Unit,
+    val enabled: Boolean,
+    val windowKindChoices: List<UsageWindowKind>,
+    val showWindowKindPicker: Boolean,
+    val showProgressStyle: Boolean,
+    val showResetStyle: Boolean,
+)
+
 /**
- * Shared usage prefs: segmented Material 3 selectors for window kind, used/remaining mode,
- * progress style, switch + conditional reset-time style, and live multi-layout widget preview.
+ * Shared usage prefs + live widget preview organized into widget-kind tabs
+ * (Standard / Compact / Overview), showing only options that apply to the active tab.
  */
 @Composable
 fun ColumnScope.UsageDisplayPrefsSection(
@@ -102,18 +140,179 @@ fun ColumnScope.UsageDisplayPrefsSection(
     updatedAtEpochMs: Long = 0L,
     newApiSnapshot: QuotaSnapshot? = null,
 ) {
+    var selectedTab by remember { mutableStateOf(WidgetConfigTab.STANDARD) }
+    val tabs = if (supportsCompactAndOverviewPreview) {
+        WidgetConfigTab.entries
+    } else {
+        listOf(WidgetConfigTab.STANDARD)
+    }
+    val effectiveTab = if (supportsCompactAndOverviewPreview) {
+        selectedTab
+    } else {
+        WidgetConfigTab.STANDARD
+    }
+    val labelStandard = stringResource(R.string.usage_preview_layout_standard)
+    val labelCompact = stringResource(R.string.usage_preview_layout_compact)
+    val labelOverview = stringResource(R.string.usage_preview_layout_overview)
+    val previewWindows = windows.ifEmpty { SAMPLE_PREVIEW_WINDOWS }
+    val previewOverviewKinds = overviewKinds.ifEmpty { SAMPLE_PREVIEW_OVERVIEW_KINDS }
+
+    val settingsModel = UsageTabSettingsModel(
+        widgetWindowKind = widgetWindowKind,
+        onWidgetWindowKindChange = onWidgetWindowKindChange,
+        usageDisplayMode = usageDisplayMode,
+        onUsageDisplayModeChange = onUsageDisplayModeChange,
+        usageProgressStyle = usageProgressStyle,
+        onUsageProgressStyleChange = onUsageProgressStyleChange,
+        usageResetStyle = usageResetStyle,
+        onUsageResetStyleChange = onUsageResetStyleChange,
+        enabled = enabled,
+        windowKindChoices = windowKindChoices,
+        showWindowKindPicker = showWindowKindPicker,
+        showProgressStyle = showProgressStyle,
+        showResetStyle = showResetStyle,
+    )
+    val previewModel = UsageLayoutPreviewModel(
+        platformName = platformName,
+        windows = previewWindows,
+        widgetWindowKind = widgetWindowKind,
+        usageDisplayMode = usageDisplayMode,
+        usageProgressStyle = usageProgressStyle,
+        usageResetStyle = usageResetStyle,
+        overviewKinds = previewOverviewKinds,
+        showResetLabels = showResetLabels,
+        showProgressStyle = showProgressStyle,
+        forceZeroProgressPreview = forceZeroProgressPreview,
+        allowWindowFallback = allowWindowFallback,
+        updatedAtEpochMs = updatedAtEpochMs,
+        newApiSnapshot = newApiSnapshot,
+    )
+
+    WidgetTabPreviewCard(
+        tabState = WidgetTabHeaderState(
+            tabs = tabs,
+            selectedTab = effectiveTab,
+            tabLabelOf = { tab ->
+                when (tab) {
+                    WidgetConfigTab.STANDARD -> labelStandard
+                    WidgetConfigTab.COMPACT -> labelCompact
+                    WidgetConfigTab.OVERVIEW -> labelOverview
+                }
+            },
+            onTabSelected = { selectedTab = it },
+        ),
+        widgetModifier = { tab ->
+            Modifier.usageLayoutWidgetSize(
+                layout = tab,
+                overviewKindsCount = previewOverviewKinds.size,
+            )
+        },
+        settingsContent = { tab ->
+            UsageTabSettingsContent(tab = tab, model = settingsModel)
+            Spacer(modifier = Modifier.height(20.dp))
+        },
+        previewContent = { tab ->
+            UsageLayoutPreviewContent(layout = tab, model = previewModel)
+        },
+    )
+}
+
+@Suppress("FunctionNaming")
+@Composable
+private fun UsageTabSettingsContent(
+    tab: WidgetConfigTab,
+    model: UsageTabSettingsModel,
+) {
     val labelRolling = stringResource(R.string.usage_window_rolling)
     val labelWeekly = stringResource(R.string.usage_window_weekly)
     val labelMonthly = stringResource(R.string.usage_window_monthly)
     val labelToken = stringResource(R.string.usage_window_token)
     val labelUsed = stringResource(R.string.usage_display_used)
     val labelRemaining = stringResource(R.string.usage_display_remaining)
-    val labelBar = stringResource(R.string.usage_progress_style_bar)
-    val labelCapsule = stringResource(R.string.usage_progress_style_capsule)
-    val labelResetFooter = stringResource(R.string.usage_reset_style_footer)
-    val labelResetStacked = stringResource(R.string.usage_reset_style_stacked)
-    val labelResetPill = stringResource(R.string.usage_reset_style_pill)
 
+    Column(modifier = Modifier.fillMaxWidth()) {
+        if (tab != WidgetConfigTab.OVERVIEW &&
+            model.showWindowKindPicker &&
+            model.windowKindChoices.isNotEmpty()
+        ) {
+            PrefsFieldLabel(stringResource(R.string.usage_widget_window_label))
+            Spacer(modifier = Modifier.height(PREFS_LABEL_TO_CONTROL_GAP))
+            SegmentedOptionRow(
+                options = model.windowKindChoices,
+                selectedOption = model.widgetWindowKind,
+                labelOf = { kind ->
+                    when (kind) {
+                        UsageWindowKind.ROLLING -> labelRolling
+                        UsageWindowKind.WEEKLY -> labelWeekly
+                        UsageWindowKind.MONTHLY -> labelMonthly
+                        UsageWindowKind.TOKEN -> labelToken
+                    }
+                },
+                onOptionSelected = model.onWidgetWindowKindChange,
+                enabled = model.enabled,
+                showIcon = false,
+            )
+            Spacer(modifier = Modifier.height(PREFS_SECTION_GAP))
+        }
+
+        PrefsFieldLabel(stringResource(R.string.usage_display_short_label))
+        Spacer(modifier = Modifier.height(PREFS_LABEL_TO_CONTROL_GAP))
+        SegmentedOptionRow(
+            options = UsageDisplayMode.entries,
+            selectedOption = model.usageDisplayMode,
+            labelOf = { mode ->
+                when (mode) {
+                    UsageDisplayMode.USED -> labelUsed
+                    UsageDisplayMode.REMAINING -> labelRemaining
+                }
+            },
+            onOptionSelected = model.onUsageDisplayModeChange,
+            enabled = model.enabled,
+            showIcon = false,
+        )
+
+        if (model.showProgressStyle && tab != WidgetConfigTab.COMPACT) {
+            Spacer(modifier = Modifier.height(PREFS_SECTION_GAP))
+            when (tab) {
+                WidgetConfigTab.STANDARD -> ProgressStyleSelector(
+                    usageProgressStyle = model.usageProgressStyle,
+                    onUsageProgressStyleChange = model.onUsageProgressStyleChange,
+                    enabled = model.enabled,
+                )
+                WidgetConfigTab.OVERVIEW -> LinearProgressStyleSelector(
+                    usageProgressStyle = model.usageProgressStyle,
+                    onUsageProgressStyleChange = model.onUsageProgressStyleChange,
+                    enabled = model.enabled,
+                )
+                WidgetConfigTab.COMPACT -> Unit
+            }
+        }
+
+        if (model.showResetStyle) {
+            val resetStyleOptions = when (tab) {
+                WidgetConfigTab.STANDARD -> RESET_VISIBLE_STYLES
+                WidgetConfigTab.COMPACT -> COMPACT_RESET_VISIBLE_STYLES
+                WidgetConfigTab.OVERVIEW -> emptyList()
+            }
+            Spacer(modifier = Modifier.height(PREFS_SECTION_GAP))
+            ResetTimeSelector(
+                usageResetStyle = model.usageResetStyle,
+                onUsageResetStyleChange = model.onUsageResetStyleChange,
+                styleOptions = resetStyleOptions,
+                enabled = model.enabled,
+            )
+        }
+    }
+}
+
+@Suppress("FunctionNaming")
+@Composable
+private fun ResetTimeSelector(
+    usageResetStyle: UsageResetStyle,
+    onUsageResetStyleChange: (UsageResetStyle) -> Unit,
+    styleOptions: List<UsageResetStyle>,
+    enabled: Boolean,
+) {
     var lastNonHiddenResetStyle by remember {
         mutableStateOf(
             if (usageResetStyle != UsageResetStyle.HIDDEN) {
@@ -128,159 +327,218 @@ fun ColumnScope.UsageDisplayPrefsSection(
             lastNonHiddenResetStyle = usageResetStyle
         }
     }
+    val resetEnabled = usageResetStyle != UsageResetStyle.HIDDEN
+    val toggleReset = { turnOn: Boolean ->
+        onUsageResetStyleChange(if (turnOn) lastNonHiddenResetStyle else UsageResetStyle.HIDDEN)
+    }
+    CompactSwitchRow(
+        title = stringResource(R.string.usage_reset_toggle_title),
+        checked = resetEnabled,
+        enabled = enabled,
+        isSectionHeader = true,
+        onCheckedChange = toggleReset,
+    )
+    if (styleOptions.isNotEmpty()) {
+        val activeStyle = if (resetEnabled) usageResetStyle else lastNonHiddenResetStyle
+        val selectedOption = activeStyle.takeIf { it in styleOptions } ?: styleOptions.first()
+        ResetStyleOptionsRow(
+            styleOptions = styleOptions,
+            selectedOption = selectedOption,
+            visible = resetEnabled,
+            enabled = enabled,
+            onOptionSelected = onUsageResetStyleChange,
+        )
+    }
+}
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = appCardColor()),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-            ) {
-                if (showWindowKindPicker && windowKindChoices.isNotEmpty()) {
-                    PrefsFieldLabel(stringResource(R.string.usage_widget_window_label))
-                    Spacer(modifier = Modifier.height(6.dp))
-                    SegmentedOptionRow(
-                        options = windowKindChoices,
-                        selectedOption = widgetWindowKind,
-                        labelOf = { kind ->
-                            when (kind) {
-                                UsageWindowKind.ROLLING -> labelRolling
-                                UsageWindowKind.WEEKLY -> labelWeekly
-                                UsageWindowKind.MONTHLY -> labelMonthly
-                                UsageWindowKind.TOKEN -> labelToken
-                            }
-                        },
-                        onOptionSelected = onWidgetWindowKindChange,
-                        enabled = enabled,
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-
-                PrefsFieldLabel(stringResource(R.string.usage_display_short_label))
-                Spacer(modifier = Modifier.height(6.dp))
+@Suppress("FunctionNaming")
+@Composable
+private fun ResetStyleOptionsRow(
+    styleOptions: List<UsageResetStyle>,
+    selectedOption: UsageResetStyle,
+    visible: Boolean,
+    enabled: Boolean,
+    onOptionSelected: (UsageResetStyle) -> Unit,
+) {
+    val labelResetFooter = stringResource(R.string.usage_reset_style_footer)
+    val labelResetStacked = stringResource(R.string.usage_reset_style_stacked)
+    val labelResetPill = stringResource(R.string.usage_reset_style_pill)
+    key(styleOptions) {
+        AnimatedVisibility(
+            visible = visible,
+            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.height(PREFS_LABEL_TO_CONTROL_GAP))
                 SegmentedOptionRow(
-                    options = UsageDisplayMode.entries,
-                    selectedOption = usageDisplayMode,
-                    labelOf = { mode ->
-                        when (mode) {
-                            UsageDisplayMode.USED -> labelUsed
-                            UsageDisplayMode.REMAINING -> labelRemaining
+                    options = styleOptions,
+                    selectedOption = selectedOption,
+                    labelOf = { style ->
+                        when (style) {
+                            UsageResetStyle.FOOTER -> labelResetFooter
+                            UsageResetStyle.FOOTER_STACKED -> labelResetStacked
+                            UsageResetStyle.PILL -> labelResetPill
+                            UsageResetStyle.HIDDEN -> ""
                         }
                     },
-                    onOptionSelected = onUsageDisplayModeChange,
+                    onOptionSelected = onOptionSelected,
                     enabled = enabled,
                     showIcon = false,
                 )
-                if (showProgressStyle) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    PrefsFieldLabel(stringResource(R.string.usage_progress_style_label))
-                    Spacer(modifier = Modifier.height(6.dp))
-                    SegmentedOptionRow(
-                        options = UsageProgressStyle.entries,
-                        selectedOption = usageProgressStyle,
-                        labelOf = { style ->
-                            when (style) {
-                                UsageProgressStyle.BAR -> labelBar
-                                UsageProgressStyle.CAPSULE -> labelCapsule
-                            }
-                        },
-                        onOptionSelected = onUsageProgressStyleChange,
-                        enabled = enabled,
-                        showIcon = false,
-                    )
-                }
-            }
-
-            if (showResetStyle) {
-                val resetEnabled = usageResetStyle != UsageResetStyle.HIDDEN
-                val toggleReset = { turnOn: Boolean ->
-                    if (turnOn) {
-                        onUsageResetStyleChange(lastNonHiddenResetStyle)
-                    } else {
-                        onUsageResetStyleChange(UsageResetStyle.HIDDEN)
-                    }
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = enabled) { toggleReset(!resetEnabled) }
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(R.string.usage_reset_toggle_title),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 12.dp),
-                    )
-                    Switch(
-                        checked = resetEnabled,
-                        onCheckedChange = toggleReset,
-                        enabled = enabled,
-                    )
-                }
-                AnimatedVisibility(visible = resetEnabled) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 14.dp, end = 14.dp, bottom = 12.dp),
-                    ) {
-                        SegmentedOptionRow(
-                            options = RESET_VISIBLE_STYLES,
-                            selectedOption = if (resetEnabled) usageResetStyle else lastNonHiddenResetStyle,
-                            labelOf = { style ->
-                                when (style) {
-                                    UsageResetStyle.FOOTER -> labelResetFooter
-                                    UsageResetStyle.FOOTER_STACKED -> labelResetStacked
-                                    UsageResetStyle.PILL -> labelResetPill
-                                    UsageResetStyle.HIDDEN -> ""
-                                }
-                            },
-                            onOptionSelected = onUsageResetStyleChange,
-                            enabled = enabled,
-                        )
-                    }
-                }
             }
         }
     }
+}
 
-    val previewWindows = windows.ifEmpty { SAMPLE_PREVIEW_WINDOWS }
-    val previewOverviewKinds = overviewKinds.ifEmpty { SAMPLE_PREVIEW_OVERVIEW_KINDS }
-    Spacer(modifier = Modifier.height(12.dp))
-    WidgetLayoutsPreviewCard(
-        platformName = platformName,
-        windows = previewWindows,
-        widgetWindowKind = widgetWindowKind,
-        usageDisplayMode = usageDisplayMode,
-        usageProgressStyle = usageProgressStyle,
-        usageResetStyle = usageResetStyle,
-        overviewKinds = previewOverviewKinds,
-        showResetLabels = showResetLabels,
-        showProgressStyle = showProgressStyle,
-        forceZeroProgressPreview = forceZeroProgressPreview,
-        supportsCompactAndOverviewPreview = supportsCompactAndOverviewPreview,
-        allowWindowFallback = allowWindowFallback,
-        updatedAtEpochMs = updatedAtEpochMs,
-        newApiSnapshot = newApiSnapshot,
+@Suppress("FunctionNaming")
+@Composable
+private fun LinearProgressStyleSelector(
+    usageProgressStyle: UsageProgressStyle,
+    onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
+    enabled: Boolean,
+) {
+    val labelBar = stringResource(R.string.usage_progress_style_bar)
+    val labelCapsule = stringResource(R.string.usage_progress_style_capsule)
+    PrefsFieldLabel(stringResource(R.string.usage_progress_style_label))
+    Spacer(modifier = Modifier.height(PREFS_LABEL_TO_CONTROL_GAP))
+    SegmentedOptionRow(
+        options = listOf(UsageProgressStyle.BAR, UsageProgressStyle.CAPSULE),
+        selectedOption = usageProgressStyle.toLinearFallback(),
+        labelOf = { style ->
+            when (style) {
+                UsageProgressStyle.CAPSULE -> labelCapsule
+                else -> labelBar
+            }
+        },
+        onOptionSelected = onUsageProgressStyleChange,
+        enabled = enabled,
+        showIcon = false,
     )
+}
+
+@Suppress("FunctionNaming")
+@Composable
+private fun ProgressStyleSelector(
+    usageProgressStyle: UsageProgressStyle,
+    onUsageProgressStyleChange: (UsageProgressStyle) -> Unit,
+    enabled: Boolean,
+) {
+    val labelBar = stringResource(R.string.usage_progress_style_bar)
+    val labelCapsule = stringResource(R.string.usage_progress_style_capsule)
+    val labelRing = stringResource(R.string.usage_progress_style_ring)
+    val labelGauge = stringResource(R.string.usage_progress_style_gauge)
+    var lastSegmented by remember { mutableStateOf(usageProgressStyle.isSegmented) }
+    LaunchedEffect(usageProgressStyle) {
+        if (usageProgressStyle.isCircular) {
+            lastSegmented = usageProgressStyle.isSegmented
+        }
+    }
+
+    PrefsFieldLabel(stringResource(R.string.usage_progress_style_label))
+    Spacer(modifier = Modifier.height(PREFS_LABEL_TO_CONTROL_GAP))
+    SegmentedOptionRow(
+        options = UsageProgressBaseStyle.entries,
+        selectedOption = usageProgressStyle.toBaseStyle(),
+        labelOf = { base ->
+            when (base) {
+                UsageProgressBaseStyle.BAR -> labelBar
+                UsageProgressBaseStyle.CAPSULE -> labelCapsule
+                UsageProgressBaseStyle.RING -> labelRing
+                UsageProgressBaseStyle.GAUGE -> labelGauge
+            }
+        },
+        onOptionSelected = { base ->
+            onUsageProgressStyleChange(base.toProgressStyle(lastSegmented))
+        },
+        enabled = enabled,
+        showIcon = false,
+    )
+    AnimatedVisibility(
+        visible = usageProgressStyle.isCircular,
+        enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+        exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+    ) {
+        val checked = usageProgressStyle.isSegmented
+        CompactSwitchRow(
+            title = stringResource(R.string.usage_progress_segmented_toggle_title),
+            checked = checked,
+            enabled = enabled,
+            isSectionHeader = false,
+            modifier = Modifier.padding(top = 6.dp),
+            onCheckedChange = { segmented ->
+                onUsageProgressStyleChange(usageProgressStyle.withSegmented(segmented))
+            },
+        )
+    }
+}
+
+@Suppress("FunctionNaming")
+@Composable
+private fun CompactSwitchRow(
+    title: String,
+    checked: Boolean,
+    enabled: Boolean,
+    isSectionHeader: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val style = if (isSectionHeader) {
+        MaterialTheme.typography.labelLarge
+    } else {
+        MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
+    }
+    val color = if (isSectionHeader) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = PREFS_CONTROL_ROW_MIN_HEIGHT)
+            .toggleable(
+                value = checked,
+                enabled = enabled,
+                role = Role.Switch,
+                onValueChange = onCheckedChange,
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            style = style,
+            color = color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 12.dp),
+        )
+        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+            Switch(
+                checked = checked,
+                onCheckedChange = null,
+                enabled = enabled,
+            )
+        }
+    }
 }
 
 @Composable
 private fun PrefsFieldLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-    )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = PREFS_CONTROL_ROW_MIN_HEIGHT),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }

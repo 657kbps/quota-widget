@@ -48,14 +48,18 @@ import com.kuyermqi.quotawidget.domain.resolveCodexUsageSummaryWindowKind
 import com.kuyermqi.quotawidget.domain.upcomingResetAtEpochMs
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.util.currentTimeMillis
-import com.kuyermqi.quotawidget.widget.BalanceBlock
 import com.kuyermqi.quotawidget.widget.WidgetHeader
+import com.kuyermqi.quotawidget.widget.BalanceBlock
 import com.kuyermqi.quotawidget.widget.clickableNoRipple
 import com.kuyermqi.quotawidget.widget.contextString
 import com.kuyermqi.quotawidget.widget.widgetContext
 import com.kuyermqi.quotawidget.widget.fittedTitleFontSize
 import com.kuyermqi.quotawidget.widget.updatedAtLabel
 import com.kuyermqi.quotawidget.widget.systemWidgetBackgroundCornerRadius
+
+private const val COMPACT_PILL_MAX_TITLE_SP = 26f
+private const val COMPACT_MAX_TITLE_SP = 32f
+private const val STANDARD_MAX_TITLE_SP = 44f
 
 @Composable
 fun UsagePercentWidgetContent(
@@ -82,19 +86,39 @@ fun UsagePercentWidgetContent(
             colorFilter = ColorFilter.tint(GlanceTheme.colors.widgetBackground),
             modifier = GlanceModifier.fillMaxSize(),
         )
+        val isCircularSuccess = state is WidgetDisplayState.Success &&
+            usageProgressStyle.isCircular &&
+            shouldShowCircularProgress(state.snapshot, windowKind)
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .padding(start = 14.dp, top = 14.dp, end = 14.dp, bottom = 22.dp),
+                .padding(
+                    start = 14.dp,
+                    top = 14.dp,
+                    end = 14.dp,
+                    bottom = if (isCircularSuccess) 14.dp else 22.dp,
+                ),
         ) {
             WidgetHeader(platformId, platformTitle, refreshPhase, openApp)
-            Spacer(
-                modifier = GlanceModifier
-                    .defaultWeight()
-                    .fillMaxWidth()
-                    .clickableNoRipple(openApp),
-            )
+            if (!isCircularSuccess) {
+                Spacer(
+                    modifier = GlanceModifier
+                        .defaultWeight()
+                        .fillMaxWidth()
+                        .clickableNoRipple(openApp),
+                )
+            }
             when (state) {
+                is WidgetDisplayState.Success ->
+                    UsagePercentSuccessBlock(
+                        snapshot = state.snapshot,
+                        windowKind = windowKind,
+                        usageDisplayMode = usageDisplayMode,
+                        usageProgressStyle = usageProgressStyle,
+                        usageResetStyle = usageResetStyle,
+                        openApp = openApp,
+                        showProgress = true,
+                    )
                 WidgetDisplayState.NotConfigured ->
                     BalanceBlock(
                         title = contextString(R.string.widget_not_configured),
@@ -115,16 +139,6 @@ fun UsagePercentWidgetContent(
                         subtitle = null,
                         titleSize = 32.sp,
                         openApp = openApp,
-                    )
-                is WidgetDisplayState.Success ->
-                    UsagePercentSuccessBlock(
-                        snapshot = state.snapshot,
-                        windowKind = windowKind,
-                        usageDisplayMode = usageDisplayMode,
-                        usageProgressStyle = usageProgressStyle,
-                        usageResetStyle = usageResetStyle,
-                        openApp = openApp,
-                        showProgress = true,
                     )
                 is WidgetDisplayState.Error ->
                     BalanceBlock(
@@ -169,12 +183,7 @@ internal fun UsagePercentSuccessBlock(
             snapshot.primaryDisplay
         else -> contextString(R.string.usage_unavailable)
     }
-    val showUsageProgress = showProgress &&
-        if (snapshot.platformId == PlatformIds.NEW_API) {
-            newApiUsageWidgetShowsProgress(snapshot)
-        } else {
-            used != null
-        }
+    val showUsageProgress = shouldShowUsageProgress(snapshot, showProgress, used)
     val progressUsed = if (snapshot.platformId == PlatformIds.NEW_API) {
         newApiUsageProgressUsedPercent(snapshot, usageDisplayMode)
     } else {
@@ -195,25 +204,61 @@ internal fun UsagePercentSuccessBlock(
     } else {
         null
     }
-    // A 2×1 widget has no room for a pill beside the value.
-    val pillText = resetAtEpochMs
-        ?.takeIf { usageResetStyle == UsageResetStyle.PILL && !compact }
-        ?.let { formatUsageResetCountdown(it - nowEpochMs) }
-    // A 2×1 widget has no room for a second footer line either.
-    val resetStyle = when {
-        compact && usageResetStyle == UsageResetStyle.FOOTER_STACKED -> UsageResetStyle.FOOTER
-        compact && usageResetStyle == UsageResetStyle.PILL -> UsageResetStyle.FOOTER
-        else -> usageResetStyle
+    val renderCircular = !compact && usageProgressStyle.isCircular && showUsageProgress && progressUsed != null
+    val updatedText = updatedAtLabel(
+        snapshot.updatedAtEpochMs,
+        compact = compact || renderCircular,
+    )
+    val updatedFooter = if (snapshot.platformId == PlatformIds.NEW_API) {
+        formatNewApiWidgetFooter(
+            snapshot = snapshot,
+            expiredLabel = contextString(R.string.new_api_token_expired),
+            updatedAtText = updatedText,
+        )
+    } else {
+        updatedText
     }
+    if (progressUsed != null && renderCircular) {
+        UsageCircularSuccessBlock(
+            model = CircularWidgetContentModel(
+                usageText = usageText,
+                progressUsed = progressUsed,
+                progressMode = progressMode,
+                usageProgressStyle = usageProgressStyle,
+                usageResetStyle = usageResetStyle,
+                resetAtEpochMs = resetAtEpochMs,
+                nowEpochMs = nowEpochMs,
+                updatedFooter = updatedFooter,
+            ),
+            openApp = openApp,
+        )
+        return
+    }
+    val pillText = resetAtEpochMs
+        ?.takeIf { usageResetStyle == UsageResetStyle.PILL }
+        ?.let { formatUsageResetCountdown(it - nowEpochMs) }
+    // A 2×1 widget has no room for a second footer line.
+    val resetStyle = if (compact && usageResetStyle == UsageResetStyle.FOOTER_STACKED) {
+        UsageResetStyle.FOOTER
+    } else {
+        usageResetStyle
+    }
+    val hasFooter = (resetAtEpochMs != null &&
+        (resetStyle == UsageResetStyle.FOOTER || resetStyle == UsageResetStyle.FOOTER_STACKED)) ||
+        updatedFooter.isNotBlank()
     val reservedHeight =
         (if (compact) 0.dp else 60.dp) +
             (if (showUsageProgress) 30.dp else 4.dp) +
-            (if (resetStyle == UsageResetStyle.FOOTER_STACKED) 28.dp else 16.dp)
+            when {
+                resetStyle == UsageResetStyle.FOOTER_STACKED && resetAtEpochMs != null -> 28.dp
+                hasFooter -> 16.dp
+                else -> 0.dp
+            }
     val usageTextSize = usageTitleSize(
         text = usageText,
         compact = compact,
         reservedHeight = reservedHeight,
-        extraWidth = if (pillText != null) 60.dp else 0.dp,
+        extraWidth = if (pillText != null) (if (compact) 54.dp else 60.dp) else 0.dp,
     )
     Column(modifier = GlanceModifier.fillMaxWidth()) {
         if (pillText != null) {
@@ -228,8 +273,8 @@ internal fun UsagePercentSuccessBlock(
                     maxLines = 1,
                     modifier = GlanceModifier.clickableNoRipple(openApp),
                 )
-                Spacer(GlanceModifier.width(6.dp))
-                UsageResetPill(text = pillText, openApp = openApp)
+                Spacer(GlanceModifier.width(if (compact) 5.dp else 6.dp))
+                UsageResetPill(text = pillText, compact = compact, openApp = openApp)
             }
         } else {
             Text(
@@ -245,7 +290,7 @@ internal fun UsagePercentSuccessBlock(
         }
         if (showUsageProgress && progressUsed != null) {
             Spacer(GlanceModifier.height(8.dp))
-            when (usageProgressStyle) {
+            when (usageProgressStyle.toLinearFallback()) {
                 UsageProgressStyle.CAPSULE ->
                     UsageCapsuleProgressTrack(
                         usedPercent = progressUsed,
@@ -257,20 +302,15 @@ internal fun UsagePercentSuccessBlock(
                         usedPercent = progressUsed,
                         usageDisplayMode = progressMode,
                     )
+                UsageProgressStyle.RING,
+                UsageProgressStyle.RING_SEGMENTED,
+                UsageProgressStyle.GAUGE,
+                UsageProgressStyle.GAUGE_SEGMENTED,
+                -> Unit
             }
-            Spacer(GlanceModifier.height(10.dp))
-        } else {
+            if (hasFooter) Spacer(GlanceModifier.height(10.dp))
+        } else if (hasFooter) {
             Spacer(GlanceModifier.height(4.dp))
-        }
-        val updatedText = updatedAtLabel(snapshot.updatedAtEpochMs)
-        val updatedFooter = if (snapshot.platformId == PlatformIds.NEW_API) {
-            formatNewApiWidgetFooter(
-                snapshot = snapshot,
-                expiredLabel = contextString(R.string.new_api_token_expired),
-                updatedAtText = updatedText,
-            )
-        } else {
-            updatedText
         }
         when {
             resetAtEpochMs != null && resetStyle == UsageResetStyle.FOOTER -> Text(
@@ -294,22 +334,24 @@ internal fun UsagePercentSuccessBlock(
                     maxLines = 1,
                     modifier = GlanceModifier.clickableNoRipple(openApp),
                 )
-                Spacer(GlanceModifier.height(2.dp))
-                Text(
-                    text = updatedFooter,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = 10.sp,
-                    ),
-                    maxLines = 1,
-                    modifier = GlanceModifier.clickableNoRipple(openApp),
-                )
+                if (updatedFooter.isNotBlank()) {
+                    Spacer(GlanceModifier.height(2.dp))
+                    Text(
+                        text = updatedFooter,
+                        style = TextStyle(
+                            color = GlanceTheme.colors.onSurfaceVariant,
+                            fontSize = 10.sp,
+                        ),
+                        maxLines = 1,
+                        modifier = GlanceModifier.clickableNoRipple(openApp),
+                    )
+                }
             }
-            else -> Text(
+            updatedFooter.isNotBlank() -> Text(
                 text = updatedFooter,
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurfaceVariant,
-                    fontSize = if (compact) 11.sp else 12.sp,
+                    fontSize = if (compact) 10.sp else 12.sp,
                 ),
                 maxLines = 1,
                 modifier = GlanceModifier.clickableNoRipple(openApp),
@@ -319,13 +361,18 @@ internal fun UsagePercentSuccessBlock(
 }
 
 /** Small countdown capsule shown next to the large percent value (reset style C). */
+@Suppress("FunctionNaming")
 @Composable
-private fun UsageResetPill(text: String, openApp: Action) {
+private fun UsageResetPill(text: String, compact: Boolean, openApp: Action) {
+    val corner = if (compact) 6.dp else 7.dp
+    val padH = if (compact) 5.dp else 6.dp
+    val padV = if (compact) 2.dp else 3.dp
+    val fontSize = if (compact) 10.sp else 11.sp
     Box(
         modifier = GlanceModifier
             .background(GlanceTheme.colors.secondaryContainer)
-            .cornerRadius(7.dp)
-            .padding(horizontal = 6.dp, vertical = 3.dp)
+            .cornerRadius(corner)
+            .padding(horizontal = padH, vertical = padV)
             .clickableNoRipple(openApp),
         contentAlignment = Alignment.Center,
     ) {
@@ -333,7 +380,7 @@ private fun UsageResetPill(text: String, openApp: Action) {
             text = text,
             style = TextStyle(
                 color = GlanceTheme.colors.onSecondaryContainer,
-                fontSize = 11.sp,
+                fontSize = fontSize,
                 fontWeight = FontWeight.Medium,
             ),
             maxLines = 1,
@@ -350,11 +397,44 @@ internal fun usageTitleSize(
 ): TextUnit {
     val size = LocalSize.current
     val horizontalReserve = if (compact) 64.dp else 28.dp
+    val maxSp = when {
+        compact && extraWidth > 0.dp -> COMPACT_PILL_MAX_TITLE_SP
+        compact -> COMPACT_MAX_TITLE_SP
+        else -> STANDARD_MAX_TITLE_SP
+    }
     return fittedTitleFontSize(
         text = text,
         maxWidth = (size.width - horizontalReserve - extraWidth).coerceAtLeast(40.dp),
         maxHeight = (size.height - reservedHeight).coerceAtLeast(24.dp),
-        minSp = if (compact) 20f else 24f,
-        maxSp = if (compact) 32f else 44f,
+        minSp = if (compact) 18f else 24f,
+        maxSp = maxSp,
     )
 }
+
+private fun shouldShowCircularProgress(
+    snapshot: QuotaSnapshot,
+    windowKind: UsageWindowKind,
+): Boolean {
+    val effectiveWindowKind = when (snapshot.platformId) {
+        PlatformIds.CODEX,
+        PlatformIds.KIMI_CODE,
+        PlatformIds.ZHIPU,
+        -> resolveCodexUsageSummaryWindowKind(snapshot.windows, windowKind) ?: windowKind
+        in PlatformIds.sessionPlatforms ->
+            resolveCodexUsageSummaryWindowKind(snapshot.windows, windowKind) ?: windowKind
+        else -> windowKind
+    }
+    val used = snapshot.windows.find { it.kind == effectiveWindowKind.toQuotaWindowKind() }?.usedPercent
+    return shouldShowUsageProgress(snapshot, showProgress = true, used = used)
+}
+
+private fun shouldShowUsageProgress(
+    snapshot: QuotaSnapshot,
+    showProgress: Boolean,
+    used: Double?,
+): Boolean = showProgress &&
+    if (snapshot.platformId == PlatformIds.NEW_API) {
+        newApiUsageWidgetShowsProgress(snapshot)
+    } else {
+        used != null
+    }

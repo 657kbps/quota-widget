@@ -168,9 +168,9 @@ internal fun contextString(@StringRes resId: Int, vararg formatArgs: Any): Strin
 internal fun widgetContext(): Context = LocalWidgetAndroidContext.current
 
 @Composable
-internal fun updatedAtLabel(epochMs: Long): String = contextString(
-    R.string.widget_updated_at,
-    WidgetDateFormatter.formatUpdatedAt(widgetContext(), epochMs),
+internal fun updatedAtLabel(epochMs: Long, compact: Boolean = false): String = contextString(
+    if (compact) R.string.widget_circular_updated_at else R.string.widget_updated_at,
+    WidgetDateFormatter.formatUpdatedAt(widgetContext(), epochMs, circular = compact),
 )
 
 /** Fixed size used by the in-app widget previews; live widgets use [balanceTitleSize]. */
