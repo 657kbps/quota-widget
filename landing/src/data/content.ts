@@ -202,8 +202,8 @@ export const PROVIDERS: ProviderItem[] = [
     monochrome: false,
     summary: {
       en: '5h · Weekly',
-      'zh-Hans': '5h · 周限额',
-      'zh-Hant': '5h · 週限額',
+      'zh-Hans': '5h · 周',
+      'zh-Hant': '5h · 週',
       ja: '5時間 · 週間',
       de: '5h · Woche',
       fr: '5h · Hebdo',
@@ -223,22 +223,17 @@ export interface LocaleCopy {
     github: string;
   };
   widgets: {
-    used: string;
-    remaining: string;
-    bar: string;
-    capsule: string;
-    dark: string;
-    light: string;
     resetsAt: string;
+    circularResetsAt: string;
     resetsOn: string;
-    updatedNow: string;
     updatedAt: string;
+    circularUpdatedAt: string;
     rolling: string;
     weekly: string;
   };
   showcase: {
     title: string;
-    tabs: ReadonlyArray<{
+    items: ReadonlyArray<{
       id: 'dark' | 'home' | 'light';
       label: string;
       src: string;
@@ -266,22 +261,17 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
       github: 'Source',
     },
     widgets: {
-      used: 'Used',
-      remaining: 'Left',
-      bar: 'Bar',
-      capsule: 'Capsule',
-      dark: 'Dark',
-      light: 'Light',
       resetsAt: 'Resets at 06:15',
+      circularResetsAt: 'Reset 06:15',
       resetsOn: 'Resets on Nov 30 at 03:03',
-      updatedNow: 'Updated just now',
       updatedAt: 'Updated Nov 25, 03:03',
+      circularUpdatedAt: 'Upd. 11/25 03:03',
       rolling: 'Rolling',
       weekly: 'Weekly',
     },
     showcase: {
-      title: 'Right on your home screen',
-      tabs: [
+      title: 'App & widgets',
+      items: [
         { id: 'dark', label: 'Dark Widgets', src: 'images/screenshots/widgets-dark.png' },
         { id: 'home', label: 'App Home', src: 'images/screenshots/app-home.png' },
         { id: 'light', label: 'Light Widgets', src: 'images/screenshots/widgets-light.png' },
@@ -319,24 +309,19 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
       github: '源码',
     },
     widgets: {
-      used: '已用',
-      remaining: '余量',
-      bar: '细条',
-      capsule: '胶囊',
-      dark: '深色',
-      light: '浅色',
-      resetsAt: '06:15 重置',
-      resetsOn: '11月30日 03:03 重置',
-      updatedNow: '刚刚更新',
-      updatedAt: '11月25日 03:03 更新',
-      rolling: '5 小时',
+      resetsAt: '重置于 06:15',
+      circularResetsAt: '06:15 重置',
+      resetsOn: '重置于 11月30日 03:03',
+      updatedAt: '更新于 11月25日 03:03',
+      circularUpdatedAt: '11/25 03:03 更新',
+      rolling: '滚动',
       weekly: '每周',
     },
     showcase: {
-      title: '桌面即看板',
-      tabs: [
+      title: '应用与小组件',
+      items: [
         { id: 'dark', label: '深色小组件', src: 'images/screenshots/widgets-dark.png' },
-        { id: 'home', label: '平台配置', src: 'images/screenshots/app-home.png' },
+        { id: 'home', label: '应用首页', src: 'images/screenshots/app-home.png' },
         { id: 'light', label: '浅色小组件', src: 'images/screenshots/widgets-light.png' },
       ],
     },
@@ -346,8 +331,8 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
     essentials: [
       {
         id: 'refresh',
-        title: '自动刷新',
-        desc: '15 分钟至 24 小时可调，点按小组件即可立即同步',
+        title: '后台同步',
+        desc: '15 分钟至 24 小时定时刷新，也可点按任意小组件立即同步',
       },
       {
         id: 'security',
@@ -356,8 +341,8 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
       },
       {
         id: 'theme',
-        title: '随系统而变',
-        desc: 'Material You 动态取色，内置 7 种语言',
+        title: 'Material You',
+        desc: '动态壁纸取色、深色模式，内置 7 种语言',
       },
     ],
   },
@@ -372,24 +357,19 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
       github: '原始碼',
     },
     widgets: {
-      used: '已用',
-      remaining: '剩餘',
-      bar: '細條',
-      capsule: '膠囊',
-      dark: '深色',
-      light: '淺色',
-      resetsAt: '06:15 重置',
-      resetsOn: '11月30日 03:03 重置',
-      updatedNow: '剛剛更新',
-      updatedAt: '11月25日 03:03 更新',
-      rolling: '5 小時',
+      resetsAt: '重設於 06:15',
+      circularResetsAt: '06:15 重設',
+      resetsOn: '重設於 11月30日 03:03',
+      updatedAt: '更新於 11月25日 03:03',
+      circularUpdatedAt: '11/25 03:03 更新',
+      rolling: '滾動',
       weekly: '每週',
     },
     showcase: {
-      title: '桌面即看板',
-      tabs: [
+      title: '應用與小工具',
+      items: [
         { id: 'dark', label: '深色小工具', src: 'images/screenshots/widgets-dark.png' },
-        { id: 'home', label: '平台設定', src: 'images/screenshots/app-home.png' },
+        { id: 'home', label: '應用首頁', src: 'images/screenshots/app-home.png' },
         { id: 'light', label: '淺色小工具', src: 'images/screenshots/widgets-light.png' },
       ],
     },
@@ -399,8 +379,8 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
     essentials: [
       {
         id: 'refresh',
-        title: '自動重新整理',
-        desc: '15 分鐘至 24 小時可調，點擊小工具即可立即同步',
+        title: '背景同步',
+        desc: '15 分鐘至 24 小時定時更新，也可點擊任意小工具立即同步',
       },
       {
         id: 'security',
@@ -409,8 +389,8 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
       },
       {
         id: 'theme',
-        title: '隨系統切換',
-        desc: 'Material You 動態取色，內建 7 種語言',
+        title: 'Material You',
+        desc: '動態桌布取色、深色模式，內建 7 種語言',
       },
     ],
   },
@@ -425,24 +405,19 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
       github: 'ソース',
     },
     widgets: {
-      used: '使用済み',
-      remaining: '残り',
-      bar: 'バー',
-      capsule: 'カプセル',
-      dark: 'ダーク',
-      light: 'ライト',
       resetsAt: '06:15 にリセット',
+      circularResetsAt: '06:15 リセット',
       resetsOn: '11月30日 03:03 にリセット',
-      updatedNow: 'たった今更新',
       updatedAt: '11月25日 03:03 に更新',
-      rolling: '5時間',
-      weekly: '週間',
+      circularUpdatedAt: '11/25 03:03 更新',
+      rolling: 'ローリング',
+      weekly: '毎週',
     },
     showcase: {
-      title: 'ホーム画面でひと目で把握',
-      tabs: [
+      title: 'アプリとウィジェット',
+      items: [
         { id: 'dark', label: 'ダークウィジェット', src: 'images/screenshots/widgets-dark.png' },
-        { id: 'home', label: 'アプリ画面', src: 'images/screenshots/app-home.png' },
+        { id: 'home', label: 'アプリホーム', src: 'images/screenshots/app-home.png' },
         { id: 'light', label: 'ライトウィジェット', src: 'images/screenshots/widgets-light.png' },
       ],
     },
@@ -452,8 +427,8 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
     essentials: [
       {
         id: 'refresh',
-        title: 'バックグラウンド更新',
-        desc: '15分〜24時間間隔で自動更新、タップで即時同期',
+        title: 'バックグラウンド同期',
+        desc: '15分〜24時間間隔で自動更新、どのウィジェットもタップで即時更新',
       },
       {
         id: 'security',
@@ -463,7 +438,7 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
       {
         id: 'theme',
         title: 'Material You',
-        desc: 'ダイナミックカラー・ダークモード・7言語対応',
+        desc: 'ダイナミック壁紙カラー・ダークモード・7言語対応',
       },
     ],
   },
@@ -472,28 +447,23 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
     appName: 'Quota Widget',
     systemLanguage: 'Systemeinstellung folgen',
     hero: {
-      headline: 'Kontingente, direkt im Blick.',
+      headline: 'Kontingente, direkt auf dem Startbildschirm.',
       subhead: 'Ein schlichtes, praktisches Kontingent-Widget.',
       download: 'APK herunterladen',
       github: 'Quellcode',
     },
     widgets: {
-      used: 'Genutzt',
-      remaining: 'Übrig',
-      bar: 'Leiste',
-      capsule: 'Kapsel',
-      dark: 'Dunkel',
-      light: 'Hell',
       resetsAt: 'Zurücksetzung um 06:15',
-      resetsOn: 'Zurücksetzung 30. Nov., 03:03',
-      updatedNow: 'Gerade aktualisiert',
-      updatedAt: 'Aktualisiert 25. Nov., 03:03',
+      circularResetsAt: 'Reset 06:15',
+      resetsOn: 'Zurücksetzung am 30. Nov. um 03:03',
+      updatedAt: 'Aktualisiert 25. Nov. 03:03',
+      circularUpdatedAt: 'Stand 25.11. 03:03',
       rolling: 'Rollierend',
-      weekly: 'Woche',
+      weekly: 'Wöchentlich',
     },
     showcase: {
-      title: 'Direkt auf deinem Startbildschirm',
-      tabs: [
+      title: 'App & Widgets',
+      items: [
         { id: 'dark', label: 'Dunkle Widgets', src: 'images/screenshots/widgets-dark.png' },
         { id: 'home', label: 'App-Startseite', src: 'images/screenshots/app-home.png' },
         { id: 'light', label: 'Helle Widgets', src: 'images/screenshots/widgets-light.png' },
@@ -506,7 +476,7 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
       {
         id: 'refresh',
         title: 'Hintergrund-Sync',
-        desc: 'Intervalle von 15 Min. bis 24 Std. und Tippen zum Aktualisieren',
+        desc: 'Intervalle von 15 Min. bis 24 Std. sowie Aktualisieren per Tipp auf jedes Widget',
       },
       {
         id: 'security',
@@ -516,7 +486,7 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
       {
         id: 'theme',
         title: 'Material You',
-        desc: 'Dynamische Farben, Dunkelmodus und 7 Sprachen',
+        desc: 'Dynamische Hintergrundfarben, Dunkelmodus und 7 Sprachen',
       },
     ],
   },
@@ -531,24 +501,19 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
       github: 'Source',
     },
     widgets: {
-      used: 'Utilisé',
-      remaining: 'Restant',
-      bar: 'Barre',
-      capsule: 'Capsule',
-      dark: 'Sombre',
-      light: 'Clair',
       resetsAt: 'Réinitialisation à 06:15',
+      circularResetsAt: 'Réinit. 06:15',
       resetsOn: 'Réinitialisation le 30 nov. à 03:03',
-      updatedNow: 'Actualisé à l’instant',
-      updatedAt: 'Actualisé le 25 nov. à 03:03',
+      updatedAt: 'Actualisé 25 nov. 03:03',
+      circularUpdatedAt: 'MàJ 25/11 03:03',
       rolling: 'Glissant',
-      weekly: 'Hebdo',
+      weekly: 'Hebdomadaire',
     },
     showcase: {
-      title: 'Directement sur votre écran',
-      tabs: [
+      title: 'L’app et ses widgets',
+      items: [
         { id: 'dark', label: 'Widgets sombres', src: 'images/screenshots/widgets-dark.png' },
-        { id: 'home', label: 'Accueil', src: 'images/screenshots/app-home.png' },
+        { id: 'home', label: 'Accueil de l’app', src: 'images/screenshots/app-home.png' },
         { id: 'light', label: 'Widgets clairs', src: 'images/screenshots/widgets-light.png' },
       ],
     },
@@ -559,7 +524,7 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
       {
         id: 'refresh',
         title: 'Synchro en arrière-plan',
-        desc: 'Intervalles de 15 min à 24 h et actualisation en un geste',
+        desc: 'Intervalles de 15 min à 24 h et actualisation en un geste sur chaque widget',
       },
       {
         id: 'security',
@@ -569,7 +534,7 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
       {
         id: 'theme',
         title: 'Material You',
-        desc: 'Couleurs dynamiques, mode sombre et 7 langues',
+        desc: 'Couleurs dynamiques du fond d’écran, mode sombre et 7 langues',
       },
     ],
   },
@@ -578,28 +543,23 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
     appName: 'Quota Widget',
     systemLanguage: 'Как в системе',
     hero: {
-      headline: 'Квоты — прямо на рабочем столе.',
+      headline: 'Квоты — прямо на главном экране.',
       subhead: 'Простой и удобный виджет квот.',
       download: 'Скачать APK',
       github: 'Код',
     },
     widgets: {
-      used: 'Использовано',
-      remaining: 'Осталось',
-      bar: 'Полоса',
-      capsule: 'Капсула',
-      dark: 'Тёмная',
-      light: 'Светлая',
       resetsAt: 'Сброс в 06:15',
+      circularResetsAt: 'Сброс 06:15',
       resetsOn: 'Сброс 30 нояб. в 03:03',
-      updatedNow: 'Обновлено только что',
-      updatedAt: 'Обновлено 25 нояб., 03:03',
-      rolling: '5 часов',
-      weekly: 'Неделя',
+      updatedAt: 'Обновлено 25 нояб. 03:03',
+      circularUpdatedAt: 'Обн. 25.11 03:03',
+      rolling: 'Скользящий',
+      weekly: 'Недельный',
     },
     showcase: {
-      title: 'Прямо на главном экране',
-      tabs: [
+      title: 'Приложение и виджеты',
+      items: [
         { id: 'dark', label: 'Тёмные виджеты', src: 'images/screenshots/widgets-dark.png' },
         { id: 'home', label: 'Главный экран', src: 'images/screenshots/app-home.png' },
         { id: 'light', label: 'Светлые виджеты', src: 'images/screenshots/widgets-light.png' },
@@ -611,8 +571,8 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
     essentials: [
       {
         id: 'refresh',
-        title: 'Фоновое обновление',
-        desc: 'Интервал от 15 мин до 24 ч и обновление по нажатию',
+        title: 'Фоновая синхронизация',
+        desc: 'Интервал от 15 мин до 24 ч и обновление в одно касание на любом виджете',
       },
       {
         id: 'security',
@@ -622,7 +582,7 @@ export const COPY: Record<SupportedLocale, LocaleCopy> = {
       {
         id: 'theme',
         title: 'Material You',
-        desc: 'Динамические цвета, тёмная тема и 7 языков',
+        desc: 'Динамические цвета обоев, тёмная тема и 7 языков',
       },
     ],
   },

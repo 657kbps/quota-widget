@@ -30,7 +30,7 @@ describe('Quota Widget landing content & i18n', () => {
     expect(existsSync(resolve(publicDir, 'logo192.png'))).toBe(true);
     expect(existsSync(resolve(publicDir, 'logo512.png'))).toBe(true);
     expect(existsSync(resolve(publicDir, 'images/app-icon.png'))).toBe(true);
-    for (const item of COPY.en.showcase.tabs) {
+    for (const item of COPY.en.showcase.items) {
       expect(existsSync(resolve(publicDir, item.src))).toBe(true);
     }
   });

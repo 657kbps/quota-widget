@@ -9,7 +9,7 @@ export const Route = createFileRoute('/')({ component: LandingPage });
 
 function LandingPage() {
   return (
-    <div className='min-h-screen bg-[var(--bg-canvas)] text-[var(--fg-primary)]'>
+    <div className='min-h-screen bg-(--bg-canvas) text-(--fg-primary)'>
       <Navbar />
       <main>
         <HeroSection />

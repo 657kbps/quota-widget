@@ -23,7 +23,13 @@
   --accent: #4e5d94;
   --accent-hover: #3f4d80;
   --accent-fg: #ffffff;
-  --glow: rgba(78, 93, 148, 0.08);
+  --widget-card-bg: #eef1fa;
+  --widget-surface: #faf8ff;
+  --widget-on-surface: #1a1c24;
+  --widget-on-surface-variant: #5c6274;
+  --widget-primary: #4b5b96;
+  --widget-capsule-fill: #aeb8da;
+  --widget-track: #dde1ee;
 }
 
 :root[data-theme='dark'] {
@@ -39,7 +45,13 @@
   --accent: #b9c3ff;
   --accent-hover: #cdd4ff;
   --accent-fg: #101424;
-  --glow: rgba(185, 195, 255, 0.09);
+  --widget-card-bg: #1d2332;
+  --widget-surface: #131622;
+  --widget-on-surface: #e6e8f0;
+  --widget-on-surface-variant: #a0a6b8;
+  --widget-primary: #b9c3ff;
+  --widget-capsule-fill: #4e5b8f;
+  --widget-track: #555a68;
 }
 
 * {

@@ -48,7 +48,7 @@ export function Navbar() {
           alt='Quota Widget'
           className='h-7 w-7 rounded-lg bg-white p-0.5 shadow-2xs ring-1 ring-black/5'
         />
-        <span className='text-sm font-semibold tracking-tight text-[var(--fg-primary)]'>{t.appName}</span>
+        <span className='text-sm font-semibold tracking-tight text-(--fg-primary)'>{t.appName}</span>
       </a>
 
       <div className='flex items-center gap-1.5'>
@@ -58,7 +58,7 @@ export function Navbar() {
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-label='Select language'
             aria-expanded={menuOpen}
-            className='inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-[var(--fg-secondary)] transition-colors hover:bg-[var(--bg-surface-muted)] hover:text-[var(--fg-primary)]'
+            className='inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-(--fg-secondary) transition-colors hover:bg-(--bg-surface-muted) hover:text-(--fg-primary)'
           >
             <Languages className='h-3.5 w-3.5' />
             <span>{LANGUAGE_LABELS[locale]}</span>
@@ -67,7 +67,7 @@ export function Navbar() {
           {menuOpen && (
             <div
               role='menu'
-              className='absolute right-0 z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-1.5 shadow-xl'
+              className='absolute right-0 z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-(--border-subtle) bg-(--bg-surface) p-1.5 shadow-xl'
             >
               {ORDERED_LOCALES.map((option) => {
                 const selected = localePreference === option;
@@ -84,12 +84,12 @@ export function Navbar() {
                     }}
                     className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs transition-colors ${
                       selected
-                        ? 'bg-[var(--bg-surface-muted)] font-medium text-[var(--fg-primary)]'
-                        : 'text-[var(--fg-secondary)] hover:bg-[var(--bg-surface-muted)] hover:text-[var(--fg-primary)]'
+                        ? 'bg-(--bg-surface-muted) font-medium text-(--fg-primary)'
+                        : 'text-(--fg-secondary) hover:bg-(--bg-surface-muted) hover:text-(--fg-primary)'
                     }`}
                   >
                     <span>{label}</span>
-                    {selected && <Check className='h-3.5 w-3.5 text-[var(--accent)]' />}
+                    {selected && <Check className='h-3.5 w-3.5 text-(--accent)' />}
                   </button>
                 );
               })}
@@ -101,7 +101,7 @@ export function Navbar() {
           type='button'
           onClick={() => setTheme(nextTheme[theme])}
           aria-label={`Theme: ${theme}`}
-          className='inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--fg-secondary)] transition-colors hover:bg-[var(--bg-surface-muted)] hover:text-[var(--fg-primary)]'
+          className='inline-flex h-8 w-8 items-center justify-center rounded-full text-(--fg-secondary) transition-colors hover:bg-(--bg-surface-muted) hover:text-(--fg-primary)'
         >
           <ThemeIcon className='h-4 w-4' />
         </button>
@@ -111,7 +111,7 @@ export function Navbar() {
           target='_blank'
           rel='noreferrer'
           aria-label='GitHub'
-          className='inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--fg-secondary)] transition-colors hover:bg-[var(--bg-surface-muted)] hover:text-[var(--fg-primary)]'
+          className='inline-flex h-8 w-8 items-center justify-center rounded-full text-(--fg-secondary) transition-colors hover:bg-(--bg-surface-muted) hover:text-(--fg-primary)'
         >
           <GitHubIcon className='h-4 w-4' />
         </a>
