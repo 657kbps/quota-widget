@@ -263,11 +263,11 @@ enum class UsageProgressStyle {
     CAPSULE,
     /** Full 360° circular ring around the percent value (standard layout). */
     RING,
-    /** 16-segment 360° circular ring around the percent value (standard layout). */
+    /** 8-segment 360° circular ring around the percent value (standard layout). */
     RING_SEGMENTED,
     /** 270° open gauge arc around the percent value (standard layout). */
     GAUGE,
-    /** 13-segment 270° open gauge arc around the percent value (standard layout). */
+    /** 6-segment 270° open gauge arc around the percent value (standard layout). */
     GAUGE_SEGMENTED,
     ;
 
