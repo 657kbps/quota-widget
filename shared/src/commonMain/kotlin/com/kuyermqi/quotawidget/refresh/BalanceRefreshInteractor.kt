@@ -65,6 +65,7 @@ private fun Throwable.directWidgetErrorKind(): WidgetErrorKind? = when (this) {
 class BalanceRefreshInteractor(
     private val settingsRepository: PlatformSettingsRepository,
     private val providers: List<QuotaProvider>,
+    private val shouldSkipRefresh: suspend (String) -> Boolean = { false },
 ) {
     private val providersById = providers.associateBy { it.platform.id }
 
@@ -130,6 +131,13 @@ class BalanceRefreshInteractor(
         if (!provider.isConfigured(settingsRepository)) {
             settingsRepository.saveWidgetNotConfigured(platformId)
             return BalanceRefreshResult.Completed(WidgetDisplayState.NotConfigured)
+        }
+
+        if (shouldSkipRefresh(platformId)) {
+            val previous = settingsRepository.getWidgetState(platformId)
+            if (previous is WidgetDisplayState.Success) {
+                return BalanceRefreshResult.Completed(previous)
+            }
         }
 
         return try {

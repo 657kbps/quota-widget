@@ -37,26 +37,8 @@ class SeedPinActivity : Activity() {
         }
         root.addView(status)
         addButton(root, "重新写入假数据") { reseed() }
-        addButton(root, "OpenCode 2×2 · 单行") {
-            pin("com.kuyermqi.quotawidget.widget.OpenCodeGoWidgetReceiver")
-        }
-        addButton(root, "OpenCode 2×1 · 单行") {
-            pin("com.kuyermqi.quotawidget.widget.OpenCodeGoCompactWidgetReceiver")
-        }
-        addButton(root, "Kimi Code 2×2 · 两行") {
-            pin("com.kuyermqi.quotawidget.widget.KimiCodeWidgetReceiver")
-        }
-        addButton(root, "Magpie 2×2 · 胶囊") {
-            pin("com.kuyermqi.quotawidget.widget.MagpieWidgetReceiver")
-        }
-        addButton(root, "Codex 2×1 · 胶囊进度（回退单行）") {
-            pin("com.kuyermqi.quotawidget.widget.CodexCompactWidgetReceiver")
-        }
-        addButton(root, "OpenCode 总览 · BAR") {
-            pin("com.kuyermqi.quotawidget.widget.OpenCodeGoOverviewWidgetReceiver")
-        }
-        addButton(root, "Zhipu 总览 · CAPSULE") {
-            pin("com.kuyermqi.quotawidget.widget.ZhipuOverviewWidgetReceiver")
+        PIN_TARGETS.forEach { (label, receiver) ->
+            addButton(root, label) { pin("com.kuyermqi.quotawidget.widget.$receiver") }
         }
         setContentView(ScrollView(this).apply { addView(root) })
     }
@@ -91,5 +73,30 @@ class SeedPinActivity : Activity() {
         val supported = manager.isRequestPinAppWidgetSupported
         val requested = supported && manager.requestPinAppWidget(provider, null, null)
         status.text = "pin $receiverName supported=$supported requested=$requested"
+    }
+
+    private companion object {
+        val PIN_TARGETS: List<Pair<String, String>> = listOf(
+            "OpenCode Go 2×2" to "OpenCodeGoWidgetReceiver",
+            "OpenCode Go 2×1" to "OpenCodeGoCompactWidgetReceiver",
+            "Kimi Code 2×2" to "KimiCodeWidgetReceiver",
+            "Kimi Code 2×1" to "KimiCodeCompactWidgetReceiver",
+            "Magpie 2×2" to "MagpieWidgetReceiver",
+            "Magpie 2×1" to "MagpieCompactWidgetReceiver",
+            "Codex 2×2" to "CodexWidgetReceiver",
+            "Codex 2×1" to "CodexCompactWidgetReceiver",
+            "Zhipu 2×2" to "ZhipuWidgetReceiver",
+            "Zhipu 2×1" to "ZhipuCompactWidgetReceiver",
+            "Command Code 2×2" to "CommandCodeWidgetReceiver",
+            "Cline 2×2" to "ClineWidgetReceiver",
+            "WorkBuddy 2×2" to "WorkBuddyWidgetReceiver",
+            "Antigravity 2×2" to "AntigravityWidgetReceiver",
+            "DeepSeek 余额 2×2" to "DeepSeekBalanceWidgetReceiver",
+            "NewAPI 用量 2×2" to "NewApiUsageWidgetReceiver",
+            "NewAPI 余额 2×2" to "NewApiBalanceWidgetReceiver",
+            "OpenCode 总览" to "OpenCodeGoOverviewWidgetReceiver",
+            "Kimi 总览" to "KimiCodeOverviewWidgetReceiver",
+            "Zhipu 总览" to "ZhipuOverviewWidgetReceiver",
+        )
     }
 }

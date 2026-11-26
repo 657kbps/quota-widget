@@ -394,6 +394,34 @@ class BalanceRefreshInteractorTest {
         assertIs<WidgetDisplayState.Success>(repo.getWidgetState(PlatformIds.KIMI_CODE))
         assertIs<WidgetDisplayState.Success>(repo.getWidgetState(PlatformIds.ZHIPU))
     }
+
+    @Test
+    fun refresh_preservesSuccessAndSkipsProviderWhenShouldSkipRefreshIsTrue() = runTest {
+        val repo = FakePlatformSettingsRepository(
+            openCode = OpenCodeGoSettings(apiKey = "debug-fake-key"),
+        )
+        val seeded = usageSnapshot(PlatformIds.OPENCODE_GO, "OpenCode Go", 62.0)
+        repo.saveWidgetSuccess(PlatformIds.OPENCODE_GO, seeded)
+        val failingProvider = object : QuotaProvider {
+            override val platform: QuotaPlatform = PlatformRegistry.find(PlatformIds.OPENCODE_GO)!!
+            override suspend fun isConfigured(repo: PlatformSettingsRepository): Boolean = true
+            override suspend fun fetch(repo: PlatformSettingsRepository): QuotaSnapshot {
+                error("network fetch must be skipped for debug-fake credentials")
+            }
+        }
+        val interactor = BalanceRefreshInteractor(
+            settingsRepository = repo,
+            providers = listOf(failingProvider),
+            shouldSkipRefresh = { it == PlatformIds.OPENCODE_GO },
+        )
+
+        val result = interactor.refresh(PlatformIds.OPENCODE_GO)
+
+        val completed = assertIs<BalanceRefreshResult.Completed>(result)
+        val state = assertIs<WidgetDisplayState.Success>(completed.state)
+        assertEquals(seeded, state.snapshot)
+        assertIs<WidgetDisplayState.Success>(repo.getWidgetState(PlatformIds.OPENCODE_GO))
+    }
 }
 
 private fun usageSnapshot(
