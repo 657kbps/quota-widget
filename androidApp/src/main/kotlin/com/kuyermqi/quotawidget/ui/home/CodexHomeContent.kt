@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -31,7 +30,8 @@ import com.kuyermqi.quotawidget.settings.CodexSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.CodexConfigContent
 import com.kuyermqi.quotawidget.ui.usage.formatCodexUsageWindowSummary
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.ui.widgetErrorText
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
 class CodexHomeState internal constructor(
@@ -119,13 +119,6 @@ data class CodexHomeBindings(
     val onLogin: () -> Unit,
 )
 
-@Composable
-fun rememberCodexHomeState(
-    settingsRepository: PlatformSettingsRepository,
-): CodexHomeState = remember(settingsRepository) {
-    CodexHomeState(settingsRepository)
-}
-
 /**
  * Widget observation, Codex summary sync, login launcher, and window-kind clamp.
  * Must be called from HomeScreen (not only when the platform row is expanded).
@@ -206,7 +199,7 @@ fun codexHomeEffects(
             if (draftInvalid) {
                 state.draftWindowKind = preferred
             }
-            WidgetGlanceState.syncAndUpdate(context, "codex_window_clamp")
+            WidgetSyncCoordinator.syncWidgets(context, "codex_window_clamp", PlatformIds.CODEX)
         } else {
             // Settings valid; only draft is out of range (e.g. dirty pick no longer offered).
             state.draftWindowKind = state.settings.widgetWindowKind
@@ -270,7 +263,7 @@ fun codexHomeEffects(
                         state.error = null
                     }
                     is WidgetDisplayState.Error -> {
-                        state.error = refreshState.message
+                        state.error = widgetErrorText(refreshState.kind, resources)
                     }
                     WidgetDisplayState.NeedsReauth -> {
                         clearCodexSession(
@@ -286,7 +279,7 @@ fun codexHomeEffects(
                         state.error = null
                     }
                 }
-                WidgetGlanceState.syncAndUpdate(context, "codex_login")
+                WidgetSyncCoordinator.syncWidgets(context, "codex_login", PlatformIds.CODEX)
             } finally {
                 state.isBusy = false
             }
@@ -356,7 +349,7 @@ fun ColumnScope.CodexHomeContent(
                         keepUsageProgressStyle = state.draftUsageProgressStyle,
                         keepUsageResetStyle = state.draftUsageResetStyle,
                     )
-                    WidgetGlanceState.syncAndUpdate(context, "codex_logout")
+                    WidgetSyncCoordinator.syncWidgets(context, "codex_logout", PlatformIds.CODEX)
                 } finally {
                     state.isBusy = false
                 }
@@ -382,7 +375,7 @@ fun ColumnScope.CodexHomeContent(
                     state.applyDraft(next)
                     when (val result = onRefreshPlatform(PlatformIds.CODEX)) {
                         is WidgetDisplayState.Error -> {
-                            state.error = result.message
+                            state.error = widgetErrorText(result.kind, context)
                         }
                         WidgetDisplayState.NeedsReauth -> {
                             clearCodexSession(
@@ -401,7 +394,7 @@ fun ColumnScope.CodexHomeContent(
                             state.error = null
                         }
                     }
-                    WidgetGlanceState.syncAndUpdate(context, "codex_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "codex_save", PlatformIds.CODEX)
                 } finally {
                     state.isSaving = false
                     state.isBusy = false

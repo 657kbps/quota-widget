@@ -5,6 +5,7 @@ import { devtools } from '@tanstack/devtools-vite';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import { parseGradleVersionName, UNKNOWN_VERSION } from './src/lib/version.ts';
 
 function resolveAppVersion(): string {
   const fromEnv = process.env.VITE_APP_VERSION?.trim();
@@ -13,12 +14,12 @@ function resolveAppVersion(): string {
   }
   try {
     const gradle = readFileSync(resolve(import.meta.dirname, '../androidApp/build.gradle.kts'), 'utf8');
-    const match = gradle.match(/versionName\s*=.*?"([^"]+)"/);
-    if (match?.[1]) {
-      return `v${match[1]}`;
+    const versionName = parseGradleVersionName(gradle);
+    if (versionName) {
+      return `v${versionName}`;
     }
   } catch {}
-  return 'v1.12.0';
+  return UNKNOWN_VERSION;
 }
 
 const base = process.env.VITE_BASE_PATH ?? '/quota-widget/';

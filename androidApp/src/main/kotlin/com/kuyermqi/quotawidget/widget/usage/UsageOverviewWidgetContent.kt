@@ -35,6 +35,7 @@ import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.domain.formatUsageDisplayPercent
 import com.kuyermqi.quotawidget.domain.formatUsageResetCountdown
 import com.kuyermqi.quotawidget.domain.upcomingResetAtEpochMs
@@ -158,7 +159,7 @@ fun UsageOverviewWidgetContent(
                             WidgetDisplayState.NeedsReauth ->
                                 contextString(R.string.widget_needs_reauth)
                             is WidgetDisplayState.Error ->
-                                contextString(R.string.widget_fetch_failed)
+                                widgetErrorText(state.kind, widgetContext())
                             is WidgetDisplayState.Success -> ""
                         },
                         subtitle = null,

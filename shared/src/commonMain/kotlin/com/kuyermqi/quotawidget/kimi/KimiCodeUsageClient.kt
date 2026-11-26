@@ -1,9 +1,10 @@
 package com.kuyermqi.quotawidget.kimi
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
+import com.kuyermqi.quotawidget.domain.HttpStatusException
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
-import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
+import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.ServiceRegion
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
@@ -13,7 +14,7 @@ import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -43,7 +44,7 @@ import kotlinx.serialization.json.JsonPrimitive
  * [Kimi Code CLI]: https://www.kimi.com/code/docs/kimi-code-cli/guides/getting-started.html
  */
 class KimiCodeUsageClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -60,15 +61,22 @@ class KimiCodeUsageClient(
                 header(HttpHeaders.Authorization, "Bearer $apiKey")
                 accept(ContentType.Application.Json)
             }
-        } catch (e: ClientRequestException) {
-            when (e.response.status) {
+        } catch (e: ResponseException) {
+            val status = e.response.status
+            when (status) {
                 HttpStatusCode.Unauthorized,
                 HttpStatusCode.Forbidden,
                 -> throw SessionExpiredException("Kimi Code API Key 无效或已失效，请检查配置")
-                HttpStatusCode.TooManyRequests ->
-                    throw IllegalStateException("Kimi Code 请求过于频繁，请稍后重试", e)
-                else ->
-                    throw IllegalStateException("查询 Kimi Code 额度失败: ${e.response.status}", e)
+                HttpStatusCode.TooManyRequests -> throw HttpStatusException(
+                    statusCode = status.value,
+                    message = "Kimi Code 请求过于频繁，请稍后重试",
+                    cause = e,
+                )
+                else -> throw HttpStatusException(
+                    statusCode = status.value,
+                    message = "查询 Kimi Code 额度失败: $status",
+                    cause = e,
+                )
             }
         }
         val body = response.bodyAsText()
@@ -91,10 +99,6 @@ class KimiCodeUsageClient(
             throw QuotaUnavailableException("Kimi Code 已认证，但未返回额度数据（可能是套餐未生效或接口暂不可用）")
         }
         return snapshot
-    }
-
-    fun close() {
-        httpClient.close()
     }
 
     companion object {
@@ -146,7 +150,7 @@ class KimiCodeUsageClient(
                 platformId = PlatformIds.KIMI_CODE,
                 platformName = PlatformRegistry.displayName(PlatformIds.KIMI_CODE),
                 windows = windows,
-                primaryDisplay = formatUsagePrimaryDisplay(windows),
+                primaryDisplay = formatUsagePrimaryDisplay(windows, NeutralUsageLabels),
                 updatedAtEpochMs = updatedAtEpochMs,
             )
         }

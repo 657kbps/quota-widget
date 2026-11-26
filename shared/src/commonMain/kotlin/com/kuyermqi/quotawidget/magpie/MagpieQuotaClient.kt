@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.magpie
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
+import com.kuyermqi.quotawidget.domain.HttpStatusException
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
@@ -8,10 +9,12 @@ import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.formatUsagePrimaryDisplay
+import com.kuyermqi.quotawidget.network.requireValidBaseUrl
 import com.kuyermqi.quotawidget.opencode.parseIsoInstantMillis
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.util.currentTimeMillis
+import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.accept
@@ -34,7 +37,7 @@ import kotlinx.serialization.json.Json
  * defaulting to the first the gateway returns.
  */
 class MagpieQuotaClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -49,6 +52,7 @@ class MagpieQuotaClient(
         baseUrl: String,
         apiKey: String,
     ): List<MagpieProvider> {
+        requireValidBaseUrl(baseUrl)
         val response = try {
             httpClient.get(quotasUrl(baseUrl)) {
                 header(HttpHeaders.Authorization, "Bearer $apiKey")
@@ -69,12 +73,8 @@ class MagpieQuotaClient(
         return providersOf(envelope.data.orEmpty())
     }
 
-    fun close() {
-        httpClient.close()
-    }
-
     private suspend fun ResponseException.toMagpieError(): Exception {
-        val serverMessage = runCatching {
+        val serverMessage = suspendRunCatching {
             json.decodeFromString(
                 MagpieErrorEnvelope.serializer(),
                 response.bodyAsText(),
@@ -87,12 +87,16 @@ class MagpieQuotaClient(
                         ?: "Magpie 网关密钥无效或已失效，请检查配置",
                 )
             HttpStatusCode.Forbidden ->
-                IllegalStateException(
+                // Not a session issue: the gateway answered, the key just lacks the
+                // quota scope, which only the account owner can grant.
+                QuotaUnavailableException(
                     serverMessage
                         ?: "Magpie 拒绝访问额度接口，请检查网关密钥的额度权限",
                 )
-            else -> IllegalStateException(
-                serverMessage ?: "查询 Magpie 额度失败: ${response.status}",
+            else -> HttpStatusException(
+                statusCode = response.status.value,
+                message = serverMessage ?: "查询 Magpie 额度失败: ${response.status}",
+                cause = this,
             )
         }
     }
@@ -246,7 +250,7 @@ class MagpieQuotaClient(
                 platformId = PlatformIds.MAGPIE,
                 platformName = PlatformRegistry.displayName(PlatformIds.MAGPIE),
                 windows = windows,
-                primaryDisplay = formatUsagePrimaryDisplay(windows, usageDisplayMode),
+                primaryDisplay = formatUsagePrimaryDisplay(windows, NeutralUsageLabels, usageDisplayMode),
                 updatedAtEpochMs = updatedAtEpochMs,
             )
         }

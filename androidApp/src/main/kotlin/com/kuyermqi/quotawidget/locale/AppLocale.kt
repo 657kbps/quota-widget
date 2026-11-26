@@ -3,6 +3,7 @@ package com.kuyermqi.quotawidget.locale
 import android.content.Context
 import android.content.res.Configuration
 import android.os.LocaleList
+import androidx.core.content.edit
 import com.kuyermqi.quotawidget.domain.AppLanguage
 import java.util.Locale
 
@@ -14,6 +15,8 @@ import java.util.Locale
  * languages fall back to English.
  */
 object AppLocale {
+    private const val PREFS = "quota_widget_locale"
+    private const val KEY_APP_LANGUAGE = "app_language"
     private const val FALLBACK_LANGUAGE_TAG = "en"
 
     /** Languages the app ships resources for. */
@@ -27,6 +30,25 @@ object AppLocale {
     private val activities = mutableSetOf<LocaleAwareActivity>()
 
     fun current(): AppLanguage = language
+
+    /** The mirrored language, readable synchronously before DataStore has loaded. */
+    fun storedLanguage(context: Context): AppLanguage =
+        AppLanguage.fromStorage(
+            context.applicationContext
+                .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getString(KEY_APP_LANGUAGE, null),
+        )
+
+    /**
+     * Applies [value] to this process and mirrors it for the next start, so the first frame
+     * after a relaunch already uses the stored language. Returns true on an actual change.
+     */
+    fun apply(context: Context, value: AppLanguage): Boolean {
+        context.applicationContext
+            .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit { putString(KEY_APP_LANGUAGE, value.name) }
+        return update(value)
+    }
 
     /** Locale used for date formatting; falls back to English for unsupported system languages. */
     fun localeOf(context: Context): Locale {
@@ -47,7 +69,7 @@ object AppLocale {
     }
 
     /** Returns true when the stored language actually changed. */
-    fun update(value: AppLanguage): Boolean {
+    private fun update(value: AppLanguage): Boolean {
         if (language == value) return false
         language = value
         return true

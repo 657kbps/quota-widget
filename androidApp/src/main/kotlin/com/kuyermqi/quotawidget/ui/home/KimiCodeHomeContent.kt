@@ -7,7 +7,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -28,7 +27,8 @@ import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.ApiKeyUsageConfigContent
 import com.kuyermqi.quotawidget.ui.platformDisplayName
 import com.kuyermqi.quotawidget.ui.usage.formatUsageWindowSummaryWithFallback
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.ui.widgetErrorText
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
 class KimiCodeHomeState internal constructor(
@@ -117,13 +117,6 @@ class KimiCodeHomeState internal constructor(
     }
 
     internal fun repository(): PlatformSettingsRepository = settingsRepository
-}
-
-@Composable
-fun rememberKimiCodeHomeState(
-    settingsRepository: PlatformSettingsRepository,
-): KimiCodeHomeState = remember(settingsRepository) {
-    KimiCodeHomeState(settingsRepository)
 }
 
 /** Collects widget state and keeps the home summary in sync. */
@@ -222,11 +215,11 @@ fun ColumnScope.KimiCodeHomeContent(
                     state.saveError = when (
                         val result = onRefreshPlatform(PlatformIds.KIMI_CODE)
                     ) {
-                        is WidgetDisplayState.Error -> result.message
+                        is WidgetDisplayState.Error -> widgetErrorText(result.kind, context)
                         WidgetDisplayState.NeedsReauth -> msgInvalidKey
                         else -> null
                     }
-                    WidgetGlanceState.syncAndUpdate(context, "kimi_code_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "kimi_code_save", PlatformIds.KIMI_CODE)
                 } finally {
                     state.isSaving = false
                 }

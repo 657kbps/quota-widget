@@ -304,7 +304,9 @@ sealed interface WidgetDisplayState {
     data object Loading : WidgetDisplayState
     data object NeedsReauth : WidgetDisplayState
     data class Success(val snapshot: QuotaSnapshot) : WidgetDisplayState
-    data class Error(val message: String) : WidgetDisplayState
+
+    /** [kind] is rendered with the app language; nothing locale-specific is persisted. */
+    data class Error(val kind: WidgetErrorKind) : WidgetDisplayState
 }
 
 enum class RefreshIconPhase {
@@ -327,7 +329,8 @@ class SessionExpiredException(
  * The platform answered, but returned nothing the widget can display (no
  * connected account, no usage window). This is an expected data condition
  * rather than a bug, so the refresh pipeline turns it into
- * [WidgetDisplayState.Error] with the message shown to the user.
+ * [WidgetDisplayState.Error] with [WidgetErrorKind.QuotaUnavailable]. The message
+ * is diagnostic only; widgets render a localized text from the kind.
  */
 class QuotaUnavailableException(
     message: String,
@@ -384,28 +387,76 @@ fun formatUsagePercent(percent: Double): String {
     }
 }
 
+/** Window labels [formatUsagePrimaryDisplay] renders, supplied by the platform that has resources. */
+interface UsageLabels {
+    val rolling: String
+    val weekly: String
+    val monthly: String
+
+    fun formatRemainingCredits(amount: String): String = "Remaining $amount credits"
+}
+
 /**
- * Compact summary of every window, named like the widget's own window labels
- * (滚动 / 每周 / 每月) and honouring [mode] so it never disagrees with what the
- * widget shows.
+ * Locale-free labels for the summary providers pre-compute before a locale exists. Widgets and
+ * home rows rebuild the summary from [QuotaSnapshot.windows] with the app language, so this text
+ * is a storage fallback and never the label a user is meant to read.
+ */
+object NeutralUsageLabels : UsageLabels {
+    override val rolling = "5h"
+    override val weekly = "7d"
+    override val monthly = "30d"
+}
+
+/** Windows whose percentages [formatUsagePrimaryDisplay] summarizes. */
+fun usageSummaryWindows(windows: List<QuotaWindow>): List<QuotaWindow> =
+    windows.filter { window ->
+        window.usedPercent != null &&
+            (
+                window.kind == QuotaWindowKind.FIVE_HOUR ||
+                    window.kind == QuotaWindowKind.WEEKLY ||
+                    window.kind == QuotaWindowKind.MONTHLY
+                )
+    }
+
+/**
+ * Compact summary of every window, labelled by [labels] and honouring [mode] so it never
+ * disagrees with what the widget shows.
  */
 fun formatUsagePrimaryDisplay(
     windows: List<QuotaWindow>,
+    labels: UsageLabels,
     mode: UsageDisplayMode = UsageDisplayMode.USED,
 ): String {
     val parts = buildList {
         windows.find { it.kind == QuotaWindowKind.FIVE_HOUR }?.usedPercent?.let {
-            add("滚动 ${formatUsagePercent(displayUsagePercent(it, mode))}")
+            add("${labels.rolling} ${formatUsagePercent(displayUsagePercent(it, mode))}")
         }
         windows.find { it.kind == QuotaWindowKind.WEEKLY }?.usedPercent?.let {
-            add("每周 ${formatUsagePercent(displayUsagePercent(it, mode))}")
+            add("${labels.weekly} ${formatUsagePercent(displayUsagePercent(it, mode))}")
         }
         windows.find { it.kind == QuotaWindowKind.MONTHLY }?.usedPercent?.let {
-            add("每月 ${formatUsagePercent(displayUsagePercent(it, mode))}")
+            add("${labels.monthly} ${formatUsagePercent(displayUsagePercent(it, mode))}")
         }
     }
     return parts.joinToString(" · ")
 }
+
+/**
+ * [QuotaSnapshot.primaryDisplay] re-rendered in [labels] for the current app language.
+ * Snapshots without usage windows (balance, plan text) keep the stored value.
+ */
+fun QuotaSnapshot.relocalizedPrimaryDisplay(
+    labels: UsageLabels,
+    mode: UsageDisplayMode = UsageDisplayMode.USED,
+): String = when {
+    usageSummaryWindows(windows).isEmpty() ->
+        WORKBUDDY_REMAINING_CREDITS.matchEntire(primaryDisplay)?.groupValues?.getOrNull(1)
+            ?.let(labels::formatRemainingCredits)
+            ?: primaryDisplay
+    else -> formatUsagePrimaryDisplay(windows, labels, mode)
+}
+
+private val WORKBUDDY_REMAINING_CREDITS = Regex("""^(?:剩余|Remaining)\s+(.+?)\s+credits$""")
 
 fun remainingUsagePercent(usedPercent: Double): Double =
     (100.0 - usedPercent).coerceIn(0.0, 100.0)

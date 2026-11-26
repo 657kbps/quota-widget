@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.currentState
 import androidx.glance.state.GlanceStateDefinition
@@ -109,122 +108,62 @@ class AntigravityCompactWidget :
     SessionUsageWidgetBase(PlatformIds.ANTIGRAVITY, overview = false, compact = true)
 class AntigravityOverviewWidget : SessionUsageWidgetBase(PlatformIds.ANTIGRAVITY, overview = true)
 
-class WorkBuddyCompactWidgetReceiver : GlanceAppWidgetReceiver() {
+class WorkBuddyCompactWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = WorkBuddyCompactWidget()
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class WorkBuddyAiCompactWidgetReceiver : GlanceAppWidgetReceiver() {
+class WorkBuddyAiCompactWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = WorkBuddyAiCompactWidget()
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class ClineCompactWidgetReceiver : GlanceAppWidgetReceiver() {
+class ClineCompactWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = ClineCompactWidget()
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class CommandCodeCompactWidgetReceiver : GlanceAppWidgetReceiver() {
+class CommandCodeCompactWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = CommandCodeCompactWidget()
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class AntigravityCompactWidgetReceiver : GlanceAppWidgetReceiver() {
+class AntigravityCompactWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = AntigravityCompactWidget()
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class WorkBuddyWidgetReceiver : GlanceAppWidgetReceiver() {
+class WorkBuddyWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = WorkBuddyWidget()
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class WorkBuddyOverviewWidgetReceiver : GlanceAppWidgetReceiver() {
+class WorkBuddyOverviewWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = WorkBuddyOverviewWidget()
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class WorkBuddyAiWidgetReceiver : GlanceAppWidgetReceiver() {
+class WorkBuddyAiWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = WorkBuddyAiWidget()
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class WorkBuddyAiOverviewWidgetReceiver : GlanceAppWidgetReceiver() {
+class WorkBuddyAiOverviewWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = WorkBuddyAiOverviewWidget()
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class ClineWidgetReceiver : GlanceAppWidgetReceiver() {
+class ClineWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = ClineWidget()
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class ClineOverviewWidgetReceiver : GlanceAppWidgetReceiver() {
+class ClineOverviewWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = ClineOverviewWidget()
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class CommandCodeWidgetReceiver : GlanceAppWidgetReceiver() {
+class CommandCodeWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = CommandCodeWidget()
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class CommandCodeOverviewWidgetReceiver : GlanceAppWidgetReceiver() {
+class CommandCodeOverviewWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = CommandCodeOverviewWidget()
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class AntigravityWidgetReceiver : GlanceAppWidgetReceiver() {
+class AntigravityWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = AntigravityWidget()
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class AntigravityOverviewWidgetReceiver : GlanceAppWidgetReceiver() {
+class AntigravityOverviewWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = AntigravityOverviewWidget()
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }

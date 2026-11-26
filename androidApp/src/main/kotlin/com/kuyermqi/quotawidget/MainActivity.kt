@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,17 +24,22 @@ import com.kuyermqi.quotawidget.refresh.displayState
 import com.kuyermqi.quotawidget.ui.FocusPlatformRequest
 import com.kuyermqi.quotawidget.ui.HomeScreen
 import com.kuyermqi.quotawidget.ui.UpdateAvailableDialog
+import com.kuyermqi.quotawidget.ui.home.HomeViewModel
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.ui.theme.QuotaWidgetTheme
 import com.kuyermqi.quotawidget.update.UpdateAvailability
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
 import com.kuyermqi.quotawidget.widget.WidgetRefreshCoordinator
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 class MainActivity : LocaleAwareActivity() {
     private var focusPlatformRequest by mutableStateOf<FocusPlatformRequest?>(null)
+
+    private val homeViewModel: HomeViewModel by viewModels {
+        (application as QuotaWidgetApp).homeViewModelFactory
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -71,7 +77,7 @@ class MainActivity : LocaleAwareActivity() {
                 appSettings.themeColorMode,
                 appSettings.customSeedColorArgb,
             ) {
-                WidgetGlanceState.syncAndUpdate(this@MainActivity, "app_theme")
+                WidgetSyncCoordinator.syncWidgets(this@MainActivity, "app_theme")
             }
 
             QuotaWidgetTheme(
@@ -111,6 +117,7 @@ class MainActivity : LocaleAwareActivity() {
 
                 HomeScreen(
                     settingsRepository = app.settingsRepository,
+                    homeViewModel = homeViewModel,
                     onRefreshPlatform = { platformId ->
                         app.refreshInteractor.refresh(platformId).displayState
                     },

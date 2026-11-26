@@ -13,6 +13,7 @@ import com.kuyermqi.quotawidget.domain.session.SessionLoginResult
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
 import com.kuyermqi.quotawidget.webview.InAppWebViewFlow
 import com.kuyermqi.quotawidget.webview.InAppWebViewHost
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,15 +27,14 @@ import kotlinx.coroutines.launch
  */
 class CommandCodeLoginWebViewFlow private constructor(
     private val host: InAppWebViewHost,
+    httpClient: HttpClient,
     private val state: String,
-    private val port: Int,
 ) : InAppWebViewFlow {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val client = CommandCodeClient()
+    private val client = CommandCodeClient(httpClient)
     private var finished = false
 
     private val server = CommandCodeCallbackServer(
-        port = port,
         expectedState = state,
         onCallback = { callback ->
             scope.launch { completeLogin(callback) }
@@ -42,17 +42,27 @@ class CommandCodeLoginWebViewFlow private constructor(
         onFailure = { message -> scope.launch { finishFailure(message) } },
     )
 
+    private val loginUrl: String by lazy {
+        server.port.takeIf { it > 0 }
+            ?.let { port -> CommandCodeClient.createLoginUrl(state, port) }
+            .orEmpty()
+    }
+
+    init {
+        server.start()
+    }
+
+    override fun initialUrl(): String? = loginUrl.ifBlank { null }
+
     override fun onPrepare() {
         CookieManager.getInstance().removeAllCookies(null)
         CookieManager.getInstance().flush()
-        server.start()
     }
 
     override fun createWebViewClient(): WebViewClient = WebViewClient()
 
     override fun onDestroy() {
         server.close()
-        client.close()
         scope.cancel()
     }
 
@@ -87,34 +97,28 @@ class CommandCodeLoginWebViewFlow private constructor(
         const val FLOW_ID = "command_code_login"
         private const val TAG = "CommandCodeLogin"
         private const val EXTRA_STATE = "extra_command_code_state"
-        private const val EXTRA_PORT = "extra_command_code_port"
 
         fun createIntent(context: Context): Intent {
             val state = CommandCodeClient.newState()
-            val port = runCatching { CommandCodeCallbackServer.freePort() }.getOrDefault(53682)
-            val client = CommandCodeClient()
-            val url = try {
-                client.createLoginUrl(state, port)
-            } finally {
-                client.close()
-            }
             return InAppWebViewActivity.createIntent(
                 context = context,
-                url = url,
+                url = "",
                 title = context.getString(
                     R.string.session_login_title,
                     context.getString(R.string.platform_name_command_code),
                 ),
                 flowId = FLOW_ID,
             ).putExtra(EXTRA_STATE, state)
-                .putExtra(EXTRA_PORT, port)
         }
 
-        fun fromIntent(host: InAppWebViewHost, intent: Intent): CommandCodeLoginWebViewFlow? {
+        fun fromIntent(
+            host: InAppWebViewHost,
+            httpClient: HttpClient,
+            intent: Intent,
+        ): CommandCodeLoginWebViewFlow? {
             val state = intent.getStringExtra(EXTRA_STATE).orEmpty()
-            val port = intent.getIntExtra(EXTRA_PORT, 0)
-            if (state.isBlank() || port <= 0) return null
-            return CommandCodeLoginWebViewFlow(host, state, port)
+            if (state.isBlank()) return null
+            return CommandCodeLoginWebViewFlow(host, httpClient, state)
         }
     }
 }

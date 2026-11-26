@@ -1,8 +1,10 @@
 package com.kuyermqi.quotawidget.antigravity
 
 import com.kuyermqi.quotawidget.codex.codexSha256
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
+import com.kuyermqi.quotawidget.domain.HttpStatusException
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
+import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
@@ -18,8 +20,11 @@ import com.kuyermqi.quotawidget.session.objectOrNull
 import com.kuyermqi.quotawidget.session.stringOrNull
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.util.currentTimeMillis
+import com.kuyermqi.quotawidget.util.secureRandomBytes
+import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -39,7 +44,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
-import kotlin.random.Random
 
 data class AntigravityLoginSession(
     val state: String,
@@ -56,38 +60,12 @@ data class AntigravityAuthResult(
 )
 
 class AntigravityClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
     },
 ) {
-    @OptIn(ExperimentalEncodingApi::class)
-    fun createLoginSession(): AntigravityLoginSession {
-        val verifier = Base64.UrlSafe.encode(Random.nextBytes(32)).trimEnd('=')
-        val challenge = Base64.UrlSafe.encode(codexSha256(verifier.encodeToByteArray())).trimEnd('=')
-        val state = Base64.UrlSafe.encode(Random.nextBytes(24)).trimEnd('=')
-        val redirect = REDIRECT_URI
-        val url = buildString {
-            append(AUTH_URL)
-            append("?client_id=").append(percentEncode(CLIENT_ID))
-            append("&redirect_uri=").append(percentEncode(redirect))
-            append("&response_type=code")
-            append("&scope=").append(percentEncode(SCOPES.joinToString(" ")))
-            append("&access_type=offline")
-            append("&prompt=consent")
-            append("&state=").append(percentEncode(state))
-            append("&code_challenge=").append(percentEncode(challenge))
-            append("&code_challenge_method=S256")
-        }
-        return AntigravityLoginSession(
-            state = state,
-            codeVerifier = verifier,
-            authorizeUrl = url,
-            redirectUri = redirect,
-        )
-    }
-
     suspend fun exchangeCode(
         code: String,
         codeVerifier: String,
@@ -182,13 +160,13 @@ class AntigravityClient(
             fetchQuotaWindows(current.accessToken, current.projectId)
         }
         if (windows.isEmpty()) {
-            throw IllegalStateException("Antigravity 未返回可用的额度信息")
+            throw QuotaUnavailableException("Antigravity 未返回可用的额度信息")
         }
         return QuotaSnapshot(
             platformId = PlatformIds.ANTIGRAVITY,
             platformName = PlatformRegistry.displayName(PlatformIds.ANTIGRAVITY),
             windows = windows,
-            primaryDisplay = formatUsagePrimaryDisplay(windows),
+            primaryDisplay = formatUsagePrimaryDisplay(windows, NeutralUsageLabels),
             updatedAtEpochMs = currentTimeMillis(),
         )
     }
@@ -210,12 +188,16 @@ class AntigravityClient(
                     append("client_secret", CLIENT_SECRET)
                 },
             )
-        } catch (e: ClientRequestException) {
+        } catch (e: ResponseException) {
             val status = e.response.status.value
             if (status == 400 || status == 401) {
                 throw SessionExpiredException("Antigravity 登录已过期，请重新登录")
             }
-            throw IllegalStateException("Antigravity 刷新登录失败: HTTP $status", e)
+            throw HttpStatusException(
+                statusCode = status,
+                message = "Antigravity 刷新登录失败: HTTP $status",
+                cause = e,
+            )
         }
         val data = json.parseToJsonElement(response.bodyAsText()).jsonObject
         val access = data.stringOrNull("access_token").orEmpty()
@@ -232,17 +214,13 @@ class AntigravityClient(
         return next
     }
 
-    fun close() {
-        httpClient.close()
-    }
-
     private suspend fun fetchEmail(accessToken: String): String? {
-        val response = runCatching {
+        val response = suspendRunCatching {
             httpClient.get(WHO_URL) {
                 header(HttpHeaders.Authorization, "Bearer $accessToken")
             }
         }.getOrNull() ?: return null
-        return runCatching {
+        return suspendRunCatching {
             json.parseToJsonElement(response.bodyAsText()).jsonObject.stringOrNull("email")
         }.getOrNull()
     }
@@ -391,12 +369,16 @@ class AntigravityClient(
                 header(HttpHeaders.UserAgent, USER_AGENT)
                 setBody(body.toString())
             }
-        } catch (e: ClientRequestException) {
+        } catch (e: ResponseException) {
             val status = e.response.status.value
             if (status == 401 || status == 403) {
                 throw SessionExpiredException("Antigravity 登录已过期，请重新登录")
             }
-            throw IllegalStateException("Antigravity 请求失败: HTTP $status", e)
+            throw HttpStatusException(
+                statusCode = status,
+                message = "Antigravity 请求失败: HTTP $status",
+                cause = e,
+            )
         }
         val text = response.bodyAsText()
         return runCatching { json.parseToJsonElement(text).jsonObject }.getOrElse {
@@ -416,35 +398,63 @@ class AntigravityClient(
         return currentTimeMillis() >= expiresAtEpochMs - 2 * 60 * 1000L
     }
 
-    private fun percentEncode(value: String): String = buildString {
-        for (byte in value.encodeToByteArray()) {
-            val code = byte.toInt() and 0xFF
-            val char = code.toChar()
-            if (char.isLetterOrDigit() || char in "-._~") {
-                append(char)
-            } else {
-                append('%')
-                append(HEX[code shr 4])
-                append(HEX[code and 0x0F])
-            }
-        }
-    }
-
     private data class ProjectInfo(val id: String, val plan: String)
 
-    private companion object {
-        const val CLIENT_ID = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
-        const val CLIENT_SECRET = "GOCSPX-" + "K58FWR486LdLJ1mLB8sXC4z6qDAf"
-        const val AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-        const val TOKEN_URL = "https://oauth2.googleapis.com/token"
-        const val WHO_URL = "https://www.googleapis.com/oauth2/v2/userinfo?alt=json"
-        const val PROD = "https://cloudcode-pa.googleapis.com"
-        const val DAILY = "https://daily-cloudcode-pa.googleapis.com"
-        const val REDIRECT_URI = "http://localhost:53683/oauth-callback"
-        const val USER_AGENT =
+    companion object {
+        @OptIn(ExperimentalEncodingApi::class)
+        fun createLoginSession(): AntigravityLoginSession {
+            val verifier = Base64.UrlSafe.encode(secureRandomBytes(32)).trimEnd('=')
+            val challenge = Base64.UrlSafe.encode(
+                codexSha256(verifier.encodeToByteArray()),
+            ).trimEnd('=')
+            val state = Base64.UrlSafe.encode(secureRandomBytes(24)).trimEnd('=')
+            val redirect = REDIRECT_URI
+            val url = buildString {
+                append(AUTH_URL)
+                append("?client_id=").append(percentEncode(CLIENT_ID))
+                append("&redirect_uri=").append(percentEncode(redirect))
+                append("&response_type=code")
+                append("&scope=").append(percentEncode(SCOPES.joinToString(" ")))
+                append("&access_type=offline")
+                append("&prompt=consent")
+                append("&state=").append(percentEncode(state))
+                append("&code_challenge=").append(percentEncode(challenge))
+                append("&code_challenge_method=S256")
+            }
+            return AntigravityLoginSession(
+                state = state,
+                codeVerifier = verifier,
+                authorizeUrl = url,
+                redirectUri = redirect,
+            )
+        }
+
+        private fun percentEncode(value: String): String = buildString {
+            for (byte in value.encodeToByteArray()) {
+                val code = byte.toInt() and 0xFF
+                val char = code.toChar()
+                if (char.isLetterOrDigit() || char in "-._~") {
+                    append(char)
+                } else {
+                    append('%')
+                    append(HEX[code shr 4])
+                    append(HEX[code and 0x0F])
+                }
+            }
+        }
+
+        private const val CLIENT_ID = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
+        private const val CLIENT_SECRET = "GOCSPX-" + "K58FWR486LdLJ1mLB8sXC4z6qDAf"
+        private const val AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+        private const val TOKEN_URL = "https://oauth2.googleapis.com/token"
+        private const val WHO_URL = "https://www.googleapis.com/oauth2/v2/userinfo?alt=json"
+        private const val PROD = "https://cloudcode-pa.googleapis.com"
+        private const val DAILY = "https://daily-cloudcode-pa.googleapis.com"
+        private const val REDIRECT_URI = "http://localhost:53683/oauth-callback"
+        private const val USER_AGENT =
             "antigravity/hub/2.32.1 (aidev_client; os_type=android; arch=arm64; cl=1021296516)"
-        const val HEX = "0123456789ABCDEF"
-        val SCOPES = listOf(
+        private const val HEX = "0123456789ABCDEF"
+        private val SCOPES = listOf(
             "https://www.googleapis.com/auth/cloud-platform",
             "https://www.googleapis.com/auth/userinfo.email",
             "https://www.googleapis.com/auth/userinfo.profile",

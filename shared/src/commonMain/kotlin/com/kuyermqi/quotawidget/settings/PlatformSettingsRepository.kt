@@ -10,6 +10,7 @@ import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.ServiceRegion
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.domain.WidgetErrorKind
 import com.kuyermqi.quotawidget.magpie.MagpieProvider
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import kotlinx.coroutines.flow.Flow
@@ -183,6 +184,13 @@ data class ZhipuSettings(
         get() = apiKey.isNotBlank()
 }
 
+/**
+ * Atomically merges a refresh result into persisted settings: [guard] sees the value that is
+ * stored when the write happens, [transform] maps it to the merged result, and the write is
+ * skipped entirely (returning false) when [guard] rejects that value.
+ *
+ * Every `edit*Settings` method on [PlatformSettingsRepository] follows this contract.
+ */
 interface PlatformSettingsRepository {
     fun observeDeepSeekSettings(): Flow<DeepSeekSettings>
     suspend fun getDeepSeekSettings(): DeepSeekSettings
@@ -197,6 +205,10 @@ interface PlatformSettingsRepository {
     suspend fun getCodexSettings(): CodexSettings
     suspend fun saveCodexSettings(settings: CodexSettings)
     suspend fun clearCodexSettings()
+    suspend fun editCodexSettings(
+        guard: (CodexSettings) -> Boolean,
+        transform: (CodexSettings) -> CodexSettings,
+    ): Boolean
 
     fun observeNewApiSettings(): Flow<NewApiSettings>
     suspend fun getNewApiSettings(): NewApiSettings
@@ -207,6 +219,10 @@ interface PlatformSettingsRepository {
     suspend fun getMagpieSettings(): MagpieSettings
     suspend fun saveMagpieSettings(settings: MagpieSettings)
     suspend fun clearMagpieSettings()
+    suspend fun editMagpieSettings(
+        guard: (MagpieSettings) -> Boolean,
+        transform: (MagpieSettings) -> MagpieSettings,
+    ): Boolean
 
     fun observeKimiCodeSettings(): Flow<KimiCodeSettings>
     suspend fun getKimiCodeSettings(): KimiCodeSettings
@@ -222,11 +238,31 @@ interface PlatformSettingsRepository {
     suspend fun getSessionSettings(platformId: String): SessionPlatformSettings
     suspend fun saveSessionSettings(platformId: String, settings: SessionPlatformSettings)
     suspend fun clearSessionSettings(platformId: String)
+    suspend fun editSessionSettings(
+        platformId: String,
+        guard: (SessionPlatformSettings) -> Boolean,
+        transform: (SessionPlatformSettings) -> SessionPlatformSettings,
+    ): Boolean
 
     fun observeWidgetState(platformId: String): Flow<WidgetDisplayState>
     suspend fun getWidgetState(platformId: String): WidgetDisplayState
+
+    /**
+     * The subset of [platformIds] that has usable credentials, in the same order. Reads the
+     * stored key material once and never decrypts a secret.
+     */
+    suspend fun configuredPlatformIds(platformIds: List<String>): List<String>
+
+    /**
+     * Widget display state, refresh phase and card settings of [platformIds], decoded from a
+     * single settings read. The result always contains an entry for every requested id.
+     */
+    suspend fun getWidgetRenderSnapshot(platformIds: Set<String>): WidgetRenderSnapshot
+
     suspend fun saveWidgetSuccess(platformId: String, snapshot: QuotaSnapshot)
-    suspend fun saveWidgetError(platformId: String, message: String)
+
+    /** Persists only the kind (plus its HTTP status); the text is rendered per app language. */
+    suspend fun saveWidgetError(platformId: String, kind: WidgetErrorKind)
     suspend fun saveWidgetLoading(platformId: String)
     suspend fun saveWidgetNotConfigured(platformId: String)
     suspend fun saveWidgetNeedsReauth(platformId: String)
@@ -235,7 +271,18 @@ interface PlatformSettingsRepository {
     suspend fun setRefreshIconPhase(platformId: String, phase: RefreshIconPhase)
     suspend fun getRefreshStartedAtEpochMs(platformId: String): Long
     suspend fun setRefreshStartedAtEpochMs(platformId: String, epochMs: Long)
-    suspend fun clearAllRefreshIconPhases()
+
+    /**
+     * Writes [phase] only when the stored start token still equals [expectedStartedAtEpochMs].
+     * Returns false (and writes nothing) when a newer run owns the phase.
+     */
+    suspend fun setRefreshIconPhaseIfStartedAt(
+        platformId: String,
+        expectedStartedAtEpochMs: Long,
+        phase: RefreshIconPhase,
+    ): Boolean
+
+    suspend fun clearStaleRefreshIconPhases()
 
     suspend fun isPlatformTipDismissed(): Boolean
     suspend fun setPlatformTipDismissed(dismissed: Boolean)

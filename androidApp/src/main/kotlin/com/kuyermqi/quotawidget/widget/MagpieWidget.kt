@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.currentState
 import androidx.glance.state.GlanceStateDefinition
@@ -92,29 +91,14 @@ class MagpieOverviewWidget : GlanceAppWidget() {
     }
 }
 
-class MagpieWidgetReceiver : GlanceAppWidgetReceiver() {
+class MagpieWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = MagpieWidget()
-
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class MagpieCompactWidgetReceiver : GlanceAppWidgetReceiver() {
+class MagpieCompactWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = MagpieCompactWidget()
-
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }
 
-class MagpieOverviewWidgetReceiver : GlanceAppWidgetReceiver() {
+class MagpieOverviewWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = MagpieOverviewWidget()
-
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }

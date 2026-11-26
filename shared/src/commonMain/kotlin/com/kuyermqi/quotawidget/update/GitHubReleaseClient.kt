@@ -1,6 +1,5 @@
 package com.kuyermqi.quotawidget.update
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -10,7 +9,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 class GitHubReleaseClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
 ) {
     suspend fun fetchLatestRelease(): GitHubRelease {
         return httpClient.get(LATEST_RELEASE_URL) {
@@ -18,10 +17,6 @@ class GitHubReleaseClient(
             header(HttpHeaders.UserAgent, USER_AGENT)
             header("X-GitHub-Api-Version", "2022-11-28")
         }.body()
-    }
-
-    fun close() {
-        httpClient.close()
     }
 
     companion object {

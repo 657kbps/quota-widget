@@ -140,6 +140,7 @@
     <string name="usage_remaining_weekly">Недельный остаток %1$s</string>
     <string name="usage_remaining_monthly">Месячный остаток %1$s</string>
     <string name="usage_remaining_token">Остаток токенов %1$s</string>
+    <string name="workbuddy_remaining_credits">Остаток %1$s кредитов</string>
     <string name="usage_used_rolling">Скользящее использование %1$s</string>
     <string name="usage_used_weekly">Недельное использование %1$s</string>
     <string name="usage_used_monthly">Месячное использование %1$s</string>
@@ -165,6 +166,8 @@
     <string name="new_api_balance_summary">Баланс %1$s</string>
     <string name="new_api_base_url_label">Базовый URL</string>
     <string name="new_api_base_url_hint">https://your-newapi-server</string>
+    <string name="base_url_plain_http_warning">Этот адрес использует незашифрованный HTTP. Любой, кто видит сетевой трафик, может прочитать ваш API-ключ; по возможности используйте HTTPS.</string>
+    <string name="base_url_invalid">Введите полный адрес, начинающийся с http:// или https://</string>
     <string name="new_api_api_key_label">API-ключ</string>
     <string name="new_api_quota_per_usd_label">Пересчёт квоты (quota : 1 USD)</string>
     <string name="new_api_quota_per_usd_hint">По умолчанию 500000, то есть 500000 квоты = 1 USD</string>
@@ -192,6 +195,12 @@
     <string name="zhipu_api_key_hint">API-ключ тарифа, созданный на странице Zhipu Coding Plan (для командных тарифов используйте командный ключ)</string>
     <string name="zhipu_invalid_key">API-ключ Zhipu недействителен или истёк. Проверьте настройки.</string>
     <string name="widget_fetch_failed">Ошибка получения</string>
+    <string name="widget_error_session_expired">Сеанс истёк. Войдите снова.</string>
+    <string name="widget_error_quota_unavailable">Платформа не вернула данные о квоте</string>
+    <string name="widget_error_http_status">Запрос не выполнен (HTTP %1$d)</string>
+    <string name="widget_error_network">Сеть недоступна. Проверьте подключение.</string>
+    <string name="widget_error_invalid_base_url">Неверный URL сервера</string>
+    <string name="widget_error_parse_failure">Сервер вернул неожиданный ответ</string>
     <string name="home_title">Quota Widget</string>
     <string name="home_section_configured">Настроено</string>
     <string name="home_section_unconfigured">Не настроено</string>

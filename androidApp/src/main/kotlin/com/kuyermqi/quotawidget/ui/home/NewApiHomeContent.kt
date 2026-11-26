@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -19,12 +18,15 @@ import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.formatNewApiBalanceTitle
+import com.kuyermqi.quotawidget.network.BaseUrlClass
+import com.kuyermqi.quotawidget.network.classifyBaseUrl
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.settings.DEFAULT_NEW_API_QUOTA_PER_USD
 import com.kuyermqi.quotawidget.settings.NewApiSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.NewApiConfigContent
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.ui.widgetErrorText
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
 class NewApiHomeState internal constructor(
@@ -139,13 +141,6 @@ class NewApiHomeState internal constructor(
 }
 
 @Composable
-fun rememberNewApiHomeState(
-    settingsRepository: PlatformSettingsRepository,
-): NewApiHomeState = remember(settingsRepository) {
-    NewApiHomeState(settingsRepository)
-}
-
-@Composable
 fun newApiHomeEffects(state: NewApiHomeState): WidgetDisplayState {
     val observed by state.repository().observeWidgetState(PlatformIds.NEW_API)
         .collectAsStateWithLifecycle(initialValue = WidgetDisplayState.NotConfigured)
@@ -218,6 +213,12 @@ fun ColumnScope.NewApiHomeContent(
                     state.saveError = resources.getString(R.string.new_api_quota_per_usd_invalid)
                     return@launch
                 }
+                if (state.draftBaseUrl.isNotBlank() &&
+                    classifyBaseUrl(state.draftBaseUrl) == BaseUrlClass.Invalid
+                ) {
+                    state.saveError = resources.getString(R.string.base_url_invalid)
+                    return@launch
+                }
                 val next = NewApiSettings(
                     baseUrl = state.draftBaseUrl.trim().trimEnd('/'),
                     apiKey = state.draftApiKey.trim(),
@@ -246,10 +247,10 @@ fun ColumnScope.NewApiHomeContent(
                     state.saveError = when (
                         val result = onRefreshPlatform(PlatformIds.NEW_API)
                     ) {
-                        is WidgetDisplayState.Error -> result.message
+                        is WidgetDisplayState.Error -> widgetErrorText(result.kind, context)
                         else -> null
                     }
-                    WidgetGlanceState.syncAndUpdate(context, "new_api_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "new_api_save", PlatformIds.NEW_API)
                 } finally {
                     state.isSaving = false
                 }

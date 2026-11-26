@@ -42,6 +42,7 @@ import com.kuyermqi.quotawidget.ui.home.CodexHomeContent
 import com.kuyermqi.quotawidget.ui.home.codexHomeEffects
 import com.kuyermqi.quotawidget.ui.home.DeepSeekHomeContent
 import com.kuyermqi.quotawidget.ui.home.deepSeekHomeEffects
+import com.kuyermqi.quotawidget.ui.home.HomeViewModel
 import com.kuyermqi.quotawidget.ui.home.KimiCodeHomeContent
 import com.kuyermqi.quotawidget.ui.home.kimiCodeHomeEffects
 import com.kuyermqi.quotawidget.ui.home.MagpieHomeContent
@@ -54,16 +55,8 @@ import com.kuyermqi.quotawidget.ui.home.SessionPlatformHomeContent
 import com.kuyermqi.quotawidget.ui.home.sessionPlatformHomeEffects
 import com.kuyermqi.quotawidget.ui.home.ZhipuHomeContent
 import com.kuyermqi.quotawidget.ui.home.zhipuHomeEffects
-import com.kuyermqi.quotawidget.ui.home.rememberCodexHomeState
-import com.kuyermqi.quotawidget.ui.home.rememberDeepSeekHomeState
-import com.kuyermqi.quotawidget.ui.home.rememberKimiCodeHomeState
-import com.kuyermqi.quotawidget.ui.home.rememberMagpieHomeState
-import com.kuyermqi.quotawidget.ui.home.rememberNewApiHomeState
-import com.kuyermqi.quotawidget.ui.home.rememberOpenCodeGoHomeState
-import com.kuyermqi.quotawidget.ui.home.rememberSessionPlatformHomeState
-import com.kuyermqi.quotawidget.ui.home.rememberZhipuHomeState
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
 data class FocusPlatformRequest(
@@ -74,6 +67,7 @@ data class FocusPlatformRequest(
 @Composable
 fun HomeScreen(
     settingsRepository: PlatformSettingsRepository,
+    homeViewModel: HomeViewModel,
     onRefreshPlatform: suspend (String) -> WidgetDisplayState,
     onRefreshAllConfigured: suspend () -> Unit,
     onOpenAppSettings: () -> Unit,
@@ -108,18 +102,18 @@ fun HomeScreen(
     var unconfiguredExpanded by rememberSaveable { mutableStateOf(false) }
     val providerListState = rememberLazyListState()
 
-    val deepSeek = rememberDeepSeekHomeState(settingsRepository)
-    val openCode = rememberOpenCodeGoHomeState(settingsRepository)
-    val codex = rememberCodexHomeState(settingsRepository)
-    val newApi = rememberNewApiHomeState(settingsRepository)
-    val magpie = rememberMagpieHomeState(settingsRepository)
-    val kimiCode = rememberKimiCodeHomeState(settingsRepository)
-    val zhipu = rememberZhipuHomeState(settingsRepository)
-    val workBuddy = rememberSessionPlatformHomeState(settingsRepository, PlatformIds.WORKBUDDY)
-    val workBuddyAi = rememberSessionPlatformHomeState(settingsRepository, PlatformIds.WORKBUDDY_AI)
-    val cline = rememberSessionPlatformHomeState(settingsRepository, PlatformIds.CLINE)
-    val commandCode = rememberSessionPlatformHomeState(settingsRepository, PlatformIds.COMMAND_CODE)
-    val antigravity = rememberSessionPlatformHomeState(settingsRepository, PlatformIds.ANTIGRAVITY)
+    val deepSeek = homeViewModel.deepSeek
+    val openCode = homeViewModel.openCode
+    val codex = homeViewModel.codex
+    val newApi = homeViewModel.newApi
+    val magpie = homeViewModel.magpie
+    val kimiCode = homeViewModel.kimiCode
+    val zhipu = homeViewModel.zhipu
+    val workBuddy = homeViewModel.workBuddy
+    val workBuddyAi = homeViewModel.workBuddyAi
+    val cline = homeViewModel.cline
+    val commandCode = homeViewModel.commandCode
+    val antigravity = homeViewModel.antigravity
 
     val deepSeekWidgetState = deepSeekHomeEffects(deepSeek)
     val openCodeBindings = openCodeGoHomeEffects(openCode, onRefreshPlatform)
@@ -141,23 +135,6 @@ fun HomeScreen(
         showBatteryOptimizationTip || showOemBackgroundTip || showPlatformTip
         )
 
-    fun discardDrafts(platformId: String) {
-        when (platformId) {
-            PlatformIds.DEEPSEEK -> deepSeek.discardDrafts()
-            PlatformIds.OPENCODE_GO -> openCode.discardDrafts()
-            PlatformIds.CODEX -> codex.discardDrafts()
-            PlatformIds.NEW_API -> newApi.discardDrafts()
-            PlatformIds.MAGPIE -> magpie.discardDrafts()
-            PlatformIds.KIMI_CODE -> kimiCode.discardDrafts()
-            PlatformIds.ZHIPU -> zhipu.discardDrafts()
-            PlatformIds.WORKBUDDY -> workBuddy.discardDrafts()
-            PlatformIds.WORKBUDDY_AI -> workBuddyAi.discardDrafts()
-            PlatformIds.CLINE -> cline.discardDrafts()
-            PlatformIds.COMMAND_CODE -> commandCode.discardDrafts()
-            PlatformIds.ANTIGRAVITY -> antigravity.discardDrafts()
-        }
-    }
-
     LaunchedEffect(activePlatformId) {
         if (activePlatformId.isNotEmpty() &&
             PlatformRegistry.find(activePlatformId) == null
@@ -170,7 +147,7 @@ fun HomeScreen(
         val request = focusPlatformRequest ?: return@LaunchedEffect
         if (PlatformRegistry.find(request.platformId) == null) return@LaunchedEffect
         if (activePlatformId.isNotEmpty() && activePlatformId != request.platformId) {
-            discardDrafts(activePlatformId)
+            homeViewModel.discardDrafts(activePlatformId)
         }
         activePlatformId = request.platformId
     }
@@ -183,22 +160,6 @@ fun HomeScreen(
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
-    fun isConfiguredFor(platformId: String): Boolean = when (platformId) {
-        PlatformIds.DEEPSEEK -> deepSeek.isConfigured
-        PlatformIds.OPENCODE_GO -> openCode.isConfigured
-        PlatformIds.CODEX -> codex.isConfigured
-        PlatformIds.NEW_API -> newApi.isConfigured
-        PlatformIds.MAGPIE -> magpie.isConfigured
-        PlatformIds.KIMI_CODE -> kimiCode.isConfigured
-        PlatformIds.ZHIPU -> zhipu.isConfigured
-        PlatformIds.WORKBUDDY -> workBuddy.isConfigured
-        PlatformIds.WORKBUDDY_AI -> workBuddyAi.isConfigured
-        PlatformIds.CLINE -> cline.isConfigured
-        PlatformIds.COMMAND_CODE -> commandCode.isConfigured
-        PlatformIds.ANTIGRAVITY -> antigravity.isConfigured
-        else -> false
     }
 
     fun summaryLabelFor(platformId: String): String? = when (platformId) {
@@ -278,7 +239,7 @@ fun HomeScreen(
     }
 
     suspend fun refreshAll(showPullIndicator: Boolean = false) {
-        val anyConfigured = PlatformRegistry.platforms.any { isConfiguredFor(it.id) }
+        val anyConfigured = PlatformRegistry.platforms.any { homeViewModel.isConfigured(it.id) }
         if (!anyConfigured) return
         if (showPullIndicator) isRefreshing = true
         try {
@@ -289,26 +250,14 @@ fun HomeScreen(
                     msgWorkspacesLoadFailed = msgOpenCodeWorkspacesLoadFailed,
                 )
             }
-            WidgetGlanceState.syncAndUpdate(context, "home_refresh")
+            WidgetSyncCoordinator.syncWidgets(context, "home_refresh")
         } finally {
             if (showPullIndicator) isRefreshing = false
         }
     }
 
-    LaunchedEffect(Unit) {
-        deepSeek.applyLoaded(settingsRepository.getDeepSeekSettings())
-        openCode.applyLoaded(settingsRepository.getOpenCodeGoSettings())
-        codex.applyLoaded(settingsRepository.getCodexSettings())
-        newApi.applyLoaded(settingsRepository.getNewApiSettings())
-        magpie.applyLoaded(settingsRepository.getMagpieSettings())
-        kimiCode.applyLoaded(settingsRepository.getKimiCodeSettings())
-        zhipu.applyLoaded(settingsRepository.getZhipuSettings())
-        workBuddy.applyPersisted(settingsRepository.getSessionSettings(PlatformIds.WORKBUDDY))
-        workBuddyAi.applyPersisted(settingsRepository.getSessionSettings(PlatformIds.WORKBUDDY_AI))
-        cline.applyPersisted(settingsRepository.getSessionSettings(PlatformIds.CLINE))
-        commandCode.applyPersisted(settingsRepository.getSessionSettings(PlatformIds.COMMAND_CODE))
-        antigravity.applyPersisted(settingsRepository.getSessionSettings(PlatformIds.ANTIGRAVITY))
-        if (PlatformRegistry.platforms.any { isConfiguredFor(it.id) }) {
+    LaunchedEffect(homeViewModel) {
+        if (homeViewModel.ensureInitialized()) {
             refreshAll(showPullIndicator = false)
         }
     }
@@ -319,7 +268,7 @@ fun HomeScreen(
             platformId = platform.id,
             name = displayName,
             summary = summaryLabelFor(platform.id),
-            configured = isConfiguredFor(platform.id),
+            configured = homeViewModel.isConfigured(platform.id),
             searchText = listOf(
                 displayName,
                 PlatformRegistry.displayName(platform.id),
@@ -381,7 +330,7 @@ fun HomeScreen(
                 title = platformDisplayName(platformId, homeList = true),
                 logo = providerLogo(platformId),
                 onBack = {
-                    discardDrafts(platformId)
+                    homeViewModel.discardDrafts(platformId)
                     activePlatformId = ""
                 },
             ) {

@@ -1,6 +1,8 @@
 package com.kuyermqi.quotawidget.newapi
 
+import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
+import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.formatNewApiBalanceTitle
 import com.kuyermqi.quotawidget.domain.formatNewApiUsageWidgetTitle
@@ -8,9 +10,17 @@ import com.kuyermqi.quotawidget.domain.formatNewApiWidgetFooter
 import com.kuyermqi.quotawidget.domain.newApiUsageProgressDisplayMode
 import com.kuyermqi.quotawidget.domain.newApiUsageProgressUsedPercent
 import com.kuyermqi.quotawidget.domain.newApiUsageWidgetShowsProgress
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -392,5 +402,35 @@ class NewApiUsageClientTest {
         )
         assertEquals(10L, decoded.data?.totalUsedLong)
         assertEquals(89L, decoded.data?.totalAvailableLong)
+    }
+
+    @Test
+    fun fetchUsage_forbidden_isSessionExpired() = runTest {
+        val client = clientResponding(HttpStatusCode.Forbidden, """{"message":"bad token"}""")
+
+        assertFailsWith<SessionExpiredException> {
+            client.fetchUsage("https://api.example.com", "sk-bad")
+        }
+    }
+
+    @Test
+    fun fetchUsage_serverError_keepsStatusCode() = runTest {
+        val client = clientResponding(HttpStatusCode.BadGateway, "upstream down")
+
+        val error = assertFailsWith<HttpStatusException> {
+            client.fetchUsage("https://api.example.com", "sk-test")
+        }
+        assertEquals(HttpStatusCode.BadGateway.value, error.statusCode)
+    }
+
+    private fun clientResponding(status: HttpStatusCode, body: String): NewApiUsageClient {
+        val engine = MockEngine {
+            respond(
+                content = body,
+                status = status,
+                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        }
+        return NewApiUsageClient(HttpClient(engine) { expectSuccess = true }, json)
     }
 }

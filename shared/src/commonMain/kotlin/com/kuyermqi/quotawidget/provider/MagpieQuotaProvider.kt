@@ -6,15 +6,28 @@ import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
 import com.kuyermqi.quotawidget.domain.defaultUsageWindowKind
+import com.kuyermqi.quotawidget.magpie.MagpieProvider
 import com.kuyermqi.quotawidget.magpie.MagpieQuotaClient
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.platform.QuotaPlatform
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 
-class MagpieQuotaProvider(
-    private val client: MagpieQuotaClient = MagpieQuotaClient(),
+internal fun interface MagpieProvidersFetcher {
+    suspend fun fetchProviders(baseUrl: String, apiKey: String): List<MagpieProvider>
+}
+
+class MagpieQuotaProvider internal constructor(
+    private val fetchProviders: MagpieProvidersFetcher,
 ) : QuotaProvider {
+    constructor(
+        client: MagpieQuotaClient,
+    ) : this(
+        fetchProviders = MagpieProvidersFetcher { baseUrl, apiKey ->
+            client.fetchProviders(baseUrl, apiKey)
+        },
+    )
+
     override val platform: QuotaPlatform =
         PlatformRegistry.find(PlatformIds.MAGPIE)
             ?: error("Magpie platform missing from registry")
@@ -25,7 +38,7 @@ class MagpieQuotaProvider(
     override suspend fun fetch(repo: PlatformSettingsRepository): QuotaSnapshot {
         val settings = repo.getMagpieSettings()
         require(settings.isConfigured) { "Magpie 未配置网关地址或 API Key" }
-        val providers = client.fetchProviders(
+        val providers = fetchProviders.fetchProviders(
             baseUrl = settings.baseUrl,
             apiKey = settings.apiKey,
         )
@@ -38,12 +51,24 @@ class MagpieQuotaProvider(
             windows = selected.windows,
             usageDisplayMode = settings.usageDisplayMode,
         )
-        repo.saveMagpieSettings(
-            settings.copy(
-                providers = providers,
-                selectedProviderId = selected.id,
-                widgetWindowKind = clampedWindowKind(settings.widgetWindowKind, selected.windows),
-            ),
+        repo.editMagpieSettings(
+            guard = { current ->
+                current.isConfigured &&
+                    current.baseUrl == settings.baseUrl &&
+                    current.apiKey == settings.apiKey
+            },
+            transform = { current ->
+                current.copy(
+                    providers = providers,
+                    // An in-flight provider switch by the user wins over this refresh.
+                    selectedProviderId = if (current.selectedProviderId == settings.selectedProviderId) {
+                        selected.id
+                    } else {
+                        current.selectedProviderId
+                    },
+                    widgetWindowKind = clampedWindowKind(current.widgetWindowKind, selected.windows),
+                )
+            },
         )
         return snapshot
     }

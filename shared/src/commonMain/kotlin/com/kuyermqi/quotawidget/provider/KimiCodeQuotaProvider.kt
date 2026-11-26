@@ -8,7 +8,7 @@ import com.kuyermqi.quotawidget.platform.QuotaPlatform
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 
 class KimiCodeQuotaProvider(
-    private val client: KimiCodeUsageClient = KimiCodeUsageClient(),
+    private val client: KimiCodeUsageClient,
 ) : QuotaProvider {
     override val platform: QuotaPlatform =
         PlatformRegistry.find(PlatformIds.KIMI_CODE)

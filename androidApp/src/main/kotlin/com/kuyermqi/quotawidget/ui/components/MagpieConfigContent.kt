@@ -38,6 +38,8 @@ import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
 import com.kuyermqi.quotawidget.domain.presentCodexOverviewWindowKinds
 import com.kuyermqi.quotawidget.magpie.MagpieProvider
+import com.kuyermqi.quotawidget.network.BaseUrlClass
+import com.kuyermqi.quotawidget.network.classifyBaseUrl
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.ui.platformDisplayName
 import com.kuyermqi.quotawidget.ui.usage.formatUsageWindowsSummary
@@ -77,6 +79,14 @@ fun ColumnScope.MagpieConfigContent(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
             enabled = !isSaving,
         )
+        if (classifyBaseUrl(baseUrl) == BaseUrlClass.PlainHttpPublic) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.base_url_plain_http_warning),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedTextField(
             value = apiKey,

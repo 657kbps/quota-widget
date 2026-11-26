@@ -1,7 +1,8 @@
 package com.kuyermqi.quotawidget.codex
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
+import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.classifyUsageWindow
@@ -9,8 +10,9 @@ import com.kuyermqi.quotawidget.domain.formatUsagePrimaryDisplay
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.util.currentTimeMillis
+import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
@@ -20,7 +22,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 class CodexUsageClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -36,9 +38,9 @@ class CodexUsageClient(
                 header(HttpHeaders.Origin, "https://chatgpt.com")
                 header(HttpHeaders.Referrer, "https://chatgpt.com/")
             }
-        } catch (e: ClientRequestException) {
+        } catch (e: ResponseException) {
             val status = e.response.status
-            val errBody = runCatching { e.response.bodyAsText() }.getOrNull().orEmpty()
+            val errBody = suspendRunCatching { e.response.bodyAsText() }.getOrNull().orEmpty()
             val summary = CodexDebugLog.summarizeOAuthErrorBody(errBody)
             CodexDebugLog.w(
                 "usage.http_error status=$status $summary " +
@@ -49,21 +51,17 @@ class CodexUsageClient(
         }
         val body = response.bodyAsText()
         val dto = json.decodeFromString(CodexUsageResponse.serializer(), body)
-        val windows = dto.toWindows()
+        val windows = dto.toWindows(nowEpochMs = currentTimeMillis())
         if (windows.isEmpty()) {
-            throw IllegalStateException("无法解析 Codex 额度窗口")
+            throw QuotaUnavailableException("无法解析 Codex 额度窗口")
         }
         return QuotaSnapshot(
             platformId = PlatformIds.CODEX,
             platformName = PlatformRegistry.displayName(PlatformIds.CODEX),
             windows = windows,
-            primaryDisplay = formatUsagePrimaryDisplay(windows),
+            primaryDisplay = formatUsagePrimaryDisplay(windows, NeutralUsageLabels),
             updatedAtEpochMs = currentTimeMillis(),
         )
-    }
-
-    fun close() {
-        httpClient.close()
     }
 
     companion object {
@@ -92,7 +90,7 @@ data class CodexWindowDto(
     @SerialName("reset_at") val resetAt: Long? = null,
 )
 
-fun CodexUsageResponse.toWindows(): List<QuotaWindow> {
+fun CodexUsageResponse.toWindows(nowEpochMs: Long = currentTimeMillis()): List<QuotaWindow> {
     val rate = rateLimit ?: return emptyList()
     val mapped = linkedMapOf<QuotaWindowKind, QuotaWindow>()
     for (window in listOfNotNull(rate.primaryWindow, rate.secondaryWindow)) {
@@ -100,7 +98,7 @@ fun CodexUsageResponse.toWindows(): List<QuotaWindow> {
         mapped[kind] = QuotaWindow(
             kind = kind,
             usedPercent = window.usedPercent,
-            resetInSec = window.resetAfterSeconds,
+            resetInSec = window.resetInSec(nowEpochMs),
         )
     }
     return listOfNotNull(
@@ -109,6 +107,24 @@ fun CodexUsageResponse.toWindows(): List<QuotaWindow> {
         mapped[QuotaWindowKind.MONTHLY],
     )
 }
+
+/**
+ * `reset_after_seconds` is authoritative when present; otherwise derive the remaining
+ * seconds from `reset_at`, which some deployments send in seconds and others in
+ * milliseconds (values below [RESET_AT_SECONDS_UPPER_BOUND] are seconds).
+ */
+private fun CodexWindowDto.resetInSec(nowEpochMs: Long): Long? {
+    resetAfterSeconds?.let { return it.coerceAtLeast(0L) }
+    val resetAt = resetAt?.takeIf { it > 0L } ?: return null
+    val resetAtEpochMs = if (resetAt < RESET_AT_SECONDS_UPPER_BOUND) {
+        resetAt * 1000L
+    } else {
+        resetAt
+    }
+    return ((resetAtEpochMs - nowEpochMs) / 1000L).coerceAtLeast(0L)
+}
+
+private const val RESET_AT_SECONDS_UPPER_BOUND = 1_000_000_000_000L
 
 /**
  * Classify by duration, not primary/secondary name.

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { resolveFallbackVersion } from '@/lib/version';
 
 export interface ReleaseInfo {
   version: string;
@@ -6,7 +7,9 @@ export interface ReleaseInfo {
   apkUrl: string | null;
 }
 
-const FALLBACK_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'v1.12.0';
+const FALLBACK_VERSION = resolveFallbackVersion(
+  typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : undefined,
+);
 
 export const FALLBACK_RELEASE: ReleaseInfo = {
   version: FALLBACK_VERSION,

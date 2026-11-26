@@ -1,8 +1,18 @@
 package com.kuyermqi.quotawidget.opencode
 
+import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
+import com.kuyermqi.quotawidget.domain.SessionExpiredException
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -176,5 +186,36 @@ class OpenCodeGoClientTest {
         )
 
         assertEquals(528_600L, windows[2].resetInSec)
+    }
+
+    @Test
+    fun fetchQuotaByApiKey_forbiddenSubscription_isQuotaUnavailable() = runTest {
+        val body =
+            """{"error":{"type":"EntitlementError","message":"subscription required"}}"""
+        val client = apiClientResponding(HttpStatusCode.Forbidden, body)
+
+        assertFailsWith<QuotaUnavailableException> {
+            client.fetchQuotaByApiKey("api-key")
+        }
+    }
+
+    @Test
+    fun fetchQuotaByApiKey_forbiddenWithoutEntitlementHint_isSessionExpired() = runTest {
+        val client = apiClientResponding(HttpStatusCode.Forbidden, """{"error":"denied"}""")
+
+        assertFailsWith<SessionExpiredException> {
+            client.fetchQuotaByApiKey("api-key")
+        }
+    }
+
+    private fun apiClientResponding(status: HttpStatusCode, body: String): OpenCodeGoClient {
+        val engine = MockEngine {
+            respond(
+                content = body,
+                status = status,
+                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        }
+        return OpenCodeGoClient(HttpClient(engine) { expectSuccess = true })
     }
 }

@@ -4,7 +4,11 @@ import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.domain.WidgetErrorKind
 import com.kuyermqi.quotawidget.platform.PlatformIds
+import com.kuyermqi.quotawidget.refresh.isRefreshPhaseStale
+import com.kuyermqi.quotawidget.refresh.shouldResetRefreshPhase
+import com.kuyermqi.quotawidget.util.currentTimeMillis
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,6 +70,12 @@ class FakePlatformSettingsRepository(
     var oemBackgroundTipDismissed: Boolean = false
     var updateIgnoredVersion: String? = null
 
+    /** Every [saveWidgetError] call as `platformId to kind`, oldest first. */
+    val widgetErrorSaves = mutableListOf<Pair<String, WidgetErrorKind>>()
+
+    /** Platform ids of every [saveWidgetSuccess] call, oldest first. */
+    val widgetSuccessSaves = mutableListOf<String>()
+
     override fun observeDeepSeekSettings(): Flow<DeepSeekSettings> = deepSeekFlow.asStateFlow()
     override suspend fun getDeepSeekSettings(): DeepSeekSettings = deepSeekFlow.value
     override suspend fun saveDeepSeekSettings(settings: DeepSeekSettings) {
@@ -115,6 +125,16 @@ class FakePlatformSettingsRepository(
         widgetFlow(PlatformIds.CODEX).value = WidgetDisplayState.NotConfigured
     }
 
+    override suspend fun editCodexSettings(
+        guard: (CodexSettings) -> Boolean,
+        transform: (CodexSettings) -> CodexSettings,
+    ): Boolean {
+        val current = codexFlow.value
+        if (!guard(current)) return false
+        saveCodexSettings(transform(current))
+        return true
+    }
+
     override fun observeNewApiSettings(): Flow<NewApiSettings> = newApiFlow.asStateFlow()
     override suspend fun getNewApiSettings(): NewApiSettings = newApiFlow.value
     override suspend fun saveNewApiSettings(settings: NewApiSettings) {
@@ -152,6 +172,16 @@ class FakePlatformSettingsRepository(
             usageResetStyle = current.usageResetStyle,
         )
         widgetFlow(PlatformIds.MAGPIE).value = WidgetDisplayState.NotConfigured
+    }
+
+    override suspend fun editMagpieSettings(
+        guard: (MagpieSettings) -> Boolean,
+        transform: (MagpieSettings) -> MagpieSettings,
+    ): Boolean {
+        val current = magpieFlow.value
+        if (!guard(current)) return false
+        saveMagpieSettings(transform(current))
+        return true
     }
 
     override fun observeKimiCodeSettings(): Flow<KimiCodeSettings> = kimiCodeFlow.asStateFlow()
@@ -223,18 +253,114 @@ class FakePlatformSettingsRepository(
         widgetFlow(platformId).value = WidgetDisplayState.NotConfigured
     }
 
+    override suspend fun editSessionSettings(
+        platformId: String,
+        guard: (SessionPlatformSettings) -> Boolean,
+        transform: (SessionPlatformSettings) -> SessionPlatformSettings,
+    ): Boolean {
+        val current = sessionFlow(platformId).value
+        if (!guard(current)) return false
+        saveSessionSettings(platformId, transform(current))
+        return true
+    }
+
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =
         widgetFlow(platformId).asStateFlow()
 
     override suspend fun getWidgetState(platformId: String): WidgetDisplayState =
         widgetFlow(platformId).value
 
+    override suspend fun configuredPlatformIds(platformIds: List<String>): List<String> =
+        platformIds.filter { platformId ->
+            when (platformId) {
+                PlatformIds.DEEPSEEK -> deepSeekFlow.value.apiKey.isNotBlank()
+                PlatformIds.OPENCODE_GO -> openCodeFlow.value.isConfigured
+                PlatformIds.CODEX -> codexFlow.value.isConfigured
+                PlatformIds.NEW_API -> newApiFlow.value.isConfigured
+                PlatformIds.MAGPIE -> magpieFlow.value.isConfigured
+                PlatformIds.KIMI_CODE -> kimiCodeFlow.value.isConfigured
+                PlatformIds.ZHIPU -> zhipuFlow.value.isConfigured
+                in PlatformIds.sessionPlatforms ->
+                    sessionFlow(platformId).value.isConfiguredFor(platformId)
+                else -> false
+            }
+        }
+
+    override suspend fun getWidgetRenderSnapshot(platformIds: Set<String>): WidgetRenderSnapshot =
+        WidgetRenderSnapshot.of(platformIds, appSettingsFlow.value) { platformId ->
+            WidgetPlatformRenderState(
+                display = widgetFlow(platformId).value,
+                phase = refreshPhases[platformId] ?: RefreshIconPhase.Idle,
+                card = cardSettings(platformId),
+            )
+        }
+
+    private fun cardSettings(platformId: String): WidgetCardSettings? = when (platformId) {
+        PlatformIds.OPENCODE_GO -> openCodeFlow.value.let { settings ->
+            WidgetCardSettings(
+                usageDisplayMode = settings.usageDisplayMode,
+                usageProgressStyle = settings.usageProgressStyle,
+                windowKind = settings.widgetWindowKind,
+                usageResetStyle = settings.usageResetStyle,
+            )
+        }
+        PlatformIds.CODEX -> codexFlow.value.let { settings ->
+            WidgetCardSettings(
+                usageDisplayMode = settings.usageDisplayMode,
+                usageProgressStyle = settings.usageProgressStyle,
+                windowKind = settings.widgetWindowKind,
+                usageResetStyle = settings.usageResetStyle,
+            )
+        }
+        PlatformIds.NEW_API -> newApiFlow.value.let { settings ->
+            WidgetCardSettings(
+                usageDisplayMode = settings.usageDisplayMode,
+                usageProgressStyle = settings.usageProgressStyle,
+            )
+        }
+        PlatformIds.MAGPIE -> magpieFlow.value.let { settings ->
+            WidgetCardSettings(
+                usageDisplayMode = settings.usageDisplayMode,
+                usageProgressStyle = settings.usageProgressStyle,
+                windowKind = settings.widgetWindowKind,
+                usageResetStyle = settings.usageResetStyle,
+            )
+        }
+        PlatformIds.KIMI_CODE -> kimiCodeFlow.value.let { settings ->
+            WidgetCardSettings(
+                usageDisplayMode = settings.usageDisplayMode,
+                usageProgressStyle = settings.usageProgressStyle,
+                windowKind = settings.widgetWindowKind,
+                usageResetStyle = settings.usageResetStyle,
+            )
+        }
+        PlatformIds.ZHIPU -> zhipuFlow.value.let { settings ->
+            WidgetCardSettings(
+                usageDisplayMode = settings.usageDisplayMode,
+                usageProgressStyle = settings.usageProgressStyle,
+                windowKind = settings.widgetWindowKind,
+                usageResetStyle = settings.usageResetStyle,
+            )
+        }
+        in PlatformIds.sessionPlatforms -> sessionFlow(platformId).value.let { settings ->
+            WidgetCardSettings(
+                usageDisplayMode = settings.usageDisplayMode,
+                usageProgressStyle = settings.usageProgressStyle,
+                windowKind = settings.widgetWindowKind,
+                usageResetStyle = settings.usageResetStyle,
+            )
+        }
+        else -> null
+    }
+
     override suspend fun saveWidgetSuccess(platformId: String, snapshot: QuotaSnapshot) {
+        widgetSuccessSaves += platformId
         widgetFlow(platformId).value = WidgetDisplayState.Success(snapshot)
     }
 
-    override suspend fun saveWidgetError(platformId: String, message: String) {
-        widgetFlow(platformId).value = WidgetDisplayState.Error(message)
+    override suspend fun saveWidgetError(platformId: String, kind: WidgetErrorKind) {
+        widgetErrorSaves += platformId to kind
+        widgetFlow(platformId).value = WidgetDisplayState.Error(kind)
     }
 
     override suspend fun saveWidgetLoading(platformId: String) {
@@ -263,8 +389,25 @@ class FakePlatformSettingsRepository(
         refreshStartedAt[platformId] = epochMs
     }
 
-    override suspend fun clearAllRefreshIconPhases() {
-        refreshPhases.clear()
+    override suspend fun setRefreshIconPhaseIfStartedAt(
+        platformId: String,
+        expectedStartedAtEpochMs: Long,
+        phase: RefreshIconPhase,
+    ): Boolean {
+        if (!shouldResetRefreshPhase(getRefreshStartedAtEpochMs(platformId), expectedStartedAtEpochMs)) {
+            return false
+        }
+        refreshPhases[platformId] = phase
+        return true
+    }
+
+    override suspend fun clearStaleRefreshIconPhases() {
+        val now = currentTimeMillis()
+        for (platformId in (refreshPhases.keys + refreshStartedAt.keys)) {
+            if (isRefreshPhaseStale(refreshStartedAt[platformId] ?: 0L, now)) {
+                refreshPhases[platformId] = RefreshIconPhase.Idle
+            }
+        }
     }
 
     override suspend fun isPlatformTipDismissed(): Boolean = platformTipDismissed

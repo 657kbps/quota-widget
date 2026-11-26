@@ -6,15 +6,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import com.kuyermqi.quotawidget.R
+import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.antigravity.AntigravityClient
 import com.kuyermqi.quotawidget.cline.ClineClient
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -25,10 +25,12 @@ import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
+import com.kuyermqi.quotawidget.domain.relocalizedPrimaryDisplay
 import com.kuyermqi.quotawidget.domain.antigravity.AntigravityLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.cline.ClineLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.commandcode.CommandCodeLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.session.SessionLoginResult
+import com.kuyermqi.quotawidget.domain.usage.usageLabels
 import com.kuyermqi.quotawidget.domain.workbuddy.WorkBuddyLoginWebViewFlow
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
@@ -36,12 +38,12 @@ import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.ui.components.SessionAuthPanel
 import com.kuyermqi.quotawidget.ui.components.SessionPlatformConfigContent
 import com.kuyermqi.quotawidget.ui.platformDisplayName
+import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.ui.usage.formatCodexUsageWindowSummary
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import com.kuyermqi.quotawidget.workbuddy.WorkBuddyClient
 import com.kuyermqi.quotawidget.workbuddy.WorkBuddyRegion
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -155,11 +157,14 @@ class SessionPlatformHomeState internal constructor(
                 windows = widgetState.snapshot.windows,
                 windowKind = settings.widgetWindowKind,
                 usageDisplayMode = settings.usageDisplayMode,
-                fallback = widgetState.snapshot.primaryDisplay,
+                fallback = widgetState.snapshot.relocalizedPrimaryDisplay(
+                    labels = usageLabels(resources),
+                    mode = settings.usageDisplayMode,
+                ),
             )
             WidgetDisplayState.Loading -> loadingMsg
             WidgetDisplayState.NeedsReauth -> reauthMsg
-            is WidgetDisplayState.Error -> widgetState.message
+            is WidgetDisplayState.Error -> widgetErrorText(widgetState.kind, resources)
             WidgetDisplayState.NotConfigured -> null
         }
     }
@@ -244,36 +249,14 @@ data class SessionPlatformHomeBindings(
 )
 
 @Composable
-fun rememberSessionPlatformHomeState(
-    settingsRepository: PlatformSettingsRepository,
-    platformId: String,
-): SessionPlatformHomeState {
-    val state = remember(platformId) {
-        SessionPlatformHomeState(settingsRepository, platformId)
-    }
-    LaunchedEffect(platformId) {
-        settingsRepository.observeSessionSettings(platformId).collectLatest { persisted ->
-            state.applyPersisted(persisted)
-        }
-    }
-    LaunchedEffect(platformId) {
-        settingsRepository.observeWidgetState(platformId).collectLatest { widgetState ->
-            state.widgetState = widgetState
-            if (widgetState is WidgetDisplayState.Success) {
-                state.error = null
-            }
-        }
-    }
-    return state
-}
-
-@Composable
 fun sessionPlatformHomeEffects(
     state: SessionPlatformHomeState,
     settingsRepository: PlatformSettingsRepository,
     onRefreshPlatform: suspend (String) -> WidgetDisplayState,
 ): SessionPlatformHomeBindings {
     val context = LocalContext.current
+    val resources = LocalResources.current
+    val app = context.applicationContext as QuotaWidgetApp
     val scope = rememberCoroutineScope()
     val loginFailed = stringResource(R.string.session_login_failed)
     val reauthMessage = stringResource(R.string.session_reauth_hint)
@@ -298,10 +281,16 @@ fun sessionPlatformHomeEffects(
                 val refreshed = withContext(Dispatchers.IO) {
                     onRefreshPlatform(state.platformId)
                 }
-                handleRefreshResult(state, settingsRepository, refreshed, reauthMessage)
-                WidgetGlanceState.syncAndUpdate(context, "session_login")
+                handleRefreshResult(
+                    state = state,
+                    settingsRepository = settingsRepository,
+                    refreshed = refreshed,
+                    reauthMessage = reauthMessage,
+                    resources = resources,
+                )
+                WidgetSyncCoordinator.syncWidgets(context, "session_login", state.platformId)
             } catch (e: Exception) {
-                state.error = e.message ?: loginFailed
+                state.error = widgetErrorText(e, resources, loginFailed)
             }
         }
     }
@@ -318,37 +307,29 @@ fun sessionPlatformHomeEffects(
                         } else {
                             WorkBuddyRegion.INTERNATIONAL
                         }
-                        val client = WorkBuddyClient()
-                        try {
-                            val session = withContext(Dispatchers.IO) {
-                                client.createLoginSession(region)
-                            }
-                            WorkBuddyLoginWebViewFlow.createIntent(context, region, session)
-                        } finally {
-                            client.close()
+                        val client = WorkBuddyClient(app.httpClient)
+                        val session = withContext(Dispatchers.IO) {
+                            client.createLoginSession(region)
                         }
+                        WorkBuddyLoginWebViewFlow.createIntent(context, region, session)
                     }
                     PlatformIds.CLINE -> {
-                        val client = ClineClient()
-                        try {
-                            val session = withContext(Dispatchers.IO) {
-                                client.createDeviceSession()
-                            }
-                            ClineLoginWebViewFlow.createIntent(context, session)
-                        } finally {
-                            client.close()
+                        val client = ClineClient(app.httpClient)
+                        val session = withContext(Dispatchers.IO) {
+                            client.createDeviceSession()
                         }
+                        ClineLoginWebViewFlow.createIntent(context, session)
                     }
                     PlatformIds.COMMAND_CODE -> withContext(Dispatchers.IO) {
                         CommandCodeLoginWebViewFlow.createIntent(context)
                     }
                     PlatformIds.ANTIGRAVITY -> AntigravityLoginWebViewFlow.createIntent(context)
-                    else -> error("未知平台: ${state.platformId}")
+                    else -> error("Unknown platform: ${state.platformId}")
                 }
                 launcher.launch(intent)
             } catch (e: Exception) {
                 state.isBusy = false
-                state.error = e.message ?: loginFailed
+                state.error = widgetErrorText(e, resources, loginFailed)
             }
         }
     }
@@ -365,9 +346,9 @@ fun sessionPlatformHomeEffects(
                 }
                 state.lastDisplay = null
                 state.error = null
-                WidgetGlanceState.syncAndUpdate(context, "session_logout")
+                WidgetSyncCoordinator.syncWidgets(context, "session_logout", state.platformId)
             } catch (e: Exception) {
-                state.error = e.message
+                state.error = widgetErrorText(e, resources)
             } finally {
                 state.isBusy = false
             }
@@ -386,14 +367,20 @@ fun sessionPlatformHomeEffects(
                     val refreshed = withContext(Dispatchers.IO) {
                         onRefreshPlatform(state.platformId)
                     }
-                    handleRefreshResult(state, settingsRepository, refreshed, reauthMessage)
+                    handleRefreshResult(
+                        state = state,
+                        settingsRepository = settingsRepository,
+                        refreshed = refreshed,
+                        reauthMessage = reauthMessage,
+                        resources = resources,
+                    )
                     if (state.supportsApiKey && state.error == null) {
                         state.authPanel = SessionAuthPanel.SUMMARY
                     }
                 }
-                WidgetGlanceState.syncAndUpdate(context, "session_save")
+                WidgetSyncCoordinator.syncWidgets(context, "session_save", state.platformId)
             } catch (e: Exception) {
-                state.error = e.message
+                state.error = widgetErrorText(e, resources)
             } finally {
                 state.isSaving = false
                 state.isBusy = false
@@ -413,10 +400,14 @@ private suspend fun handleRefreshResult(
     settingsRepository: PlatformSettingsRepository,
     refreshed: WidgetDisplayState,
     reauthMessage: String,
+    resources: Resources,
 ) {
     when (refreshed) {
         is WidgetDisplayState.Success -> {
-            state.lastDisplay = refreshed.snapshot.primaryDisplay
+            state.lastDisplay = refreshed.snapshot.relocalizedPrimaryDisplay(
+                labels = usageLabels(resources),
+                mode = state.settings.usageDisplayMode,
+            )
             val available = availableUsageWindowKinds(refreshed.snapshot.windows)
             if (available.isNotEmpty() && state.draftWindowKind !in available) {
                 state.draftWindowKind = available.first()
@@ -430,7 +421,7 @@ private suspend fun handleRefreshResult(
             state.error = reauthMessage
         }
         is WidgetDisplayState.Error -> {
-            state.error = refreshed.message
+            state.error = widgetErrorText(refreshed.kind, resources)
         }
         else -> Unit
     }

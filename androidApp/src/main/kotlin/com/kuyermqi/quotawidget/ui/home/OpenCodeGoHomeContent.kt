@@ -6,11 +6,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +24,8 @@ import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.opencode.OpenCodeLoginWebViewFlow
+import com.kuyermqi.quotawidget.domain.relocalizedPrimaryDisplay
+import com.kuyermqi.quotawidget.domain.usage.usageLabels
 import com.kuyermqi.quotawidget.opencode.OpenCodeGoClient
 import com.kuyermqi.quotawidget.opencode.OpenCodeWorkspace
 import com.kuyermqi.quotawidget.platform.PlatformIds
@@ -35,7 +35,8 @@ import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.OpenCodeAuthPanel
 import com.kuyermqi.quotawidget.ui.components.OpenCodeGoConfigContent
 import com.kuyermqi.quotawidget.ui.usage.formatUsageWindowSummary
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.ui.widgetErrorText
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -135,7 +136,10 @@ class OpenCodeGoHomeState internal constructor(
                 windows = widgetState.snapshot.windows,
                 windowKind = settings.widgetWindowKind,
                 usageDisplayMode = settings.usageDisplayMode,
-                fallback = widgetState.snapshot.primaryDisplay,
+                fallback = widgetState.snapshot.relocalizedPrimaryDisplay(
+                    labels = usageLabels(resources),
+                    mode = settings.usageDisplayMode,
+                ),
             )
             WidgetDisplayState.Loading -> lastDisplay ?: loadingMsg
             is WidgetDisplayState.Error -> lastDisplay
@@ -167,20 +171,6 @@ data class OpenCodeGoHomeBindings(
     val windows: List<QuotaWindow>,
     val onLogin: () -> Unit,
 )
-
-@Composable
-fun rememberOpenCodeGoHomeState(
-    settingsRepository: PlatformSettingsRepository,
-): OpenCodeGoHomeState {
-    val client = remember { OpenCodeGoClient() }
-    val state = remember(settingsRepository, client) {
-        OpenCodeGoHomeState(settingsRepository, client)
-    }
-    DisposableEffect(client) {
-        onDispose { client.close() }
-    }
-    return state
-}
 
 /**
  * Widget observation, summary sync, and login launcher.
@@ -220,7 +210,10 @@ fun openCodeGoHomeEffects(
             windows = success.snapshot.windows,
             windowKind = state.settings.widgetWindowKind,
             usageDisplayMode = state.settings.usageDisplayMode,
-            fallback = success.snapshot.primaryDisplay,
+            fallback = success.snapshot.relocalizedPrimaryDisplay(
+                labels = usageLabels(resources),
+                mode = state.settings.usageDisplayMode,
+            ),
         )
     }
 
@@ -275,7 +268,7 @@ fun openCodeGoHomeEffects(
                         state.authPanel = OpenCodeAuthPanel.SUMMARY
                     }
                     is WidgetDisplayState.Error -> {
-                        state.error = refresh.message
+                        state.error = widgetErrorText(refresh.kind, resources)
                         state.authPanel = OpenCodeAuthPanel.SUMMARY
                     }
                     WidgetDisplayState.NeedsReauth -> {
@@ -293,7 +286,7 @@ fun openCodeGoHomeEffects(
                         state.authPanel = OpenCodeAuthPanel.SUMMARY
                     }
                 }
-                WidgetGlanceState.syncAndUpdate(context, "opencode_login")
+                WidgetSyncCoordinator.syncWidgets(context, "opencode_login", PlatformIds.OPENCODE_GO)
             } finally {
                 state.isBusy = false
             }
@@ -393,7 +386,7 @@ fun ColumnScope.OpenCodeGoHomeContent(
                         keepUsageProgressStyle = state.draftUsageProgressStyle,
                         keepUsageResetStyle = state.draftUsageResetStyle,
                     )
-                    WidgetGlanceState.syncAndUpdate(context, "opencode_logout")
+                    WidgetSyncCoordinator.syncWidgets(context, "opencode_logout", PlatformIds.OPENCODE_GO)
                 } finally {
                     state.isBusy = false
                 }
@@ -445,7 +438,7 @@ fun ColumnScope.OpenCodeGoHomeContent(
                     }
                     when (val result = onRefreshPlatform(PlatformIds.OPENCODE_GO)) {
                         is WidgetDisplayState.Error -> {
-                            state.error = result.message
+                            state.error = widgetErrorText(result.kind, context)
                             state.authPanel = editingPanel
                         }
                         WidgetDisplayState.NeedsReauth -> {
@@ -466,7 +459,7 @@ fun ColumnScope.OpenCodeGoHomeContent(
                             }
                         }
                     }
-                    WidgetGlanceState.syncAndUpdate(context, "opencode_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "opencode_save", PlatformIds.OPENCODE_GO)
                 } finally {
                     state.isSaving = false
                     state.isBusy = false

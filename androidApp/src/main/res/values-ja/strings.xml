@@ -140,6 +140,7 @@
     <string name="usage_remaining_weekly">毎週の残量 %1$s</string>
     <string name="usage_remaining_monthly">毎月の残量 %1$s</string>
     <string name="usage_remaining_token">トークン残量 %1$s</string>
+    <string name="workbuddy_remaining_credits">残り %1$s クレジット</string>
     <string name="usage_used_rolling">ローリング使用量 %1$s</string>
     <string name="usage_used_weekly">毎週の使用量 %1$s</string>
     <string name="usage_used_monthly">毎月の使用量 %1$s</string>
@@ -165,6 +166,8 @@
     <string name="new_api_balance_summary">残高 %1$s</string>
     <string name="new_api_base_url_label">ベース URL</string>
     <string name="new_api_base_url_hint">https://your-newapi-server</string>
+    <string name="base_url_plain_http_warning">この URL は暗号化されていない HTTP です。通信経路上の第三者が API キーを読み取れます。可能なら HTTPS を使用してください。</string>
+    <string name="base_url_invalid">http:// または https:// で始まる完全な URL を入力してください</string>
     <string name="new_api_api_key_label">API キー</string>
     <string name="new_api_quota_per_usd_label">クォータ換算（quota : 1 USD）</string>
     <string name="new_api_quota_per_usd_hint">デフォルトは 500000（500000 クォータ = 1 USD）</string>
@@ -192,6 +195,12 @@
     <string name="zhipu_api_key_hint">Zhipu コーディングプランのページで作成したプラン API キー（チームプランはチームキーを使用）</string>
     <string name="zhipu_invalid_key">Zhipu API キーが無効または期限切れです。設定を確認してください。</string>
     <string name="widget_fetch_failed">取得に失敗</string>
+    <string name="widget_error_session_expired">ログインの有効期限が切れました。再度ログインしてください</string>
+    <string name="widget_error_quota_unavailable">プラットフォームが表示できるクォータデータを返しませんでした</string>
+    <string name="widget_error_http_status">リクエストに失敗しました (HTTP %1$d)</string>
+    <string name="widget_error_network">ネットワークに接続できません。接続を確認してください</string>
+    <string name="widget_error_invalid_base_url">サーバー URL が無効です</string>
+    <string name="widget_error_parse_failure">サーバーから想定外の応答が返りました</string>
     <string name="home_title">クォータウィジェット</string>
     <string name="home_section_configured">設定済み</string>
     <string name="home_section_unconfigured">未設定</string>

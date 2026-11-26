@@ -7,7 +7,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -23,12 +22,15 @@ import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
 import com.kuyermqi.quotawidget.domain.defaultUsageWindowKind
 import com.kuyermqi.quotawidget.magpie.MagpieProvider
+import com.kuyermqi.quotawidget.network.BaseUrlClass
+import com.kuyermqi.quotawidget.network.classifyBaseUrl
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.settings.MagpieSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.MagpieConfigContent
 import com.kuyermqi.quotawidget.ui.usage.formatUsageWindowSummary
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.ui.widgetErrorText
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
 class MagpieHomeState internal constructor(
@@ -180,13 +182,6 @@ private fun magpieUsageSummary(
 }
 
 @Composable
-fun rememberMagpieHomeState(
-    settingsRepository: PlatformSettingsRepository,
-): MagpieHomeState = remember(settingsRepository) {
-    MagpieHomeState(settingsRepository)
-}
-
-@Composable
 fun magpieHomeEffects(state: MagpieHomeState): WidgetDisplayState {
     val resources = LocalResources.current
     val observed by state.repository().observeWidgetState(PlatformIds.MAGPIE)
@@ -258,6 +253,12 @@ fun ColumnScope.MagpieHomeContent(
         saveError = state.saveError,
         onSave = {
             scope.launch {
+                if (state.draftBaseUrl.isNotBlank() &&
+                    classifyBaseUrl(state.draftBaseUrl) == BaseUrlClass.Invalid
+                ) {
+                    state.saveError = resources.getString(R.string.base_url_invalid)
+                    return@launch
+                }
                 val next = MagpieSettings(
                     baseUrl = state.draftBaseUrl.trim().trimEnd('/'),
                     apiKey = state.draftApiKey.trim(),
@@ -281,7 +282,8 @@ fun ColumnScope.MagpieHomeContent(
                         state.lastUpdatedAtEpochMs = 0L
                     }
                     when (val result = onRefreshPlatform(PlatformIds.MAGPIE)) {
-                        is WidgetDisplayState.Error -> state.saveError = result.message
+                        is WidgetDisplayState.Error ->
+                            state.saveError = widgetErrorText(result.kind, resources)
                         WidgetDisplayState.NeedsReauth ->
                             state.saveError = resources.getString(R.string.magpie_key_rejected)
                         is WidgetDisplayState.Success -> {
@@ -290,7 +292,7 @@ fun ColumnScope.MagpieHomeContent(
                         }
                         else -> Unit
                     }
-                    WidgetGlanceState.syncAndUpdate(context, "magpie_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "magpie_save", PlatformIds.MAGPIE)
                 } finally {
                     state.isSaving = false
                 }

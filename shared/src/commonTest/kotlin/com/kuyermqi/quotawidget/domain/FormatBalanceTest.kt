@@ -2,7 +2,26 @@ package com.kuyermqi.quotawidget.domain
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+
+private val englishLabels = object : UsageLabels {
+    override val rolling = "Rolling"
+    override val weekly = "Weekly"
+    override val monthly = "Monthly"
+
+    override fun formatRemainingCredits(amount: String): String =
+        "Remaining $amount credits"
+}
+
+private val frenchLabels = object : UsageLabels {
+    override val rolling = "Glissant"
+    override val weekly = "Hebdomadaire"
+    override val monthly = "Mensuel"
+
+    override fun formatRemainingCredits(amount: String): String =
+        "$amount crédits restants"
+}
 
 class FormatBalanceTest {
     @Test
@@ -24,15 +43,17 @@ class FormatBalanceTest {
     }
 
     @Test
-    fun formatUsagePrimaryDisplay_joinsWindows() {
+    fun formatUsagePrimaryDisplay_joinsWindowsWithTheGivenLabels() {
         val display = formatUsagePrimaryDisplay(
             listOf(
                 QuotaWindow(kind = QuotaWindowKind.FIVE_HOUR, usedPercent = 19.5),
                 QuotaWindow(kind = QuotaWindowKind.WEEKLY, usedPercent = 30.0),
                 QuotaWindow(kind = QuotaWindowKind.MONTHLY, usedPercent = 12.0),
             ),
+            englishLabels,
         )
-        assertEquals("滚动 19.5 % · 每周 30 % · 每月 12 %", display)
+        assertEquals("Rolling 19.5 % · Weekly 30 % · Monthly 12 %", display)
+        assertFalse(display.contains(Regex("\\p{IsHan}")))
     }
 
     @Test
@@ -43,10 +64,45 @@ class FormatBalanceTest {
         )
 
         assertEquals(
-            "滚动 80.5 % · 每周 70 %",
-            formatUsagePrimaryDisplay(windows, UsageDisplayMode.REMAINING),
+            "Rolling 80.5 % · Weekly 70 %",
+            formatUsagePrimaryDisplay(windows, englishLabels, UsageDisplayMode.REMAINING),
         )
     }
+
+    @Test
+    fun relocalizedPrimaryDisplay_rebuildsUsageSummariesOnly() {
+        val usage = snapshot(
+            windows = listOf(QuotaWindow(kind = QuotaWindowKind.WEEKLY, usedPercent = 30.0)),
+            primaryDisplay = "每周 30 %",
+        )
+        assertEquals("Weekly 30 %", usage.relocalizedPrimaryDisplay(englishLabels))
+
+        val balance = snapshot(
+            windows = listOf(QuotaWindow(kind = QuotaWindowKind.BALANCE)),
+            primaryDisplay = "$12.50",
+        )
+        assertEquals("$12.50", balance.relocalizedPrimaryDisplay(englishLabels))
+
+        val plan = snapshot(windows = emptyList(), primaryDisplay = "Pro plan")
+        assertEquals("Pro plan", plan.relocalizedPrimaryDisplay(englishLabels))
+
+        val neutralCredits = snapshot(windows = emptyList(), primaryDisplay = "Remaining 12.5 credits")
+        assertEquals("12.5 crédits restants", neutralCredits.relocalizedPrimaryDisplay(frenchLabels))
+
+        val legacyChineseCredits = snapshot(windows = emptyList(), primaryDisplay = "剩余 400 credits")
+        assertEquals("400 crédits restants", legacyChineseCredits.relocalizedPrimaryDisplay(frenchLabels))
+    }
+
+    private fun snapshot(
+        windows: List<QuotaWindow>,
+        primaryDisplay: String,
+    ): QuotaSnapshot = QuotaSnapshot(
+        platformId = "kimi_code",
+        platformName = "Kimi Code",
+        windows = windows,
+        primaryDisplay = primaryDisplay,
+        updatedAtEpochMs = 1L,
+    )
 
     @Test
     fun formatUsageRemainingRolling_usesRemainingPercent() {

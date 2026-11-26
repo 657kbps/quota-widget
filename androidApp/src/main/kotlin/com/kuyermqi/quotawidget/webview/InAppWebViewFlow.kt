@@ -8,6 +8,12 @@ import android.webkit.WebViewClient
  * Keep platform-specific login capture in feature packages so the Activity stays a reusable shell.
  */
 interface InAppWebViewFlow {
+    /**
+     * URL to load when the caller cannot know it up front (e.g. the flow owns a loopback
+     * callback server and only learns its port after binding). Ignored when the intent carries a URL.
+     */
+    fun initialUrl(): String? = null
+
     /** Called once before the WebView loads (e.g. clear cookies). */
     fun onPrepare() {}
 

@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.cline
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
+import com.kuyermqi.quotawidget.domain.HttpStatusException
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
@@ -17,8 +18,10 @@ import com.kuyermqi.quotawidget.session.objectOrNull
 import com.kuyermqi.quotawidget.session.stringOrNull
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.util.currentTimeMillis
+import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -59,7 +62,7 @@ data class ClineAuthResult(
 )
 
 class ClineClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -103,7 +106,7 @@ class ClineClient(
                 },
             )
         } catch (e: ClientRequestException) {
-            val error = runCatching {
+            val error = suspendRunCatching {
                 json.parseToJsonElement(e.response.bodyAsText()).jsonObject.stringOrNull("error")
             }.getOrNull()
             return when (error) {
@@ -152,68 +155,72 @@ class ClineClient(
         if (current.apiKey.isBlank() && current.isExpiring()) {
             current = refresh(current, save)
         }
+        return try {
+            loadOnce(current, save)
+        } catch (e: SessionExpiredException) {
+            // A lapsed token is retried at most once; a second lapse means the session is gone.
+            if (current.apiKey.isNotBlank() || current.refreshToken.isBlank()) throw e
+            loadOnce(refresh(current, save), save)
+        }
+    }
+
+    private suspend fun loadOnce(
+        current: SessionPlatformSettings,
+        save: suspend (SessionPlatformSettings) -> Unit,
+    ): QuotaSnapshot {
         var limitsError: String? = null
-        var me: JsonObject
-        var balance: JsonObject?
-        while (true) {
-            try {
-                me = clineApi("/users/me", bearer = bearerOf(current))
-                balance = try {
-                    fetchBalance(me, current)
-                } catch (e: SessionExpiredException) {
-                    throw e
-                } catch (e: Exception) {
-                    null
-                }
-                val limits = try {
-                    clineApi("/users/me/plan/usage-limits", bearer = bearerOf(current))
-                } catch (e: SessionExpiredException) {
-                    throw e
-                } catch (e: Exception) {
-                    if (e.message?.contains("HTTP 404") == true) {
-                        null
-                    } else {
-                        limitsError = "ClinePass 限额读取失败"
-                        null
-                    }
-                }
-                val windows = limits.toWindows()
-                val plan = me.stringOrNull("plan")
-                    ?: me.stringOrNull("planType")
-                    ?: me.stringOrNull("planName")
-                    ?: me.stringOrNull("membership")
-                    ?: me.stringOrNull("tier")
-                    ?: ""
-                val balanceText = balance?.toBalanceText()
-                val display = balanceText
-                    ?: if (windows.isNotEmpty()) formatUsagePrimaryDisplay(windows) else plan
-                val email = me.stringOrNull("email").orEmpty()
-                val uid = me.stringOrNull("clineUserId")
-                    ?: me.stringOrNull("id")
-                    ?: me.stringOrNull("subject")
-                    ?: me.stringOrNull("userId")
-                    ?: current.uid
-                val next = current.copy(
-                    uid = uid,
-                    email = email.ifBlank { current.email },
-                    accountId = current.accountId.ifBlank { email.ifBlank { uid } },
-                    plan = plan.ifBlank { current.plan },
-                )
-                if (next != current) save(next)
-                return QuotaSnapshot(
-                    platformId = PlatformIds.CLINE,
-                    platformName = PlatformRegistry.displayName(PlatformIds.CLINE),
-                    windows = windows,
-                    primaryDisplay = display,
-                    updatedAtEpochMs = currentTimeMillis(),
-                ).also {
-                    if (limitsError != null) {
-                        // Surfaced by the home row through an empty display only when nothing loaded.
-                    }
-                }
-            } catch (e: SessionExpiredException) {
-                if (current.apiKey.isNotBlank() || current.refreshToken.isBlank()) throw e
-                current = refresh(current, save)
+        val me = clineApi("/users/me", bearer = bearerOf(current))
+        val balance = try {
+            fetchBalance(me, current)
+        } catch (e: SessionExpiredException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+        val limits = try {
+            clineApi("/users/me/plan/usage-limits", bearer = bearerOf(current))
+        } catch (e: SessionExpiredException) {
+            throw e
+        } catch (e: Exception) {
+            if (e is HttpStatusException && e.statusCode == 404) {
+                null
+            } else {
+                limitsError = "ClinePass 限额读取失败"
+                null
+            }
+        }
+        val windows = limits.toWindows()
+        val plan = me.stringOrNull("plan")
+            ?: me.stringOrNull("planType")
+            ?: me.stringOrNull("planName")
+            ?: me.stringOrNull("membership")
+            ?: me.stringOrNull("tier")
+            ?: ""
+        val balanceText = balance?.toBalanceText()
+        val display = balanceText
+            ?: if (windows.isNotEmpty()) formatUsagePrimaryDisplay(windows, NeutralUsageLabels) else plan
+        val email = me.stringOrNull("email").orEmpty()
+        val uid = me.stringOrNull("clineUserId")
+            ?: me.stringOrNull("id")
+            ?: me.stringOrNull("subject")
+            ?: me.stringOrNull("userId")
+            ?: current.uid
+        val next = current.copy(
+            uid = uid,
+            email = email.ifBlank { current.email },
+            accountId = current.accountId.ifBlank { email.ifBlank { uid } },
+            plan = plan.ifBlank { current.plan },
+        )
+        if (next != current) save(next)
+        return QuotaSnapshot(
+            platformId = PlatformIds.CLINE,
+            platformName = PlatformRegistry.displayName(PlatformIds.CLINE),
+            windows = windows,
+            primaryDisplay = display,
+            updatedAtEpochMs = currentTimeMillis(),
+        ).also {
+            if (limitsError != null) {
+                // Surfaced by the home row through an empty display only when nothing loaded.
             }
         }
     }
@@ -252,10 +259,6 @@ class ClineClient(
         )
         save(next)
         return next
-    }
-
-    fun close() {
-        httpClient.close()
     }
 
     private suspend fun fetchBalance(me: JsonObject, settings: SessionPlatformSettings): JsonObject? {
@@ -302,13 +305,16 @@ class ClineClient(
                     headers.forEach { (name, value) -> header(name, value) }
                 }
             }
-        } catch (e: ClientRequestException) {
+        } catch (e: ResponseException) {
             val status = e.response.status.value
-            val text = runCatching { e.response.bodyAsText() }.getOrNull().orEmpty()
             if (status in lapsedStatuses) {
                 throw SessionExpiredException("Cline 登录已过期，请重新登录")
             }
-            throw IllegalStateException("Cline 请求失败: HTTP $status", e)
+            throw HttpStatusException(
+                statusCode = status,
+                message = "Cline 请求失败: HTTP $status",
+                cause = e,
+            )
         }
         val text = response.bodyAsText()
         val root = runCatching { json.parseToJsonElement(text).jsonObject }.getOrElse {

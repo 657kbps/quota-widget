@@ -11,6 +11,7 @@ import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.workbuddy.WorkBuddyClient
 import com.kuyermqi.quotawidget.workbuddy.WorkBuddyRegion
+import io.ktor.client.HttpClient
 
 /** Provider logic for one generic [SessionPlatformSettings] account. */
 interface SessionQuotaClient {
@@ -37,15 +38,52 @@ class SessionQuotaProvider(
         val platformId = platform.id
         val settings = repo.getSessionSettings(platformId)
         require(client.isConfigured(settings)) { "${platform.displayName} 未配置" }
+        // Credentials this fetch is allowed to replace: the ones it sent, then whatever it
+        // rotated them into. A user who logs out or re-logs-in meanwhile fails the guard below,
+        // so a late network result can never resurrect or overwrite their credentials.
+        var baseline = settings
         return client.fetch(settings) { next ->
-            repo.saveSessionSettings(platformId, next)
+            val expected = baseline
+            val applied = repo.editSessionSettings(
+                platformId = platformId,
+                guard = { current ->
+                    current.isConfiguredFor(platformId) && current.hasSameCredentialsAs(expected)
+                },
+                transform = { current -> current.mergeRefreshResult(next) },
+            )
+            if (applied) baseline = next
         }
     }
 }
 
+private fun SessionPlatformSettings.hasSameCredentialsAs(other: SessionPlatformSettings): Boolean =
+    accessToken == other.accessToken &&
+        refreshToken == other.refreshToken &&
+        apiKey == other.apiKey
+
+/**
+ * What a refresh may persist: rotated tokens and the account metadata derived from them.
+ * Widget display preferences belong to the user, so they always come from the stored value.
+ */
+private fun SessionPlatformSettings.mergeRefreshResult(
+    next: SessionPlatformSettings,
+): SessionPlatformSettings = copy(
+    accessToken = next.accessToken,
+    refreshToken = next.refreshToken,
+    expiresAtEpochMs = next.expiresAtEpochMs,
+    apiKey = next.apiKey,
+    accountId = next.accountId,
+    email = next.email,
+    plan = next.plan,
+    projectId = next.projectId,
+    domain = next.domain,
+    uid = next.uid,
+    enterpriseId = next.enterpriseId,
+)
+
 class WorkBuddyQuotaClient(
     private val region: WorkBuddyRegion,
-    private val client: WorkBuddyClient = WorkBuddyClient(),
+    private val client: WorkBuddyClient,
 ) : SessionQuotaClient {
     override fun isConfigured(settings: SessionPlatformSettings): Boolean =
         settings.accessToken.isNotBlank() && settings.refreshToken.isNotBlank()
@@ -57,7 +95,7 @@ class WorkBuddyQuotaClient(
 }
 
 class ClineQuotaClient(
-    private val client: ClineClient = ClineClient(),
+    private val client: ClineClient,
 ) : SessionQuotaClient {
     override fun isConfigured(settings: SessionPlatformSettings): Boolean =
         (settings.accessToken.isNotBlank() && settings.refreshToken.isNotBlank()) ||
@@ -70,7 +108,7 @@ class ClineQuotaClient(
 }
 
 class CommandCodeQuotaClient(
-    private val client: CommandCodeClient = CommandCodeClient(),
+    private val client: CommandCodeClient,
 ) : SessionQuotaClient {
     override fun isConfigured(settings: SessionPlatformSettings): Boolean =
         settings.apiKey.isNotBlank()
@@ -82,7 +120,7 @@ class CommandCodeQuotaClient(
 }
 
 class AntigravityQuotaClient(
-    private val client: AntigravityClient = AntigravityClient(),
+    private val client: AntigravityClient,
 ) : SessionQuotaClient {
     override fun isConfigured(settings: SessionPlatformSettings): Boolean =
         settings.refreshToken.isNotBlank()
@@ -93,16 +131,22 @@ class AntigravityQuotaClient(
     ): QuotaSnapshot = client.fetchQuota(settings, save)
 }
 
-fun sessionQuotaProviders(): List<QuotaProvider> = listOf(
+fun sessionQuotaProviders(httpClient: HttpClient): List<QuotaProvider> = listOf(
     SessionQuotaProvider(
         PlatformIds.WORKBUDDY,
-        WorkBuddyQuotaClient(WorkBuddyRegion.CHINA),
+        WorkBuddyQuotaClient(WorkBuddyRegion.CHINA, WorkBuddyClient(httpClient)),
     ),
     SessionQuotaProvider(
         PlatformIds.WORKBUDDY_AI,
-        WorkBuddyQuotaClient(WorkBuddyRegion.INTERNATIONAL),
+        WorkBuddyQuotaClient(WorkBuddyRegion.INTERNATIONAL, WorkBuddyClient(httpClient)),
     ),
-    SessionQuotaProvider(PlatformIds.CLINE, ClineQuotaClient()),
-    SessionQuotaProvider(PlatformIds.COMMAND_CODE, CommandCodeQuotaClient()),
-    SessionQuotaProvider(PlatformIds.ANTIGRAVITY, AntigravityQuotaClient()),
+    SessionQuotaProvider(PlatformIds.CLINE, ClineQuotaClient(ClineClient(httpClient))),
+    SessionQuotaProvider(
+        PlatformIds.COMMAND_CODE,
+        CommandCodeQuotaClient(CommandCodeClient(httpClient)),
+    ),
+    SessionQuotaProvider(
+        PlatformIds.ANTIGRAVITY,
+        AntigravityQuotaClient(AntigravityClient(httpClient)),
+    ),
 )

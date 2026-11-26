@@ -75,6 +75,80 @@ class CodexWindowClassifierTest {
     }
 
     @Test
+    fun usageResponse_resetAtSeconds_fallsBackToRemainingSeconds() {
+        val now = 1_700_000_000_000L
+        val windows = singleWindow(
+            CodexWindowDto(
+                usedPercent = 5.0,
+                limitWindowSeconds = 18_000,
+                resetAt = now / 1000L + 3_600L,
+            ),
+        ).toWindows(nowEpochMs = now)
+
+        assertEquals(3_600L, windows.single().resetInSec)
+    }
+
+    @Test
+    fun usageResponse_resetAtMillis_fallsBackToRemainingSeconds() {
+        val now = 1_700_000_000_000L
+        val windows = singleWindow(
+            CodexWindowDto(
+                usedPercent = 5.0,
+                limitWindowSeconds = 604_800,
+                resetAt = now + 90_000L,
+            ),
+        ).toWindows(nowEpochMs = now)
+
+        assertEquals(90L, windows.single().resetInSec)
+    }
+
+    @Test
+    fun usageResponse_resetAfterSecondsTakesPrecedence() {
+        val now = 1_700_000_000_000L
+        val windows = singleWindow(
+            CodexWindowDto(
+                usedPercent = 5.0,
+                limitWindowSeconds = 18_000,
+                resetAfterSeconds = 12,
+                resetAt = now / 1000L + 3_600L,
+            ),
+        ).toWindows(nowEpochMs = now)
+
+        assertEquals(12L, windows.single().resetInSec)
+    }
+
+    @Test
+    fun usageResponse_elapsedReset_clampsToZero() {
+        val now = 1_700_000_000_000L
+        val fromMillis = singleWindow(
+            CodexWindowDto(
+                usedPercent = 5.0,
+                limitWindowSeconds = 18_000,
+                resetAt = now - 60_000L,
+            ),
+        ).toWindows(nowEpochMs = now)
+        val fromNegativeSeconds = singleWindow(
+            CodexWindowDto(
+                usedPercent = 5.0,
+                limitWindowSeconds = 18_000,
+                resetAfterSeconds = -5L,
+            ),
+        ).toWindows(nowEpochMs = now)
+
+        assertEquals(0L, fromMillis.single().resetInSec)
+        assertEquals(0L, fromNegativeSeconds.single().resetInSec)
+    }
+
+    @Test
+    fun usageResponse_withoutResetFields_leavesResetNull() {
+        val windows = singleWindow(
+            CodexWindowDto(usedPercent = 5.0, limitWindowSeconds = 18_000),
+        ).toWindows(nowEpochMs = 1_700_000_000_000L)
+
+        assertNull(windows.single().resetInSec)
+    }
+
+    @Test
     fun pkce_challenge_isS256Base64Url() {
         val verifier = "a".repeat(128) // hex-like length
         val challenge = CodexOAuth.generateCodeChallenge(verifier)
@@ -83,4 +157,7 @@ class CodexWindowClassifierTest {
         assertEquals(false, challenge.contains('+'))
         assertEquals(false, challenge.contains('/'))
     }
+
+    private fun singleWindow(window: CodexWindowDto): CodexUsageResponse =
+        CodexUsageResponse(rateLimit = CodexRateLimitDto(primaryWindow = window))
 }

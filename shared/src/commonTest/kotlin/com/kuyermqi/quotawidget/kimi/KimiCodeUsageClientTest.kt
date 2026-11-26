@@ -1,5 +1,6 @@
 package com.kuyermqi.quotawidget.kimi
 
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.ServiceRegion
 import kotlinx.serialization.json.Json
@@ -54,8 +55,8 @@ class KimiCodeUsageClientTest {
         assertEquals(306_465L, weekly.resetInSec)
         assertEquals("kimi_code", snapshot.platformId)
         assertEquals("Kimi Code", snapshot.platformName)
-        assertTrue(snapshot.primaryDisplay.contains("滚动"))
-        assertTrue(snapshot.primaryDisplay.contains("每周"))
+        assertTrue(snapshot.primaryDisplay.contains(NeutralUsageLabels.rolling))
+        assertTrue(snapshot.primaryDisplay.contains(NeutralUsageLabels.weekly))
     }
 
     @Test

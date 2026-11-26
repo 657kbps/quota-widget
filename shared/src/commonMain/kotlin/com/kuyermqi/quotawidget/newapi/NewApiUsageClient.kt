@@ -1,6 +1,5 @@
 package com.kuyermqi.quotawidget.newapi
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
 import com.kuyermqi.quotawidget.domain.NEW_API_UNLIMITED_REMAINING_DISPLAY
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
@@ -8,12 +7,14 @@ import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.formatBalance
+import com.kuyermqi.quotawidget.domain.httpFailure
+import com.kuyermqi.quotawidget.network.requireValidBaseUrl
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.settings.DEFAULT_NEW_API_QUOTA_PER_USD
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -27,7 +28,7 @@ import kotlinx.serialization.json.Json
 import kotlin.math.abs
 
 class NewApiUsageClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -38,18 +39,21 @@ class NewApiUsageClient(
         apiKey: String,
         quotaPerUsd: Long = DEFAULT_NEW_API_QUOTA_PER_USD,
     ): QuotaSnapshot {
+        requireValidBaseUrl(baseUrl)
         val url = usageUrl(baseUrl)
         val response = try {
             httpClient.get(url) {
                 header(HttpHeaders.Authorization, "Bearer $apiKey")
                 accept(ContentType.Application.Json)
             }
-        } catch (e: ClientRequestException) {
+        } catch (e: ResponseException) {
             val status = e.response.status
-            if (status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden) {
-                throw SessionExpiredException("NewAPI Token 无效或已失效，请检查配置")
-            }
-            throw IllegalStateException("查询 NewAPI 额度失败: $status", e)
+            throw httpFailure(
+                statusCode = status.value,
+                sessionExpiredMessage = "NewAPI Token 无效或已失效，请检查配置",
+                failureMessage = "查询 NewAPI 额度失败: $status",
+                cause = e,
+            )
         }
         if (response.status == HttpStatusCode.Unauthorized ||
             response.status == HttpStatusCode.Forbidden
@@ -71,10 +75,6 @@ class NewApiUsageClient(
         }
         val data = envelope.data ?: throw IllegalStateException("NewAPI 返回数据为空")
         return toSnapshot(data, quotaPerUsd = quotaPerUsd)
-    }
-
-    fun close() {
-        httpClient.close()
     }
 
     companion object {

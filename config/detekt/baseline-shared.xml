@@ -1,0 +1,381 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CognitiveComplexMethod:UrlParsing.kt$internal fun parseHttpUrl(raw: String): HttpUrlParts?</ID>
+    <ID>ComplexCondition:AndroidPlatformSettingsRepository.kt$AndroidPlatformSettingsRepository$credentialsChanged || status == null || status == StoredWidgetStatus.NOT_CONFIGURED || status == StoredWidgetStatus.NEEDS_REAUTH</ID>
+    <ID>ComplexCondition:CodexAuthErrors.kt$CodexAuthErrors$lower.contains("request_forbidden") &amp;&amp; (lower.contains("country") || lower.contains("region") || lower.contains("territory"))</ID>
+    <ID>ComplexCondition:CommandCodeClient.kt$CommandCodeClient.Companion$monthlyPlan &gt; 0.0 || monthlyCredits &gt; 0.0 || purchased &gt; 0.0 || free &gt; 0.0</ID>
+    <ID>ComplexCondition:OpenCodeGoStatusParser.kt$month !in 1..12 || day !in 1..31 || hour &gt; 23 || minute &gt; 59 || second &gt; 60</ID>
+    <ID>ComplexCondition:PreferencesSettingsMappers.kt$credentialsChanged || status == null || status == StoredWidgetStatus.NOT_CONFIGURED || status == StoredWidgetStatus.NEEDS_REAUTH</ID>
+    <ID>ComplexCondition:WorkBuddyClient.kt$WorkBuddyClient$!needsName &amp;&amp; (account.enterpriseId.isNotBlank() || type.isBlank() || type == "personal")</ID>
+    <ID>CyclomaticComplexMethod:AntigravityClient.kt$AntigravityClient$private suspend fun fetchQuotaWindows(accessToken: String, projectId: String): List&lt;QuotaWindow&gt;</ID>
+    <ID>CyclomaticComplexMethod:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$private suspend fun resolveServerFnId(workspaceId: String, cookieHeader: String): String</ID>
+    <ID>CyclomaticComplexMethod:WorkBuddyClient.kt$WorkBuddyClient$private fun JsonObject.toCreditWindow(): CreditWindow?</ID>
+    <ID>FunctionOnlyReturningConstant:OpenCodeLegacyClient.kt$OpenCodeLegacyClient.Companion$internal fun encodeEmptyServerFnArgs(): String</ID>
+    <ID>InstanceOfCheckForException:ClineClient.kt$ClineClient$e is HttpStatusException</ID>
+    <ID>LongParameterList:PreferencesSettingsMappers.kt$( prefs: MutablePreferences, key: Preferences.Key&lt;String&gt;, value: String, platformId: String, field: String, crypto: SettingsCrypto, )</ID>
+    <ID>LoopWithTooManyJumpStatements:AntigravityClient.kt$AntigravityClient$for</ID>
+    <ID>LoopWithTooManyJumpStatements:ClineClient.kt$ClineClient$for</ID>
+    <ID>LoopWithTooManyJumpStatements:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$for</ID>
+    <ID>LoopWithTooManyJumpStatements:MagpieQuotaClient.kt$MagpieQuotaClient.Companion$for</ID>
+    <ID>LoopWithTooManyJumpStatements:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$while</ID>
+    <ID>LoopWithTooManyJumpStatements:SecureRandom.kt$for</ID>
+    <ID>LoopWithTooManyJumpStatements:SerovalServerFnDecoder.kt$SerovalServerFnDecoder$while</ID>
+    <ID>LoopWithTooManyJumpStatements:SerovalServerFnDecoder.kt$SerovalServerFnDecoder.JsLiteralParser$while</ID>
+    <ID>LoopWithTooManyJumpStatements:WorkBuddyClient.kt$WorkBuddyClient$for</ID>
+    <ID>LoopWithTooManyJumpStatements:ZhipuUsageClient.kt$ZhipuUsageClient.Companion$for</ID>
+    <ID>MagicNumber:AntigravityClient.kt$AntigravityClient$100.0</ID>
+    <ID>MagicNumber:AntigravityClient.kt$AntigravityClient$1000L</ID>
+    <ID>MagicNumber:AntigravityClient.kt$AntigravityClient$3600L</ID>
+    <ID>MagicNumber:AntigravityClient.kt$AntigravityClient$400</ID>
+    <ID>MagicNumber:AntigravityClient.kt$AntigravityClient$401</ID>
+    <ID>MagicNumber:AntigravityClient.kt$AntigravityClient$403</ID>
+    <ID>MagicNumber:AntigravityClient.kt$AntigravityClient$5</ID>
+    <ID>MagicNumber:AntigravityClient.kt$AntigravityClient$500</ID>
+    <ID>MagicNumber:AntigravityClient.kt$AntigravityClient$60</ID>
+    <ID>MagicNumber:AntigravityClient.kt$AntigravityClient.Companion$0xFF</ID>
+    <ID>MagicNumber:AntigravityClient.kt$AntigravityClient.Companion$24</ID>
+    <ID>MagicNumber:AntigravityClient.kt$AntigravityClient.Companion$32</ID>
+    <ID>MagicNumber:AntigravityClient.kt$AntigravityClient.Companion$4</ID>
+    <ID>MagicNumber:ClineClient.kt$ClineClient$0.01</ID>
+    <ID>MagicNumber:ClineClient.kt$ClineClient$100</ID>
+    <ID>MagicNumber:ClineClient.kt$ClineClient$100.0</ID>
+    <ID>MagicNumber:ClineClient.kt$ClineClient$1000L</ID>
+    <ID>MagicNumber:ClineClient.kt$ClineClient$10_000.0</ID>
+    <ID>MagicNumber:ClineClient.kt$ClineClient$1_000_000.0</ID>
+    <ID>MagicNumber:ClineClient.kt$ClineClient$400</ID>
+    <ID>MagicNumber:ClineClient.kt$ClineClient$401</ID>
+    <ID>MagicNumber:ClineClient.kt$ClineClient$403</ID>
+    <ID>MagicNumber:ClineClient.kt$ClineClient$404</ID>
+    <ID>MagicNumber:ClineClient.kt$ClineClient$5</ID>
+    <ID>MagicNumber:ClineClient.kt$ClineClient$60</ID>
+    <ID>MagicNumber:CodexDebugLog.kt$CodexDebugLog$160</ID>
+    <ID>MagicNumber:CodexDebugLog.kt$CodexDebugLog$240</ID>
+    <ID>MagicNumber:CodexDebugLog.kt$CodexDebugLog$4</ID>
+    <ID>MagicNumber:CodexOAuth.kt$60</ID>
+    <ID>MagicNumber:CodexOAuth.kt$CodexOAuth$6</ID>
+    <ID>MagicNumber:CodexOAuth.kt$CodexOAuth.Companion$16</ID>
+    <ID>MagicNumber:CodexOAuth.kt$CodexOAuth.Companion$3</ID>
+    <ID>MagicNumber:CodexOAuth.kt$CodexOAuth.Companion$32</ID>
+    <ID>MagicNumber:CodexOAuth.kt$CodexOAuth.Companion$4</ID>
+    <ID>MagicNumber:CodexOAuth.kt$CodexOAuth.Companion$64</ID>
+    <ID>MagicNumber:CodexQuotaProvider.kt$CodexQuotaProvider$6</ID>
+    <ID>MagicNumber:CodexUsageClient.kt$1000L</ID>
+    <ID>MagicNumber:CodexUsageClient.kt$CodexUsageClient$6</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient$1_000L</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient$3</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient$401</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient$403</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient.Companion$0xFF</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient.Companion$10.0</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient.Companion$100</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient.Companion$100.0</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient.Companion$1000L</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient.Companion$150.0</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient.Companion$16</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient.Companion$3</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient.Companion$30.0</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient.Companion$300.0</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient.Companion$32</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient.Companion$4</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient.Companion$40.0</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient.Companion$70.0</ID>
+    <ID>MagicNumber:CommandCodeClient.kt$CommandCodeClient.Companion$80.0</ID>
+    <ID>MagicNumber:GoPageUsageParser.kt$GoPageUsageParser$480</ID>
+    <ID>MagicNumber:HttpClientFactory.android.kt$15</ID>
+    <ID>MagicNumber:HttpClientFactory.android.kt$20</ID>
+    <ID>MagicNumber:HttpStatusException.kt$500</ID>
+    <ID>MagicNumber:HttpStatusException.kt$599</ID>
+    <ID>MagicNumber:JsonSupport.kt$100.0</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$10</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$100</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$100.0</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$10_000_000_000.0</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$11</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$12</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$146_097L</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$153</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$1970</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$1_000.0</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$1_000L</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$23</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$23L</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$28</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$29</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$2_592_000.0</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$3</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$30</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$31</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$365</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$3_600.0</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$3_600L</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$4</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$400</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$5</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$59</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$59L</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$6</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$60.0</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$604_800.0</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$60L</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$719_468L</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$8</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$86_400.0</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$86_400L</ID>
+    <ID>MagicNumber:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$9</ID>
+    <ID>MagicNumber:MagpieQuotaClient.kt$MagpieQuotaClient.Companion$1000L</ID>
+    <ID>MagicNumber:Models.kt$10</ID>
+    <ID>MagicNumber:Models.kt$10.0</ID>
+    <ID>MagicNumber:Models.kt$100</ID>
+    <ID>MagicNumber:Models.kt$100.0</ID>
+    <ID>MagicNumber:Models.kt$10_000.0</ID>
+    <ID>MagicNumber:Models.kt$120</ID>
+    <ID>MagicNumber:Models.kt$1440</ID>
+    <ID>MagicNumber:Models.kt$15</ID>
+    <ID>MagicNumber:Models.kt$180</ID>
+    <ID>MagicNumber:Models.kt$1_000.0</ID>
+    <ID>MagicNumber:Models.kt$1_000_000.0</ID>
+    <ID>MagicNumber:Models.kt$1_000_000_000.0</ID>
+    <ID>MagicNumber:Models.kt$24L</ID>
+    <ID>MagicNumber:Models.kt$30</ID>
+    <ID>MagicNumber:Models.kt$3600L</ID>
+    <ID>MagicNumber:Models.kt$60</ID>
+    <ID>MagicNumber:Models.kt$6L</ID>
+    <ID>MagicNumber:Models.kt$720</ID>
+    <ID>MagicNumber:Models.kt$8L</ID>
+    <ID>MagicNumber:NewApiUsageClient.kt$NewApiUsageClient.Companion$0.01</ID>
+    <ID>MagicNumber:NewApiUsageClient.kt$NewApiUsageClient.Companion$100.0</ID>
+    <ID>MagicNumber:NewApiUsageClient.kt$NewApiUsageClient.Companion$1000L</ID>
+    <ID>MagicNumber:NewApiUsageClient.kt$NewApiUsageClient.Companion$1_000_000_000_000L</ID>
+    <ID>MagicNumber:OpenCodeGoApiUsageParser.kt$OpenCodeGoApiUsageParser$100.0</ID>
+    <ID>MagicNumber:OpenCodeGoApiUsageParser.kt$OpenCodeGoApiUsageParser$10_000_000_000L</ID>
+    <ID>MagicNumber:OpenCodeGoApiUsageParser.kt$OpenCodeGoApiUsageParser$1_000L</ID>
+    <ID>MagicNumber:OpenCodeGoClient.kt$OpenCodeGoClient$120</ID>
+    <ID>MagicNumber:OpenCodeGoClient.kt$OpenCodeGoClient$160</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$100</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$12</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$146_097L</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$153</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$1_000L</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$23</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$3</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$31</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$365</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$399</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$3_600</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$3_600L</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$4</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$400</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$5</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$59</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$6</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$60</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$60L</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$7</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$719_468L</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$8</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$86_400L</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$9</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$OpenCodeGoStatusParser$100.0</ID>
+    <ID>MagicNumber:OpenCodeGoStatusParser.kt$OpenCodeGoStatusParser$1_000L</ID>
+    <ID>MagicNumber:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$120</ID>
+    <ID>MagicNumber:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$160</ID>
+    <ID>MagicNumber:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$400</ID>
+    <ID>MagicNumber:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$60</ID>
+    <ID>MagicNumber:OpenCodeLegacyClient.kt$OpenCodeLegacyClient.Companion$0xFF</ID>
+    <ID>MagicNumber:OpenCodeLegacyClient.kt$OpenCodeLegacyClient.Companion$16</ID>
+    <ID>MagicNumber:OpenCodeLegacyClient.kt$OpenCodeLegacyClient.Companion$160</ID>
+    <ID>MagicNumber:Redirects.kt$301</ID>
+    <ID>MagicNumber:Redirects.kt$302</ID>
+    <ID>MagicNumber:Redirects.kt$303</ID>
+    <ID>MagicNumber:Redirects.kt$307</ID>
+    <ID>MagicNumber:Redirects.kt$308</ID>
+    <ID>MagicNumber:ResetTime.kt$1000L</ID>
+    <ID>MagicNumber:SecureRandom.kt$0xFF</ID>
+    <ID>MagicNumber:SecureRandom.kt$256</ID>
+    <ID>MagicNumber:SecureRandom.kt$4</ID>
+    <ID>MagicNumber:SerovalServerFnDecoder.kt$SerovalServerFnDecoder$11</ID>
+    <ID>MagicNumber:SerovalServerFnDecoder.kt$SerovalServerFnDecoder$12</ID>
+    <ID>MagicNumber:SerovalServerFnDecoder.kt$SerovalServerFnDecoder$16</ID>
+    <ID>MagicNumber:SerovalServerFnDecoder.kt$SerovalServerFnDecoder.JsLiteralParser$16</ID>
+    <ID>MagicNumber:SerovalServerFnDecoder.kt$SerovalServerFnDecoder.JsLiteralParser$3</ID>
+    <ID>MagicNumber:SerovalServerFnDecoder.kt$SerovalServerFnDecoder.JsLiteralParser$4</ID>
+    <ID>MagicNumber:SerovalServerFnDecoder.kt$SerovalServerFnDecoder.JsLiteralParser$5</ID>
+    <ID>MagicNumber:Time.android.kt$1000L</ID>
+    <ID>MagicNumber:Time.android.kt$10_000_000_000L</ID>
+    <ID>MagicNumber:UrlParsing.kt$3</ID>
+    <ID>MagicNumber:UrlParsing.kt$65535</ID>
+    <ID>MagicNumber:UrlParsing.kt$HttpUrlParts$0xFC00</ID>
+    <ID>MagicNumber:UrlParsing.kt$HttpUrlParts$0xFE00</ID>
+    <ID>MagicNumber:UrlParsing.kt$HttpUrlParts$0xFE80</ID>
+    <ID>MagicNumber:UrlParsing.kt$HttpUrlParts$0xFFC0</ID>
+    <ID>MagicNumber:UrlParsing.kt$HttpUrlParts$10</ID>
+    <ID>MagicNumber:UrlParsing.kt$HttpUrlParts$127</ID>
+    <ID>MagicNumber:UrlParsing.kt$HttpUrlParts$16</ID>
+    <ID>MagicNumber:UrlParsing.kt$HttpUrlParts$168</ID>
+    <ID>MagicNumber:UrlParsing.kt$HttpUrlParts$169</ID>
+    <ID>MagicNumber:UrlParsing.kt$HttpUrlParts$172</ID>
+    <ID>MagicNumber:UrlParsing.kt$HttpUrlParts$192</ID>
+    <ID>MagicNumber:UrlParsing.kt$HttpUrlParts$254</ID>
+    <ID>MagicNumber:UrlParsing.kt$HttpUrlParts$255</ID>
+    <ID>MagicNumber:UrlParsing.kt$HttpUrlParts$31</ID>
+    <ID>MagicNumber:UrlParsing.kt$HttpUrlParts$4</ID>
+    <ID>MagicNumber:WidgetErrorKind.kt$WidgetErrorKind.Companion$100</ID>
+    <ID>MagicNumber:WidgetErrorKind.kt$WidgetErrorKind.Companion$599</ID>
+    <ID>MagicNumber:WorkBuddyClient.kt$WorkBuddyClient$0xFF</ID>
+    <ID>MagicNumber:WorkBuddyClient.kt$WorkBuddyClient$100.0</ID>
+    <ID>MagicNumber:WorkBuddyClient.kt$WorkBuddyClient$1000L</ID>
+    <ID>MagicNumber:WorkBuddyClient.kt$WorkBuddyClient$1001</ID>
+    <ID>MagicNumber:WorkBuddyClient.kt$WorkBuddyClient$11001</ID>
+    <ID>MagicNumber:WorkBuddyClient.kt$WorkBuddyClient$11217</ID>
+    <ID>MagicNumber:WorkBuddyClient.kt$WorkBuddyClient$12151</ID>
+    <ID>MagicNumber:WorkBuddyClient.kt$WorkBuddyClient$16</ID>
+    <ID>MagicNumber:WorkBuddyClient.kt$WorkBuddyClient$4</ID>
+    <ID>MagicNumber:WorkBuddyClient.kt$WorkBuddyClient$401</ID>
+    <ID>MagicNumber:WorkBuddyClient.kt$WorkBuddyClient$403</ID>
+    <ID>MagicNumber:WorkBuddyClient.kt$WorkBuddyClient$60_000L</ID>
+    <ID>MagicNumber:ZhipuUsageClient.kt$100.0</ID>
+    <ID>MagicNumber:ZhipuUsageClient.kt$1_000</ID>
+    <ID>MagicNumber:ZhipuUsageClient.kt$1_001</ID>
+    <ID>MagicNumber:ZhipuUsageClient.kt$200</ID>
+    <ID>MagicNumber:ZhipuUsageClient.kt$401</ID>
+    <ID>MagicNumber:ZhipuUsageClient.kt$ZhipuUsageClient.Companion$1_000L</ID>
+    <ID>MagicNumber:ZhipuUsageClient.kt$ZhipuUsageClient.Companion$3</ID>
+    <ID>MagicNumber:ZhipuUsageClient.kt$ZhipuUsageClient.Companion$6</ID>
+    <ID>MatchingDeclarationName:PreferencesSettingsMappers.kt$SettingsCrypto</ID>
+    <ID>MatchingDeclarationName:StoredCredentials.kt$StoredCredentialPresence</ID>
+    <ID>MatchingDeclarationName:UrlParsing.kt$HttpUrlParts</ID>
+    <ID>MaxLineLength:Models.kt$BalanceSnapshot$/** DeepSeek balance API result; mapped into [QuotaSnapshot] by [com.kuyermqi.quotawidget.provider.DeepSeekQuotaProvider]. */</ID>
+    <ID>NewLineAtEndOfFile:WidgetRenderSnapshot.kt$com.kuyermqi.quotawidget.settings.WidgetRenderSnapshot.kt</ID>
+    <ID>PrintStackTrace:BalanceRefreshInteractor.kt$BalanceRefreshInteractor$e</ID>
+    <ID>RethrowCaughtException:ClineClient.kt$ClineClient$throw e</ID>
+    <ID>ReturnCount:AntigravityClient.kt$AntigravityClient$private fun SessionPlatformSettings.isExpiring(): Boolean</ID>
+    <ID>ReturnCount:AntigravityClient.kt$AntigravityClient$private suspend fun loadProject(accessToken: String, existingProject: String): ProjectInfo</ID>
+    <ID>ReturnCount:BalanceRefreshInteractor.kt$BalanceRefreshInteractor$private suspend fun refreshInternal(platformId: String): BalanceRefreshResult</ID>
+    <ID>ReturnCount:BalanceRefreshInteractor.kt$internal fun isRetryableFailure(error: Throwable): Boolean</ID>
+    <ID>ReturnCount:BaseUrl.kt$fun classifyBaseUrl(baseUrl: String): BaseUrlClass</ID>
+    <ID>ReturnCount:ClineClient.kt$ClineClient$private fun JsonObject?.toBalanceText(): String?</ID>
+    <ID>ReturnCount:ClineClient.kt$ClineClient$private fun SessionPlatformSettings.isExpiring(): Boolean</ID>
+    <ID>ReturnCount:ClineClient.kt$ClineClient$private suspend fun fetchBalance(me: JsonObject, settings: SessionPlatformSettings): JsonObject?</ID>
+    <ID>ReturnCount:ClineClient.kt$ClineClient$suspend fun pollDeviceToken(session: ClineDeviceSession): ClineDevicePoll</ID>
+    <ID>ReturnCount:CodexAuthErrors.kt$CodexAuthErrors$fun classify(status: HttpStatusCode, body: String): Kind</ID>
+    <ID>ReturnCount:CodexAuthErrors.kt$CodexAuthErrors$private fun isRegionRestricted(body: String): Boolean</ID>
+    <ID>ReturnCount:CodexDebugLog.kt$CodexDebugLog$fun summarizeOAuthErrorBody(body: String): String</ID>
+    <ID>ReturnCount:CodexUsageClient.kt$private fun CodexWindowDto.resetInSec(nowEpochMs: Long): Long?</ID>
+    <ID>ReturnCount:CommandCodeClient.kt$CommandCodeClient.Companion$fun parseLoginCallback(url: String): CommandCodeCallback?</ID>
+    <ID>ReturnCount:CommandCodeClient.kt$CommandCodeClient.Companion$private fun JsonObject.toLimitWindow( kind: QuotaWindowKind, nowEpochMs: Long, ): QuotaWindow?</ID>
+    <ID>ReturnCount:DeepSeekBalanceClient.kt$DeepSeekBalanceClient.Companion$internal fun selectBalance( infos: List&lt;BalanceInfoDto&gt;, preferred: CurrencyPreference, ): BalanceInfoDto?</ID>
+    <ID>ReturnCount:GoPageUsageParser.kt$GoPageUsageParser$fun parse(html: String): LiteSubscriptionDto?</ID>
+    <ID>ReturnCount:JsonSupport.kt$internal fun JsonObject.stringOrNull(key: String): String?</ID>
+    <ID>ReturnCount:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$internal fun KimiCodeWindowKindDto.durationSeconds(): Long?</ID>
+    <ID>ReturnCount:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$internal fun parseIso8601EpochMs(raw: String?): Long?</ID>
+    <ID>ReturnCount:KimiCodeUsageClient.kt$KimiCodeUsageClient.Companion$internal fun resetInSeconds(resetTime: JsonElement?, nowEpochMs: Long): Long?</ID>
+    <ID>ReturnCount:Models.kt$fun formatNewApiUsageWidgetTitle( snapshot: QuotaSnapshot, mode: UsageDisplayMode, ): String?</ID>
+    <ID>ReturnCount:Models.kt$fun newApiUsageProgressUsedPercent( snapshot: QuotaSnapshot, mode: UsageDisplayMode, ): Double?</ID>
+    <ID>ReturnCount:NewApiUsageClient.kt$NewApiUsageClient.Companion$fun formatQuotaUsd( quotaUnits: Long, quotaPerUsd: Long = DEFAULT_NEW_API_QUOTA_PER_USD, ): String</ID>
+    <ID>ReturnCount:NewApiUsageClient.kt$NewApiUsageClient.Companion$fun usedPercent( totalGranted: Long, totalUsed: Long, unlimited: Boolean, totalAvailable: Long = 0L, ): Double?</ID>
+    <ID>ReturnCount:OpenCodeGoApiUsageParser.kt$OpenCodeGoApiUsageParser$private fun OpenCodeGoApiWindowDto.resolveResetInSec(nowEpochMs: Long): Long?</ID>
+    <ID>ReturnCount:OpenCodeGoStatusParser.kt$OpenCodeGoStatusParser$fun parse(body: String, nowEpochMs: Long): List&lt;QuotaWindow&gt;</ID>
+    <ID>ReturnCount:OpenCodeGoStatusParser.kt$OpenCodeGoStatusParser$private fun OpenCodeGoMeterDto.toWindow( kind: QuotaWindowKind, nowEpochMs: Long, fallbackResetsAt: String? = null, ): QuotaWindow?</ID>
+    <ID>ReturnCount:OpenCodeGoStatusParser.kt$internal fun parseIsoInstantMillis(value: String?): Long?</ID>
+    <ID>ReturnCount:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$private suspend fun resolveServerFnId(workspaceId: String, cookieHeader: String): String</ID>
+    <ID>ReturnCount:OpenCodeLegacyClient.kt$OpenCodeLegacyClient.Companion$fun cookieHeaderFor(authCookieOrHeader: String): String</ID>
+    <ID>ReturnCount:OpenCodeLegacyClient.kt$OpenCodeLegacyClient.Companion$internal fun findWorkspacesServerFnId(text: String): String?</ID>
+    <ID>ReturnCount:RecoveringAead.kt$RecoveringAead$fun load(): AeadLoadResult</ID>
+    <ID>ReturnCount:Redirects.kt$fun classifyRedirect(fromUrl: String, toUrl: String): RedirectDecision</ID>
+    <ID>ReturnCount:ResetTime.kt$fun QuotaWindow.resetAtEpochMs(fetchedAtEpochMs: Long): Long?</ID>
+    <ID>ReturnCount:SemVer.kt$SemVer$override fun compareTo(other: SemVer): Int</ID>
+    <ID>ReturnCount:SerovalServerFnDecoder.kt$SerovalServerFnDecoder$fun decodeLiteSubscription(body: String): LiteSubscriptionDto?</ID>
+    <ID>ReturnCount:SerovalServerFnDecoder.kt$SerovalServerFnDecoder$fun decodeWorkspaces(body: String): List&lt;OpenCodeWorkspace&gt;?</ID>
+    <ID>ReturnCount:SerovalServerFnDecoder.kt$SerovalServerFnDecoder$internal fun firstChunkPayload(body: String): String?</ID>
+    <ID>ReturnCount:SerovalServerFnDecoder.kt$SerovalServerFnDecoder$private fun parseRootValue(payload: String): Any?</ID>
+    <ID>ReturnCount:SerovalServerFnDecoder.kt$SerovalServerFnDecoder$private fun usageFrom(value: Any?): LiteUsageDto?</ID>
+    <ID>ReturnCount:SerovalServerFnDecoder.kt$SerovalServerFnDecoder.JsLiteralParser$fun parseValue(): Any?</ID>
+    <ID>ReturnCount:Time.android.kt$actual fun parseDateTimeToEpochMs(value: String): Long?</ID>
+    <ID>ReturnCount:UpdateCheckInteractor.kt$UpdateCheckInteractor$suspend fun check(currentVersionName: String): UpdateAvailability?</ID>
+    <ID>ReturnCount:UpdateCheckInteractor.kt$UpdateCheckInteractor$suspend fun checkManually(currentVersionName: String): UpdateCheckOutcome</ID>
+    <ID>ReturnCount:UrlParsing.kt$HttpUrlParts$private fun ipv4Octets(): List&lt;Int&gt;?</ID>
+    <ID>ReturnCount:UrlParsing.kt$internal fun parseHttpUrl(raw: String): HttpUrlParts?</ID>
+    <ID>ReturnCount:UrlParsing.kt$internal fun resolveRedirectUrl(currentUrl: String, location: String): String?</ID>
+    <ID>ReturnCount:UsageDisplayPrefs.kt$UsageDisplayPrefKeyScheme$fun keyName(platformId: String, field: UsageDisplayPrefField): String?</ID>
+    <ID>ReturnCount:WorkBuddyClient.kt$WorkBuddyClient$private fun JsonObject.toCreditWindow(): CreditWindow?</ID>
+    <ID>ReturnCount:WorkBuddyClient.kt$WorkBuddyClient$private fun JsonObject.toEnterpriseWindow(): CreditWindow?</ID>
+    <ID>ReturnCount:WorkBuddyClient.kt$WorkBuddyClient$private fun SessionPlatformSettings.isExpiring(): Boolean</ID>
+    <ID>ReturnCount:WorkBuddyClient.kt$WorkBuddyClient$private suspend fun withEnterprise( region: WorkBuddyRegion, token: WorkBuddyToken, account: WorkBuddyAccount, ): WorkBuddyAccount</ID>
+    <ID>ReturnCount:WorkBuddyClient.kt$WorkBuddyClient$suspend fun fetchLoginAccount( region: WorkBuddyRegion, state: String, token: WorkBuddyToken, ): WorkBuddyAccount?</ID>
+    <ID>ReturnCount:WorkBuddyClient.kt$WorkBuddyClient$suspend fun pollLoginToken(region: WorkBuddyRegion, state: String): WorkBuddyToken?</ID>
+    <ID>ReturnCount:ZhipuUsageClient.kt$internal fun ZhipuUsageEnvelope.failureOrNull(): Exception?</ID>
+    <ID>SwallowedException:AntigravityClient.kt$AntigravityClient$e: ClientRequestException</ID>
+    <ID>SwallowedException:AntigravityClient.kt$AntigravityClient$e: Exception</ID>
+    <ID>SwallowedException:AntigravityClient.kt$AntigravityClient$e: SessionExpiredException</ID>
+    <ID>SwallowedException:ClineClient.kt$ClineClient$e: Exception</ID>
+    <ID>SwallowedException:SingleFlight.kt$SingleFlight$e: CancellationException</ID>
+    <ID>SwallowedException:WorkBuddyClient.kt$WorkBuddyClient$e: SessionExpiredException</ID>
+    <ID>ThrowsCount:AntigravityClient.kt$AntigravityClient$private suspend fun call( base: String, method: String, accessToken: String, body: JsonObject = buildJsonObject { put("metadata", buildJsonObject { put("ideType", "ANTIGRAVITY") }) }, ): JsonObject</ID>
+    <ID>ThrowsCount:AntigravityClient.kt$AntigravityClient$private suspend fun loadProject(accessToken: String, existingProject: String): ProjectInfo</ID>
+    <ID>ThrowsCount:AntigravityClient.kt$AntigravityClient$suspend fun refresh( settings: SessionPlatformSettings, save: suspend (SessionPlatformSettings) -&gt; Unit, ): SessionPlatformSettings</ID>
+    <ID>ThrowsCount:ClineClient.kt$ClineClient$private suspend fun clineApi( path: String, method: String = "GET", body: JsonObject? = null, lapsedStatuses: Set&lt;Int&gt; = setOf(401, 403), bearer: String = "", ): JsonObject</ID>
+    <ID>ThrowsCount:ClineClient.kt$ClineClient$suspend fun pollDeviceToken(session: ClineDeviceSession): ClineDevicePoll</ID>
+    <ID>ThrowsCount:CodexAuthErrors.kt$CodexAuthErrors$fun throwForHttpFailure( status: HttpStatusCode, body: String, source: String, cause: Throwable? = null, ): Nothing</ID>
+    <ID>ThrowsCount:CodexQuotaProvider.kt$CodexQuotaProvider$private suspend fun refreshAndPersist( repo: PlatformSettingsRepository, settings: CodexSettings, force: Boolean, ): CodexSettings</ID>
+    <ID>ThrowsCount:CommandCodeClient.kt$CommandCodeClient$private suspend fun accountJson(path: String, apiKey: String): JsonObject</ID>
+    <ID>ThrowsCount:CommandCodeClient.kt$CommandCodeClient$suspend fun fetchQuota( settings: SessionPlatformSettings, save: suspend (SessionPlatformSettings) -&gt; Unit, ): QuotaSnapshot</ID>
+    <ID>ThrowsCount:KimiCodeUsageClient.kt$KimiCodeUsageClient$suspend fun fetchUsage( apiKey: String, region: ServiceRegion = ServiceRegion.CN, nowEpochMs: Long = currentTimeMillis(), ): QuotaSnapshot</ID>
+    <ID>ThrowsCount:MagpieQuotaClient.kt$MagpieQuotaClient$suspend fun fetchProviders( baseUrl: String, apiKey: String, ): List&lt;MagpieProvider&gt;</ID>
+    <ID>ThrowsCount:NewApiUsageClient.kt$NewApiUsageClient$suspend fun fetchUsage( baseUrl: String, apiKey: String, quotaPerUsd: Long = DEFAULT_NEW_API_QUOTA_PER_USD, ): QuotaSnapshot</ID>
+    <ID>ThrowsCount:OpenCodeGoClient.kt$OpenCodeGoClient$private suspend fun getApiJson(apiKey: String): String</ID>
+    <ID>ThrowsCount:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$private suspend fun invokeServerFn( serverFnId: String, cookieHeader: String, argsJson: String?, referer: String, clearLiteCacheOnNotFound: Boolean = false, ): String</ID>
+    <ID>ThrowsCount:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$private suspend fun resolveServerFnId(workspaceId: String, cookieHeader: String): String</ID>
+    <ID>ThrowsCount:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$suspend fun fetchQuota(workspaceId: String, authCookie: String): QuotaSnapshot</ID>
+    <ID>ThrowsCount:Redirects.kt$private suspend fun Sender.executeFollowingRedirects(initial: HttpRequestBuilder): HttpClientCall</ID>
+    <ID>ThrowsCount:WorkBuddyClient.kt$WorkBuddyClient$suspend fun refresh( region: WorkBuddyRegion, settings: SessionPlatformSettings, save: suspend (SessionPlatformSettings) -&gt; Unit, ): SessionPlatformSettings</ID>
+    <ID>ThrowsCount:ZhipuUsageClient.kt$ZhipuUsageClient$suspend fun fetchUsage( apiKey: String, region: ServiceRegion = ServiceRegion.CN, nowEpochMs: Long = currentTimeMillis(), ): QuotaSnapshot</ID>
+    <ID>TooGenericExceptionCaught:AntigravityClient.kt$AntigravityClient$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:BalanceRefreshInteractor.kt$BalanceRefreshInteractor$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ClineClient.kt$ClineClient$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:CodexQuotaProvider.kt$CodexQuotaProvider$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MagpieQuotaClient.kt$MagpieQuotaClient$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:NewApiUsageClient.kt$NewApiUsageClient$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:OpenCodeGoClient.kt$OpenCodeGoClient$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:RecoveringAead.kt$RecoveringAead$error: Throwable</ID>
+    <ID>TooGenericExceptionCaught:SingleFlight.kt$SingleFlight$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:SuspendRunCatching.kt$e: Throwable</ID>
+    <ID>TooManyFunctions:AndroidPlatformSettingsRepository.kt$AndroidPlatformSettingsRepository : PlatformSettingsRepository</ID>
+    <ID>TooManyFunctions:AntigravityClient.kt$AntigravityClient</ID>
+    <ID>TooManyFunctions:ClineClient.kt$ClineClient</ID>
+    <ID>TooManyFunctions:CodexOAuth.kt$CodexOAuth$Companion</ID>
+    <ID>TooManyFunctions:CommandCodeClient.kt$CommandCodeClient$Companion</ID>
+    <ID>TooManyFunctions:KimiCodeUsageClient.kt$KimiCodeUsageClient$Companion</ID>
+    <ID>TooManyFunctions:Models.kt$com.kuyermqi.quotawidget.domain.Models.kt</ID>
+    <ID>TooManyFunctions:NewApiUsageClient.kt$NewApiUsageClient$Companion</ID>
+    <ID>TooManyFunctions:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$Companion</ID>
+    <ID>TooManyFunctions:PlatformSettingsRepository.kt$PlatformSettingsRepository</ID>
+    <ID>TooManyFunctions:PreferencesSettingsMappers.kt$com.kuyermqi.quotawidget.settings.PreferencesSettingsMappers.kt</ID>
+    <ID>TooManyFunctions:SettingsPreferenceKeys.kt$com.kuyermqi.quotawidget.settings.SettingsPreferenceKeys.kt</ID>
+    <ID>TooManyFunctions:WorkBuddyClient.kt$WorkBuddyClient</ID>
+    <ID>UnusedParameter:Models.kt$mode: UsageDisplayMode</ID>
+    <ID>UseCheckOrError:AntigravityClient.kt$AntigravityClient$throw IllegalStateException("Antigravity 登录响应缺少令牌")</ID>
+    <ID>UseCheckOrError:ClineClient.kt$ClineClient$throw IllegalStateException( "Cline 请求失败: ${root.stringOrNull("error").orEmpty()}", )</ID>
+    <ID>UseCheckOrError:ClineClient.kt$ClineClient$throw IllegalStateException("Cline 登录响应不完整")</ID>
+    <ID>UseCheckOrError:ClineClient.kt$ClineClient$throw IllegalStateException("Cline 登录响应缺少令牌")</ID>
+    <ID>UseCheckOrError:ClineClient.kt$ClineClient$throw IllegalStateException("Cline 登录失败: $error")</ID>
+    <ID>UseCheckOrError:ClineClient.kt$ClineClient$throw IllegalStateException("Cline 返回数据为空")</ID>
+    <ID>UseCheckOrError:CommandCodeClient.kt$CommandCodeClient$throw (lastError ?: IllegalStateException("Command Code 登录失败"))</ID>
+    <ID>UseCheckOrError:KimiCodeUsageClient.kt$KimiCodeUsageClient$throw IllegalStateException("Kimi Code 返回为空")</ID>
+    <ID>UseCheckOrError:MagpieQuotaClient.kt$MagpieQuotaClient$throw IllegalStateException("Magpie 返回为空")</ID>
+    <ID>UseCheckOrError:NewApiUsageClient.kt$NewApiUsageClient$throw IllegalStateException("NewAPI 返回为空")</ID>
+    <ID>UseCheckOrError:NewApiUsageClient.kt$NewApiUsageClient$throw IllegalStateException("NewAPI 返回数据为空")</ID>
+    <ID>UseCheckOrError:OpenCodeGoClient.kt$OpenCodeGoClient$throw IllegalStateException("OpenCode Go 用量接口返回了非 JSON 响应")</ID>
+    <ID>UseCheckOrError:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$throw IllegalStateException( "OpenCode 接口返回异常 (prefix=${text.take(160).replace('\n', ' ')})", )</ID>
+    <ID>UseCheckOrError:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$throw IllegalStateException( "无法解析 OpenCode Go 额度 (pageLen=${html.length} prefix=${html.take(120).replace('\n', ' ')})", )</ID>
+    <ID>UseCheckOrError:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$throw IllegalStateException( "无法解析 Workspace 列表 (prefix=${body.take(160).replace('\n', ' ')})", )</ID>
+    <ID>UseCheckOrError:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$throw IllegalStateException("无法定位 OpenCode Go 额度接口")</ID>
+    <ID>UseCheckOrError:OpenCodeLegacyClient.kt$OpenCodeLegacyClient$throw IllegalStateException("无法定位 OpenCode Workspace 列表接口 (scanned=$scanned)")</ID>
+    <ID>UseCheckOrError:Redirects.kt$throw IllegalStateException("重定向目标无效，已停止请求")</ID>
+    <ID>UseCheckOrError:WorkBuddyClient.kt$WorkBuddyClient$throw IllegalStateException("${region.appName} 刷新登录失败")</ID>
+    <ID>UseCheckOrError:WorkBuddyClient.kt$WorkBuddyClient$throw IllegalStateException("${region.appName} 未返回登录地址")</ID>
+    <ID>UseCheckOrError:ZhipuUsageClient.kt$ZhipuUsageClient$throw IllegalStateException("Zhipu 返回为空")</ID>
+    <ID>UseCheckOrError:ZhipuUsageClient.kt$ZhipuUsageClient$throw IllegalStateException("Zhipu 返回数据为空")</ID>
+  </CurrentIssues>
+</SmellBaseline>

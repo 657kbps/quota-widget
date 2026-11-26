@@ -1,11 +1,14 @@
 package com.kuyermqi.quotawidget.opencode
 
-import com.kuyermqi.quotawidget.deepseek.createHttpClient
+import com.kuyermqi.quotawidget.domain.HttpStatusException
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
+import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.formatUsagePrimaryDisplay
 import com.kuyermqi.quotawidget.domain.formatUsageRemainingRolling
+import com.kuyermqi.quotawidget.domain.httpFailure
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.util.currentTimeMillis
@@ -29,7 +32,7 @@ import kotlinx.serialization.json.Json
  * `GET /zen/go/v1/usage` instead of a browser session.
  */
 class OpenCodeGoClient(
-    private val httpClient: HttpClient = createHttpClient(),
+    private val httpClient: HttpClient,
 ) {
     private val legacyClient = OpenCodeLegacyClient(httpClient)
 
@@ -115,20 +118,16 @@ class OpenCodeGoClient(
 
     private fun snapshotFromWindows(windows: List<QuotaWindow>): QuotaSnapshot {
         if (windows.isEmpty()) {
-            throw IllegalStateException("OpenCode Go 未开通或额度不可用")
+            throw QuotaUnavailableException("OpenCode Go 未开通或额度不可用")
         }
         return QuotaSnapshot(
             platformId = PlatformIds.OPENCODE_GO,
             platformName = PlatformRegistry.displayName(PlatformIds.OPENCODE_GO),
             windows = windows,
             primaryDisplay = formatUsageRemainingRolling(windows)
-                ?: formatUsagePrimaryDisplay(windows),
+                ?: formatUsagePrimaryDisplay(windows, NeutralUsageLabels),
             updatedAtEpochMs = currentTimeMillis(),
         )
-    }
-
-    fun close() {
-        httpClient.close()
     }
 
     private suspend fun getJson(
@@ -148,19 +147,17 @@ class OpenCodeGoClient(
                 }
             }
         } catch (e: ResponseException) {
-            when (e.response.status) {
-                HttpStatusCode.Unauthorized,
-                HttpStatusCode.Forbidden,
-                -> throw SessionExpiredException("OpenCode 会话已失效")
-                HttpStatusCode.NotFound -> throw IllegalStateException(
-                    "OpenCode 接口不存在或 Workspace 无效",
-                    e,
-                )
-                else -> throw IllegalStateException(
-                    "OpenCode 请求失败 HTTP ${e.response.status.value}: ${e.message}",
-                    e,
-                )
-            }
+            val status = e.response.status
+            throw httpFailure(
+                statusCode = status.value,
+                sessionExpiredMessage = "OpenCode 会话已失效",
+                failureMessage = if (status == HttpStatusCode.NotFound) {
+                    "OpenCode 接口不存在或 Workspace 无效"
+                } else {
+                    "OpenCode 请求失败 HTTP ${status.value}: ${e.message}"
+                },
+                cause = e,
+            )
         }
         val body = response.bodyAsText()
         val trimmed = body.trimStart()
@@ -186,29 +183,28 @@ class OpenCodeGoClient(
             val subscriptionRequired = upstreamBody.contains("subscription", ignoreCase = true) ||
                 upstreamBody.contains("EntitlementError", ignoreCase = true)
             when (e.response.status) {
-                HttpStatusCode.Unauthorized -> throw IllegalStateException(
+                HttpStatusCode.Unauthorized -> throw SessionExpiredException(
                     "OpenCode API Key 无效或已过期",
-                    e,
                 )
-                HttpStatusCode.Forbidden -> throw IllegalStateException(
-                    if (subscriptionRequired) {
-                        "OpenCode Go 订阅未开通或已过期"
-                    } else {
-                        "OpenCode 拒绝访问 (HTTP 403)"
-                    },
-                    e,
+                HttpStatusCode.Forbidden -> if (subscriptionRequired) {
+                    throw QuotaUnavailableException("OpenCode Go 订阅未开通或已过期")
+                } else {
+                    throw SessionExpiredException("OpenCode 拒绝访问 (HTTP 403)")
+                }
+                HttpStatusCode.TooManyRequests -> throw HttpStatusException(
+                    statusCode = HttpStatusCode.TooManyRequests.value,
+                    message = "OpenCode 请求过于频繁，请稍后重试",
+                    cause = e,
                 )
-                HttpStatusCode.TooManyRequests -> throw IllegalStateException(
-                    "OpenCode 请求过于频繁，请稍后重试",
-                    e,
+                HttpStatusCode.NotFound -> throw HttpStatusException(
+                    statusCode = HttpStatusCode.NotFound.value,
+                    message = "OpenCode Go 用量接口不存在",
+                    cause = e,
                 )
-                HttpStatusCode.NotFound -> throw IllegalStateException(
-                    "OpenCode Go 用量接口不存在",
-                    e,
-                )
-                else -> throw IllegalStateException(
-                    "OpenCode Go 用量请求失败 HTTP ${e.response.status.value}: ${e.message}",
-                    e,
+                else -> throw HttpStatusException(
+                    statusCode = e.response.status.value,
+                    message = "OpenCode Go 用量请求失败 HTTP ${e.response.status.value}: ${e.message}",
+                    cause = e,
                 )
             }
         }

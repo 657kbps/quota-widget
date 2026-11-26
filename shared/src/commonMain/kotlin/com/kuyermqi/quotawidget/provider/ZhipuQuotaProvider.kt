@@ -8,7 +8,7 @@ import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.zhipu.ZhipuUsageClient
 
 class ZhipuQuotaProvider(
-    private val client: ZhipuUsageClient = ZhipuUsageClient(),
+    private val client: ZhipuUsageClient,
 ) : QuotaProvider {
     override val platform: QuotaPlatform =
         PlatformRegistry.find(PlatformIds.ZHIPU)

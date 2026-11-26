@@ -13,22 +13,21 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.3.5",
-    "@tanstack/react-devtools": "^0.10.14",
     "@tanstack/react-query": "^5.107.1",
     "@tanstack/react-router": "^1.170.46",
-    "@tanstack/react-router-devtools": "^1.167.2",
-    "@tanstack/router-plugin": "^1.168.48",
     "lucide-react": "^1.70.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "tailwindcss": "^4.3.5",
     "zustand": "^5.1.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.6",
     "@tailwindcss/typography": "^0.5.20",
+    "@tailwindcss/vite": "^4.3.5",
     "@tanstack/devtools-vite": "^0.8.6",
+    "@tanstack/react-devtools": "^0.10.14",
+    "@tanstack/react-router-devtools": "^1.167.2",
+    "@tanstack/router-plugin": "^1.168.48",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^26.6.6",
@@ -36,6 +35,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.2.1",
     "jsdom": "^31.0.0",
+    "tailwindcss": "^4.3.5",
     "typescript": "^7.0.2",
     "vite": "^8.3.6",
     "vitest": "^5.1.0"

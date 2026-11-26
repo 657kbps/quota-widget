@@ -140,6 +140,7 @@
     <string name="usage_remaining_weekly">Restant hebdomadaire %1$s</string>
     <string name="usage_remaining_monthly">Restant mensuel %1$s</string>
     <string name="usage_remaining_token">Restant de jetons %1$s</string>
+    <string name="workbuddy_remaining_credits">%1$s crédits restants</string>
     <string name="usage_used_rolling">Utilisation glissante %1$s</string>
     <string name="usage_used_weekly">Utilisation hebdomadaire %1$s</string>
     <string name="usage_used_monthly">Utilisation mensuelle %1$s</string>
@@ -165,6 +166,8 @@
     <string name="new_api_balance_summary">Solde %1$s</string>
     <string name="new_api_base_url_label">URL de base</string>
     <string name="new_api_base_url_hint">https://your-newapi-server</string>
+    <string name="base_url_plain_http_warning">Cette URL utilise HTTP non chiffré. Toute personne sur le chemin réseau peut lire votre clé API ; utilisez HTTPS si possible.</string>
+    <string name="base_url_invalid">Saisissez une URL complète commençant par http:// ou https://</string>
     <string name="new_api_api_key_label">Clé API</string>
     <string name="new_api_quota_per_usd_label">Conversion du quota (quota : 1 USD)</string>
     <string name="new_api_quota_per_usd_hint">Par défaut 500000, soit 500000 de quota = 1 USD</string>
@@ -192,6 +195,12 @@
     <string name="zhipu_api_key_hint">Une clé API de formule créée sur la page Zhipu Coding Plan (utilisez une clé d\'équipe pour les formules d\'équipe)</string>
     <string name="zhipu_invalid_key">La clé API Zhipu est invalide ou a expiré. Vérifiez la configuration.</string>
     <string name="widget_fetch_failed">Échec de la récupération</string>
+    <string name="widget_error_session_expired">Session expirée. Veuillez vous reconnecter.</string>
+    <string name="widget_error_quota_unavailable">La plateforme n\'a renvoyé aucune donnée de quota</string>
+    <string name="widget_error_http_status">Échec de la requête (HTTP %1$d)</string>
+    <string name="widget_error_network">Réseau indisponible. Vérifiez votre connexion.</string>
+    <string name="widget_error_invalid_base_url">URL du serveur invalide</string>
+    <string name="widget_error_parse_failure">Réponse inattendue du serveur</string>
     <string name="home_title">Quota Widget</string>
     <string name="home_section_configured">Configurés</string>
     <string name="home_section_unconfigured">Non configurés</string>

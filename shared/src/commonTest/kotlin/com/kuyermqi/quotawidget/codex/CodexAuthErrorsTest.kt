@@ -1,6 +1,8 @@
 package com.kuyermqi.quotawidget.codex
 
+import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
+import com.kuyermqi.quotawidget.refresh.isRetryableFailure
 import io.ktor.http.HttpStatusCode
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -118,17 +120,31 @@ class CodexAuthErrorsTest {
     }
 
     @Test
-    fun throwForHttpFailure_htmlForbidden_usesTransientMessage() {
+    fun throwForHttpFailure_htmlForbidden_usesTransientMessageAndStatus() {
         val body = "<html><body>blocked</body></html>"
-        val error = assertFailsWith<IllegalStateException> {
+        val error = assertFailsWith<HttpStatusException> {
             CodexAuthErrors.throwForHttpFailure(
                 HttpStatusCode.Forbidden,
                 body,
                 source = "usage",
             )
         }
+        assertEquals(HttpStatusCode.Forbidden.value, error.statusCode)
         assertEquals(CodexAuthErrors.TEMPORARILY_UNAVAILABLE_MESSAGE, error.message)
         assertNull(error.cause)
+    }
+
+    @Test
+    fun throwForHttpFailure_serverError_keepsStatusCode() {
+        val error = assertFailsWith<HttpStatusException> {
+            CodexAuthErrors.throwForHttpFailure(
+                HttpStatusCode.ServiceUnavailable,
+                "upstream down",
+                source = "usage",
+            )
+        }
+        assertEquals(HttpStatusCode.ServiceUnavailable.value, error.statusCode)
+        assertTrue(isRetryableFailure(error))
     }
 
     @Test

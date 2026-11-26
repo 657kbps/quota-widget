@@ -141,6 +141,7 @@
     <string name="usage_remaining_weekly">Weekly remaining %1$s</string>
     <string name="usage_remaining_monthly">Monthly remaining %1$s</string>
     <string name="usage_remaining_token">Token remaining %1$s</string>
+    <string name="workbuddy_remaining_credits">Remaining %1$s credits</string>
     <string name="usage_used_rolling">Rolling used %1$s</string>
     <string name="usage_used_weekly">Weekly used %1$s</string>
     <string name="usage_used_monthly">Monthly used %1$s</string>
@@ -166,6 +167,8 @@
     <string name="new_api_balance_summary">Balance %1$s</string>
     <string name="new_api_base_url_label">Base URL</string>
     <string name="new_api_base_url_hint">https://your-newapi-server</string>
+    <string name="base_url_plain_http_warning">This URL uses plain HTTP. Anyone on the network path can read your API key; use HTTPS if you can.</string>
+    <string name="base_url_invalid">Enter a full URL starting with http:// or https://</string>
     <string name="new_api_api_key_label">API Key</string>
     <string name="new_api_quota_per_usd_label">Quota conversion (quota : 1 USD)</string>
     <string name="new_api_quota_per_usd_hint">Defaults to 500000, meaning 500000 quota = 1 USD</string>
@@ -193,6 +196,12 @@
     <string name="zhipu_api_key_hint">A plan API key created on the Zhipu Coding Plan page (use a team key for team plans)</string>
     <string name="zhipu_invalid_key">The Zhipu API key is invalid or expired. Check your configuration.</string>
     <string name="widget_fetch_failed">Fetch failed</string>
+    <string name="widget_error_session_expired">Session expired. Sign in again.</string>
+    <string name="widget_error_quota_unavailable">The platform returned no quota data</string>
+    <string name="widget_error_http_status">Request failed (HTTP %1$d)</string>
+    <string name="widget_error_network">Network unavailable. Check your connection.</string>
+    <string name="widget_error_invalid_base_url">Invalid server URL</string>
+    <string name="widget_error_parse_failure">Unexpected response from the server</string>
     <string name="home_title">Quota Widget</string>
     <string name="home_section_configured">Configured</string>
     <string name="home_section_unconfigured">Not configured</string>

@@ -140,6 +140,7 @@
     <string name="usage_remaining_weekly">每週餘量 %1$s</string>
     <string name="usage_remaining_monthly">每月餘量 %1$s</string>
     <string name="usage_remaining_token">權杖餘量 %1$s</string>
+    <string name="workbuddy_remaining_credits">剩餘 %1$s 點數</string>
     <string name="usage_used_rolling">滾動用量 %1$s</string>
     <string name="usage_used_weekly">每週用量 %1$s</string>
     <string name="usage_used_monthly">每月用量 %1$s</string>
@@ -165,6 +166,8 @@
     <string name="new_api_balance_summary">餘額 %1$s</string>
     <string name="new_api_base_url_label">Base URL</string>
     <string name="new_api_base_url_hint">https://your-newapi-server</string>
+    <string name="base_url_plain_http_warning">此位址使用明文 HTTP，網路中的第三方可讀取你的 API Key，建議改用 HTTPS。</string>
+    <string name="base_url_invalid">請輸入以 http:// 或 https:// 開頭的完整位址</string>
     <string name="new_api_api_key_label">API Key</string>
     <string name="new_api_quota_per_usd_label">額度換算（quota : 1 USD）</string>
     <string name="new_api_quota_per_usd_hint">預設 500000，表示 500000 額度 = 1 美元</string>
@@ -192,6 +195,12 @@
     <string name="zhipu_api_key_hint">在 Zhipu 編程方案頁面建立的方案 API Key（團隊版請使用團隊 Key）</string>
     <string name="zhipu_invalid_key">Zhipu API Key 無效或已失效，請檢查設定</string>
     <string name="widget_fetch_failed">取得失敗</string>
+    <string name="widget_error_session_expired">登入已過期，請重新登入</string>
+    <string name="widget_error_quota_unavailable">平台未回傳可顯示的額度資料</string>
+    <string name="widget_error_http_status">請求失敗（HTTP %1$d）</string>
+    <string name="widget_error_network">網路無法使用，請檢查網路連線</string>
+    <string name="widget_error_invalid_base_url">伺服器位址無效</string>
+    <string name="widget_error_parse_failure">伺服器回傳無法辨識的回應</string>
     <string name="home_title">配額監控</string>
     <string name="home_section_configured">已設定</string>
     <string name="home_section_unconfigured">未設定</string>

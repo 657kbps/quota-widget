@@ -9,7 +9,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CommandCodeClientTest {
-    private val client = CommandCodeClient()
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -17,7 +16,7 @@ class CommandCodeClientTest {
 
     @Test
     fun loginUrlCarriesLoopbackCallbackAndState() {
-        val url = client.createLoginUrl("state-123")
+        val url = CommandCodeClient.createLoginUrl("state-123")
 
         assertTrue(url.startsWith("https://commandcode.ai/studio/auth/cli?"))
         assertTrue(url.contains("callback=http%3A%2F%2F127.0.0.1%3A53682%2Fcallback"))
@@ -26,9 +25,16 @@ class CommandCodeClientTest {
     }
 
     @Test
+    fun loginUrlUsesTheActuallyBoundCallbackPort() {
+        val url = CommandCodeClient.createLoginUrl("state-123", port = 45123)
+
+        assertTrue(url.contains("callback=http%3A%2F%2F127.0.0.1%3A45123%2Fcallback"))
+    }
+
+    @Test
     fun callbackParsesAndDecodesCredentials() {
         val encodedKey = "key" + "%2B" + "1"
-        val callback = client.parseLoginCallback(
+        val callback = CommandCodeClient.parseLoginCallback(
             "http://127.0.0.1:53682/callback?apiKey=$encodedKey" +
                 "&state=state&userId=u1&userName=Test%20User&keyName=my%20key",
         )
@@ -42,8 +48,18 @@ class CommandCodeClientTest {
 
     @Test
     fun callbackWithoutKeyIsIgnored() {
-        assertNull(client.parseLoginCallback("http://127.0.0.1:53682/callback?state=s"))
-        assertNull(client.parseLoginCallback("https://commandcode.ai/studio/auth/cli"))
+        assertNull(CommandCodeClient.parseLoginCallback("http://127.0.0.1:53682/callback?state=s"))
+        assertNull(CommandCodeClient.parseLoginCallback("https://commandcode.ai/studio/auth/cli"))
+    }
+
+    @Test
+    fun newStateIsUrlSafeAndUnique() {
+        val first = CommandCodeClient.newState()
+        val second = CommandCodeClient.newState()
+
+        assertEquals(32, first.length)
+        assertTrue(first.all { it.isLetterOrDigit() || it == '-' || it == '_' })
+        assertTrue(first != second)
     }
 
     @Test
@@ -78,7 +94,7 @@ class CommandCodeClientTest {
             """.trimIndent(),
         ).jsonObject
 
-        val parsed = client.parseCredits(
+        val parsed = CommandCodeClient.parseCredits(
             creditsResponse = response,
             subscription = "GOAT" to subscription,
             nowEpochMs = now,
@@ -122,7 +138,7 @@ class CommandCodeClientTest {
             """.trimIndent(),
         ).jsonObject
 
-        val parsed = client.parseCredits(
+        val parsed = CommandCodeClient.parseCredits(
             creditsResponse = response,
             subscription = null,
             nowEpochMs = 1_795_630_000_000L,

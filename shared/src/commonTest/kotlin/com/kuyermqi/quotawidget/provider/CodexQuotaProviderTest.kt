@@ -6,7 +6,11 @@ import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
+import com.kuyermqi.quotawidget.domain.UsageDisplayMode
+import com.kuyermqi.quotawidget.domain.UsageProgressStyle
+import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.domain.WidgetErrorKind
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.refresh.BalanceRefreshInteractor
@@ -14,7 +18,10 @@ import com.kuyermqi.quotawidget.refresh.BalanceRefreshResult
 import com.kuyermqi.quotawidget.settings.CodexSettings
 import com.kuyermqi.quotawidget.settings.FakePlatformSettingsRepository
 import com.kuyermqi.quotawidget.util.currentTimeMillis
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -33,7 +40,7 @@ class CodexQuotaProviderTest {
         val provider = CodexQuotaProvider(
             tokenRefresher = CodexTokenRefresher {
                 refreshCalls++
-                throw IllegalStateException("OAuth token refresh failed: 503")
+                throw IOException("OAuth token refresh failed: connect timeout")
             },
             usageFetcher = CodexUsageFetcher { _, _ -> error("usage should not run") },
         )
@@ -68,7 +75,7 @@ class CodexQuotaProviderTest {
     }
 
     @Test
-    fun regionRestricted_usage_isTransient_keepsSuccessAndCredentials() = runTest {
+    fun regionRestricted_usage_writesErrorAndKeepsCredentials() = runTest {
         val previous = sampleSnapshot()
         val settings = CodexSettings(
             accessToken = "access-fresh",
@@ -94,18 +101,20 @@ class CodexQuotaProviderTest {
 
         val result = interactor.refresh(PlatformIds.CODEX)
 
+        val regionError = WidgetDisplayState.Error(WidgetErrorKind.Unknown())
         assertEquals(0, refreshCalls)
-        val failure = assertIs<BalanceRefreshResult.TransientFailure>(result)
-        assertEquals(false, failure.retryable)
-        assertIs<WidgetDisplayState.Success>(failure.retained)
-        assertIs<WidgetDisplayState.Success>(repo.getWidgetState(PlatformIds.CODEX))
+        val completed = assertIs<BalanceRefreshResult.Completed>(result)
+        assertEquals(regionError, completed.state)
+        assertEquals(regionError, repo.getWidgetState(PlatformIds.CODEX))
+        assertEquals(1, repo.widgetErrorSaves.size)
+        assertEquals(PlatformIds.CODEX, repo.widgetErrorSaves.single().first)
         assertEquals("access-fresh", repo.getCodexSettings().accessToken)
         assertEquals("refresh-keep", repo.getCodexSettings().refreshToken)
         assertTrue(repo.getCodexSettings().isConfigured)
     }
 
     @Test
-    fun regionRestricted_oauthRefresh_isTransient_keepsCredentials() = runTest {
+    fun regionRestricted_oauthRefresh_writesErrorAndKeepsCredentials() = runTest {
         val previous = sampleSnapshot()
         val repo = FakePlatformSettingsRepository(
             codex = expiredCodexSettings(),
@@ -121,16 +130,13 @@ class CodexQuotaProviderTest {
 
         val result = interactor.refresh(PlatformIds.CODEX)
 
-        val failure = assertIs<BalanceRefreshResult.TransientFailure>(result)
-        assertEquals(false, failure.retryable)
-        assertIs<WidgetDisplayState.Success>(failure.retained)
+        val regionError = WidgetDisplayState.Error(WidgetErrorKind.Unknown())
+        val completed = assertIs<BalanceRefreshResult.Completed>(result)
+        assertEquals(regionError, completed.state)
         assertTrue(repo.getCodexSettings().isConfigured)
         assertEquals("access-old", repo.getCodexSettings().accessToken)
         assertEquals("refresh-old", repo.getCodexSettings().refreshToken)
-        assertEquals(
-            WidgetDisplayState.Success(previous),
-            repo.getWidgetState(PlatformIds.CODEX),
-        )
+        assertEquals(regionError, repo.getWidgetState(PlatformIds.CODEX))
     }
 
     @Test
@@ -297,6 +303,116 @@ class CodexQuotaProviderTest {
         assertEquals("42%", snapshot.primaryDisplay)
         assertEquals("access-new", repo.getCodexSettings().accessToken)
     }
+
+    @Test
+    fun clampedWindowKind_keepsUserWindowChangeDuringFetch() = runTest {
+        val repo = FakePlatformSettingsRepository(
+            codex = CodexSettings(
+                accessToken = "access-fresh",
+                refreshToken = "refresh-fresh",
+                accountId = "acc-1",
+                expiresAtEpochMs = currentTimeMillis() + 60 * 60 * 1000L,
+                widgetWindowKind = UsageWindowKind.WEEKLY,
+                usageDisplayMode = UsageDisplayMode.USED,
+                usageProgressStyle = UsageProgressStyle.BAR,
+            ),
+        )
+        val started = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val provider = CodexQuotaProvider(
+            tokenRefresher = CodexTokenRefresher { error("no refresh expected") },
+            usageFetcher = CodexUsageFetcher { _, _ ->
+                started.complete(Unit)
+                release.await()
+                fiveHourOnlySnapshot()
+            },
+        )
+
+        val job = async { provider.fetch(repo) }
+        started.await()
+        // The user prefers the 5h window and switches style while the request is in flight.
+        repo.saveCodexSettings(
+            repo.getCodexSettings().copy(
+                widgetWindowKind = UsageWindowKind.ROLLING,
+                usageDisplayMode = UsageDisplayMode.REMAINING,
+                usageProgressStyle = UsageProgressStyle.CAPSULE,
+            ),
+        )
+        release.complete(Unit)
+        job.await()
+
+        val stored = repo.getCodexSettings()
+        assertEquals(UsageWindowKind.ROLLING, stored.widgetWindowKind)
+        assertEquals(UsageDisplayMode.REMAINING, stored.usageDisplayMode)
+        assertEquals(UsageProgressStyle.CAPSULE, stored.usageProgressStyle)
+    }
+
+    @Test
+    fun clampedWindowKind_fallsBackToReportedWindow() = runTest {
+        val repo = FakePlatformSettingsRepository(
+            codex = CodexSettings(
+                accessToken = "access-fresh",
+                refreshToken = "refresh-fresh",
+                accountId = "acc-1",
+                expiresAtEpochMs = currentTimeMillis() + 60 * 60 * 1000L,
+                widgetWindowKind = UsageWindowKind.WEEKLY,
+                usageDisplayMode = UsageDisplayMode.REMAINING,
+            ),
+        )
+        val provider = CodexQuotaProvider(
+            tokenRefresher = CodexTokenRefresher { error("no refresh expected") },
+            usageFetcher = CodexUsageFetcher { _, _ -> fiveHourOnlySnapshot() },
+        )
+
+        provider.fetch(repo)
+
+        val stored = repo.getCodexSettings()
+        assertEquals(UsageWindowKind.ROLLING, stored.widgetWindowKind)
+        assertEquals(UsageDisplayMode.REMAINING, stored.usageDisplayMode)
+    }
+
+    @Test
+    fun clampedWindowKind_skipsWriteWhenLoggedOutDuringFetch() = runTest {
+        val repo = FakePlatformSettingsRepository(
+            codex = CodexSettings(
+                accessToken = "access-fresh",
+                refreshToken = "refresh-fresh",
+                accountId = "acc-1",
+                expiresAtEpochMs = currentTimeMillis() + 60 * 60 * 1000L,
+                widgetWindowKind = UsageWindowKind.WEEKLY,
+            ),
+        )
+        val started = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val provider = CodexQuotaProvider(
+            tokenRefresher = CodexTokenRefresher { error("no refresh expected") },
+            usageFetcher = CodexUsageFetcher { _, _ ->
+                started.complete(Unit)
+                release.await()
+                fiveHourOnlySnapshot()
+            },
+        )
+
+        val job = async { provider.fetch(repo) }
+        started.await()
+        repo.clearCodexSettings()
+        release.complete(Unit)
+        job.await()
+
+        val stored = repo.getCodexSettings()
+        assertTrue(!stored.isConfigured)
+        assertEquals("", stored.accessToken)
+    }
+
+    private fun fiveHourOnlySnapshot() = QuotaSnapshot(
+        platformId = PlatformIds.CODEX,
+        platformName = PlatformRegistry.displayName(PlatformIds.CODEX),
+        windows = listOf(
+            QuotaWindow(kind = QuotaWindowKind.FIVE_HOUR, usedPercent = 12.0),
+        ),
+        primaryDisplay = "12%",
+        updatedAtEpochMs = currentTimeMillis(),
+    )
 
     private fun expiredCodexSettings() = CodexSettings(
         accessToken = "access-old",

@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.update
 
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
+import com.kuyermqi.quotawidget.util.suspendRunCatching
 
 data class UpdateAvailability(
     val versionName: String,
@@ -17,13 +18,13 @@ sealed interface UpdateCheckOutcome {
 
 class UpdateCheckInteractor(
     private val settingsRepository: PlatformSettingsRepository,
-    private val releaseClient: GitHubReleaseClient = GitHubReleaseClient(),
+    private val releaseClient: GitHubReleaseClient,
 ) {
     suspend fun check(currentVersionName: String): UpdateAvailability? {
         if (!settingsRepository.getAppSettings().checkForUpdatesOnLaunch) {
             return null
         }
-        val release = runCatching { releaseClient.fetchLatestRelease() }.getOrNull()
+        val release = suspendRunCatching { releaseClient.fetchLatestRelease() }.getOrNull()
             ?: return null
         val remoteVersion = normalizeVersionName(release.tagName)
         if (remoteVersion.isBlank() || release.htmlUrl.isBlank()) {
@@ -45,7 +46,7 @@ class UpdateCheckInteractor(
     }
 
     suspend fun checkManually(currentVersionName: String): UpdateCheckOutcome {
-        val release = runCatching { releaseClient.fetchLatestRelease() }.getOrNull()
+        val release = suspendRunCatching { releaseClient.fetchLatestRelease() }.getOrNull()
             ?: return UpdateCheckOutcome.Failed
         val remoteVersion = normalizeVersionName(release.tagName)
         if (remoteVersion.isBlank() || release.htmlUrl.isBlank()) {

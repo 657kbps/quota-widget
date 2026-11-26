@@ -1,5 +1,6 @@
 package com.kuyermqi.quotawidget.deepseek
 
+import com.kuyermqi.quotawidget.network.followRedirectsSafely
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -9,11 +10,13 @@ import java.util.concurrent.TimeUnit
 
 actual fun createHttpClient(): HttpClient = HttpClient(OkHttp) {
     expectSuccess = true
+    followRedirects = false
     engine {
         config {
             connectTimeout(15, TimeUnit.SECONDS)
             readTimeout(15, TimeUnit.SECONDS)
             callTimeout(20, TimeUnit.SECONDS)
+            followRedirects(false)
         }
     }
     install(ContentNegotiation) {
@@ -24,4 +27,4 @@ actual fun createHttpClient(): HttpClient = HttpClient(OkHttp) {
             },
         )
     }
-}
+}.followRedirectsSafely()

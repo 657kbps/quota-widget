@@ -6,7 +6,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -19,7 +18,8 @@ import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.settings.DeepSeekSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.DeepSeekConfigContent
-import com.kuyermqi.quotawidget.widget.WidgetGlanceState
+import com.kuyermqi.quotawidget.ui.widgetErrorText
+import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
 class DeepSeekHomeState internal constructor(
@@ -83,13 +83,6 @@ class DeepSeekHomeState internal constructor(
     internal fun repository(): PlatformSettingsRepository = settingsRepository
 }
 
-@Composable
-fun rememberDeepSeekHomeState(
-    settingsRepository: PlatformSettingsRepository,
-): DeepSeekHomeState = remember(settingsRepository) {
-    DeepSeekHomeState(settingsRepository)
-}
-
 /** Collects widget state and keeps [DeepSeekHomeState.lastDisplay] in sync. */
 @Composable
 fun deepSeekHomeEffects(state: DeepSeekHomeState): WidgetDisplayState {
@@ -149,10 +142,10 @@ fun ColumnScope.DeepSeekHomeContent(
                     state.saveError = when (
                         val result = onRefreshPlatform(PlatformIds.DEEPSEEK)
                     ) {
-                        is WidgetDisplayState.Error -> result.message
+                        is WidgetDisplayState.Error -> widgetErrorText(result.kind, context)
                         else -> null
                     }
-                    WidgetGlanceState.syncAndUpdate(context, "deepseek_save")
+                    WidgetSyncCoordinator.syncWidgets(context, "deepseek_save", PlatformIds.DEEPSEEK)
                 } finally {
                     state.isSaving = false
                 }

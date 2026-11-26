@@ -5,7 +5,6 @@ import androidx.compose.ui.unit.DpSize
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.currentState
 import androidx.glance.state.GlanceStateDefinition
@@ -57,11 +56,6 @@ class KimiCodeOverviewWidget : GlanceAppWidget() {
     }
 }
 
-class KimiCodeOverviewWidgetReceiver : GlanceAppWidgetReceiver() {
+class KimiCodeOverviewWidgetReceiver : QuotaGlanceReceiver() {
     override val glanceAppWidget: GlanceAppWidget = KimiCodeOverviewWidget()
-
-    override fun onEnabled(context: Context) {
-        super.onEnabled(context)
-        enqueueBootstrapRefresh(context)
-    }
 }

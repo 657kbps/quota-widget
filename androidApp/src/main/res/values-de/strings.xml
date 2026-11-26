@@ -140,6 +140,7 @@
     <string name="usage_remaining_weekly">Wöchentlich verbleibend %1$s</string>
     <string name="usage_remaining_monthly">Monatlich verbleibend %1$s</string>
     <string name="usage_remaining_token">Token verbleibend %1$s</string>
+    <string name="workbuddy_remaining_credits">%1$s Credits verbleibend</string>
     <string name="usage_used_rolling">Rollierend verbraucht %1$s</string>
     <string name="usage_used_weekly">Wöchentlich verbraucht %1$s</string>
     <string name="usage_used_monthly">Monatlich verbraucht %1$s</string>
@@ -165,6 +166,8 @@
     <string name="new_api_balance_summary">Guthaben %1$s</string>
     <string name="new_api_base_url_label">Basis-URL</string>
     <string name="new_api_base_url_hint">https://your-newapi-server</string>
+    <string name="base_url_plain_http_warning">Diese URL verwendet unverschlüsseltes HTTP. Wer Zugriff auf den Netzwerkpfad hat, kann Ihren API Key mitlesen; verwenden Sie nach Möglichkeit HTTPS.</string>
+    <string name="base_url_invalid">Geben Sie eine vollständige URL ein, die mit http:// oder https:// beginnt</string>
     <string name="new_api_api_key_label">API-Schlüssel</string>
     <string name="new_api_quota_per_usd_label">Kontingentumrechnung (Quota : 1 USD)</string>
     <string name="new_api_quota_per_usd_hint">Standard 500000, d. h. 500000 Quota = 1 USD</string>
@@ -192,6 +195,12 @@
     <string name="zhipu_api_key_hint">Ein auf der Zhipu Coding Plan-Seite erstellter Plan-API-Schlüssel (für Team-Tarife den Team-Schlüssel verwenden)</string>
     <string name="zhipu_invalid_key">Der Zhipu API-Schlüssel ist ungültig oder abgelaufen. Prüfen Sie die Konfiguration.</string>
     <string name="widget_fetch_failed">Abruf fehlgeschlagen</string>
+    <string name="widget_error_session_expired">Sitzung abgelaufen. Bitte erneut anmelden.</string>
+    <string name="widget_error_quota_unavailable">Die Plattform hat keine Quotendaten geliefert</string>
+    <string name="widget_error_http_status">Anfrage fehlgeschlagen (HTTP %1$d)</string>
+    <string name="widget_error_network">Kein Netzwerk. Bitte Verbindung prüfen.</string>
+    <string name="widget_error_invalid_base_url">Ungültige Server-URL</string>
+    <string name="widget_error_parse_failure">Unerwartete Antwort vom Server</string>
     <string name="home_title">Quota Widget</string>
     <string name="home_section_configured">Konfiguriert</string>
     <string name="home_section_unconfigured">Nicht konfiguriert</string>
