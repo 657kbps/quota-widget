@@ -88,6 +88,7 @@ internal fun computeCircularRingLayout(
     detailLineCount: Int,
     isGauge: Boolean,
     percentFontSizeSp: Float,
+    fontScale: Float = 1f,
 ): CircularRingLayout {
     val scale = ringSize / BASE_RING_SIZE_DP.dp
     val strokeWidth = circularRingStrokeDp(ringSize)
@@ -105,7 +106,8 @@ internal fun computeCircularRingLayout(
         DETAILS_GAP_ONE_LINE_DP
     }
     val gap = gapDp.dp * scale
-    val detailsTopPadding = (percentCenterY + (percentFontSizeSp * HALF_HEIGHT_FACTOR).dp + gap)
+    val percentHalfHeightDp = (percentFontSizeSp * fontScale * HALF_HEIGHT_FACTOR).dp
+    val detailsTopPadding = (percentCenterY + percentHalfHeightDp + gap)
         .coerceAtLeast(ringSize / 2)
     val horizontalRatio = if (isGauge) GAUGE_HORIZONTAL_RATIO else RING_HORIZONTAL_RATIO
     val detailsHorizontalPadding = strokeWidth + innerDiameter * horizontalRatio

@@ -113,11 +113,13 @@ internal fun StandardCircularWidgetPreview(
             usageResetStyle = model.usageResetStyle,
             hasFooterText = model.defaultFooter.isNotBlank(),
         )
+        val fontScale = resources.configuration.fontScale.takeIf { it > 0f } ?: 1f
         val layout = computeCircularRingLayout(
             ringSize = ringSize,
             detailLineCount = detailLineCount,
             isGauge = model.usageProgressStyle.isGauge,
             percentFontSizeSp = percentFontSize.value,
+            fontScale = fontScale,
         )
 
         Box(

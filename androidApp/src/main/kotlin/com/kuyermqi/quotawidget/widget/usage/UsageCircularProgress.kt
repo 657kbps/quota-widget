@@ -113,16 +113,18 @@ internal fun UsageCircularSuccessBlock(
         usageResetStyle = model.usageResetStyle,
         hasFooterText = model.updatedFooter.isNotBlank(),
     )
+    val glanceContext = LocalContext.current
+    val fontScale = glanceContext.resources.configuration.fontScale.takeIf { it > 0f } ?: 1f
     val layout = computeCircularRingLayout(
         ringSize = ringSize,
         detailLineCount = detailLineCount,
         isGauge = model.usageProgressStyle.isGauge,
         percentFontSizeSp = percentFontSize.value,
+        fontScale = fontScale,
     )
 
     val fillFraction = displayUsageFillFraction(model.progressUsed, model.progressMode)
     val nearLimit = isUsageNearLimitForDisplay(model.progressUsed, model.progressMode)
-    val glanceContext = LocalContext.current
     val fillColor = if (nearLimit) {
         GlanceTheme.colors.error.getColor(glanceContext).toArgb()
     } else {
