@@ -392,6 +392,8 @@ interface UsageLabels {
     val rolling: String
     val weekly: String
     val monthly: String
+
+    fun formatRemainingCredits(amount: String): String = "Remaining $amount credits"
 }
 
 /**
@@ -447,9 +449,14 @@ fun QuotaSnapshot.relocalizedPrimaryDisplay(
     labels: UsageLabels,
     mode: UsageDisplayMode = UsageDisplayMode.USED,
 ): String = when {
-    usageSummaryWindows(windows).isEmpty() -> primaryDisplay
+    usageSummaryWindows(windows).isEmpty() ->
+        WORKBUDDY_REMAINING_CREDITS.matchEntire(primaryDisplay)?.groupValues?.getOrNull(1)
+            ?.let(labels::formatRemainingCredits)
+            ?: primaryDisplay
     else -> formatUsagePrimaryDisplay(windows, labels, mode)
 }
+
+private val WORKBUDDY_REMAINING_CREDITS = Regex("""^(?:剩余|Remaining)\s+(.+?)\s+credits$""")
 
 fun remainingUsagePercent(usedPercent: Double): Double =
     (100.0 - usedPercent).coerceIn(0.0, 100.0)

@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.workbuddy
 
 import com.kuyermqi.quotawidget.domain.HttpStatusException
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -438,7 +439,7 @@ class WorkBuddyClient(
                 return CreditWindow(
                     usedPercent = null,
                     resetInSec = null,
-                    display = "剩余 ${formatCompact(prepaid)} credits",
+                    display = NeutralUsageLabels.formatRemainingCredits(formatCompact(prepaid)),
                 )
             }
             return null

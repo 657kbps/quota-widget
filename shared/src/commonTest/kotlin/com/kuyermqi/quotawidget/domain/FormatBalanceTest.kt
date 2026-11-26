@@ -9,6 +9,18 @@ private val englishLabels = object : UsageLabels {
     override val rolling = "Rolling"
     override val weekly = "Weekly"
     override val monthly = "Monthly"
+
+    override fun formatRemainingCredits(amount: String): String =
+        "Remaining $amount credits"
+}
+
+private val frenchLabels = object : UsageLabels {
+    override val rolling = "Glissant"
+    override val weekly = "Hebdomadaire"
+    override val monthly = "Mensuel"
+
+    override fun formatRemainingCredits(amount: String): String =
+        "$amount crédits restants"
 }
 
 class FormatBalanceTest {
@@ -73,6 +85,12 @@ class FormatBalanceTest {
 
         val plan = snapshot(windows = emptyList(), primaryDisplay = "Pro plan")
         assertEquals("Pro plan", plan.relocalizedPrimaryDisplay(englishLabels))
+
+        val neutralCredits = snapshot(windows = emptyList(), primaryDisplay = "Remaining 12.5 credits")
+        assertEquals("12.5 crédits restants", neutralCredits.relocalizedPrimaryDisplay(frenchLabels))
+
+        val legacyChineseCredits = snapshot(windows = emptyList(), primaryDisplay = "剩余 400 credits")
+        assertEquals("400 crédits restants", legacyChineseCredits.relocalizedPrimaryDisplay(frenchLabels))
     }
 
     private fun snapshot(

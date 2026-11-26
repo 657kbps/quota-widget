@@ -140,6 +140,7 @@
     <string name="usage_remaining_weekly">每周余量 %1$s</string>
     <string name="usage_remaining_monthly">每月余量 %1$s</string>
     <string name="usage_remaining_token">令牌余量 %1$s</string>
+    <string name="workbuddy_remaining_credits">剩余 %1$s 积分</string>
     <string name="usage_used_rolling">滚动用量 %1$s</string>
     <string name="usage_used_weekly">每周用量 %1$s</string>
     <string name="usage_used_monthly">每月用量 %1$s</string>

@@ -140,6 +140,7 @@
     <string name="usage_remaining_weekly">Restant hebdomadaire %1$s</string>
     <string name="usage_remaining_monthly">Restant mensuel %1$s</string>
     <string name="usage_remaining_token">Restant de jetons %1$s</string>
+    <string name="workbuddy_remaining_credits">%1$s crédits restants</string>
     <string name="usage_used_rolling">Utilisation glissante %1$s</string>
     <string name="usage_used_weekly">Utilisation hebdomadaire %1$s</string>
     <string name="usage_used_monthly">Utilisation mensuelle %1$s</string>

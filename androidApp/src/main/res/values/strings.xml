@@ -141,6 +141,7 @@
     <string name="usage_remaining_weekly">Weekly remaining %1$s</string>
     <string name="usage_remaining_monthly">Monthly remaining %1$s</string>
     <string name="usage_remaining_token">Token remaining %1$s</string>
+    <string name="workbuddy_remaining_credits">Remaining %1$s credits</string>
     <string name="usage_used_rolling">Rolling used %1$s</string>
     <string name="usage_used_weekly">Weekly used %1$s</string>
     <string name="usage_used_monthly">Monthly used %1$s</string>

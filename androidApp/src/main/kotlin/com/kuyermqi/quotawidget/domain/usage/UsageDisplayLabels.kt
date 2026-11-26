@@ -25,10 +25,13 @@ fun overviewWindowLabel(
     kind: QuotaWindowKind,
 ): String = resources.getString(usageWindowLabelRes(kind))
 
-private class ResourcesUsageLabels(resources: Resources) : UsageLabels {
+private class ResourcesUsageLabels(private val resources: Resources) : UsageLabels {
     override val rolling: String = resources.getString(R.string.usage_window_rolling)
     override val weekly: String = resources.getString(R.string.usage_window_weekly)
     override val monthly: String = resources.getString(R.string.usage_window_monthly)
+
+    override fun formatRemainingCredits(amount: String): String =
+        resources.getString(R.string.workbuddy_remaining_credits, amount)
 }
 
 @Volatile
