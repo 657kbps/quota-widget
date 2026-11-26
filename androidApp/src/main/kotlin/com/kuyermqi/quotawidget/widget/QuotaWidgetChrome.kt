@@ -217,12 +217,14 @@ internal fun balanceTitleSize(text: String, compact: Boolean): TextUnit {
     )
 }
 
+@Suppress("FunctionNaming")
 @Composable
 internal fun BalanceBlock(
     title: String,
     subtitle: String?,
     titleSize: TextUnit,
     openApp: Action,
+    maxLines: Int = 1,
 ) {
     Column(modifier = GlanceModifier.fillMaxWidth()) {
         Text(
@@ -232,7 +234,7 @@ internal fun BalanceBlock(
                 fontSize = titleSize,
                 fontWeight = FontWeight.Bold,
             ),
-            maxLines = 1,
+            maxLines = maxLines,
             modifier = GlanceModifier.clickableNoRipple(openApp),
         )
         if (!subtitle.isNullOrBlank()) {

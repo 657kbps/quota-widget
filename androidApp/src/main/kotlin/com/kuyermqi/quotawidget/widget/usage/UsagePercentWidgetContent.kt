@@ -36,7 +36,6 @@ import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
-import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.domain.formatNewApiUsageWidgetTitle
 import com.kuyermqi.quotawidget.domain.formatNewApiWidgetFooter
 import com.kuyermqi.quotawidget.domain.formatUsageDisplayPercent
@@ -49,10 +48,9 @@ import com.kuyermqi.quotawidget.domain.upcomingResetAtEpochMs
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import com.kuyermqi.quotawidget.widget.WidgetHeader
-import com.kuyermqi.quotawidget.widget.BalanceBlock
+import com.kuyermqi.quotawidget.widget.WidgetStatusBlock
 import com.kuyermqi.quotawidget.widget.clickableNoRipple
 import com.kuyermqi.quotawidget.widget.contextString
-import com.kuyermqi.quotawidget.widget.widgetContext
 import com.kuyermqi.quotawidget.widget.fittedTitleFontSize
 import com.kuyermqi.quotawidget.widget.updatedAtLabel
 import com.kuyermqi.quotawidget.widget.systemWidgetBackgroundCornerRadius
@@ -119,34 +117,7 @@ fun UsagePercentWidgetContent(
                         openApp = openApp,
                         showProgress = true,
                     )
-                WidgetDisplayState.NotConfigured ->
-                    BalanceBlock(
-                        title = contextString(R.string.widget_not_configured),
-                        subtitle = null,
-                        titleSize = 32.sp,
-                        openApp = openApp,
-                    )
-                WidgetDisplayState.Loading ->
-                    BalanceBlock(
-                        title = contextString(R.string.widget_loading_balance),
-                        subtitle = null,
-                        titleSize = 32.sp,
-                        openApp = openApp,
-                    )
-                WidgetDisplayState.NeedsReauth ->
-                    BalanceBlock(
-                        title = contextString(R.string.widget_needs_reauth),
-                        subtitle = null,
-                        titleSize = 32.sp,
-                        openApp = openApp,
-                    )
-                is WidgetDisplayState.Error ->
-                    BalanceBlock(
-                        title = widgetErrorText(state.kind, widgetContext()),
-                        subtitle = null,
-                        titleSize = 32.sp,
-                        openApp = openApp,
-                    )
+                else -> WidgetStatusBlock(state = state, openApp = openApp)
             }
         }
     }
