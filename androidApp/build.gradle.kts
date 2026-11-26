@@ -22,8 +22,8 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         //noinspection OldTargetApi
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 23
-        versionName = (findProperty("versionName") as String?) ?: "1.12.1"
+        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 24
+        versionName = (findProperty("versionName") as String?) ?: "1.13.0"
     }
     bundle {
         // Keep every locale in the base artifact so the in-app language picker works offline.
