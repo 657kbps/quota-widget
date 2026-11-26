@@ -7,7 +7,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -118,13 +117,6 @@ class KimiCodeHomeState internal constructor(
     }
 
     internal fun repository(): PlatformSettingsRepository = settingsRepository
-}
-
-@Composable
-fun rememberKimiCodeHomeState(
-    settingsRepository: PlatformSettingsRepository,
-): KimiCodeHomeState = remember(settingsRepository) {
-    KimiCodeHomeState(settingsRepository)
 }
 
 /** Collects widget state and keeps the home summary in sync. */

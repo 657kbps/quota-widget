@@ -6,10 +6,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -46,7 +44,6 @@ import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import com.kuyermqi.quotawidget.workbuddy.WorkBuddyClient
 import com.kuyermqi.quotawidget.workbuddy.WorkBuddyRegion
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -250,30 +247,6 @@ data class SessionPlatformHomeBindings(
     val onLogout: () -> Unit,
     val onSave: () -> Unit,
 )
-
-@Composable
-fun rememberSessionPlatformHomeState(
-    settingsRepository: PlatformSettingsRepository,
-    platformId: String,
-): SessionPlatformHomeState {
-    val state = remember(platformId) {
-        SessionPlatformHomeState(settingsRepository, platformId)
-    }
-    LaunchedEffect(platformId) {
-        settingsRepository.observeSessionSettings(platformId).collectLatest { persisted ->
-            state.applyPersisted(persisted)
-        }
-    }
-    LaunchedEffect(platformId) {
-        settingsRepository.observeWidgetState(platformId).collectLatest { widgetState ->
-            state.widgetState = widgetState
-            if (widgetState is WidgetDisplayState.Success) {
-                state.error = null
-            }
-        }
-    }
-    return state
-}
 
 @Composable
 fun sessionPlatformHomeEffects(

@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -119,13 +118,6 @@ data class CodexHomeBindings(
     val windows: List<QuotaWindow>,
     val onLogin: () -> Unit,
 )
-
-@Composable
-fun rememberCodexHomeState(
-    settingsRepository: PlatformSettingsRepository,
-): CodexHomeState = remember(settingsRepository) {
-    CodexHomeState(settingsRepository)
-}
 
 /**
  * Widget observation, Codex summary sync, login launcher, and window-kind clamp.

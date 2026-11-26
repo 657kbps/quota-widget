@@ -9,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -18,7 +17,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.res.Resources
 import com.kuyermqi.quotawidget.R
-import com.kuyermqi.quotawidget.QuotaWidgetApp
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
@@ -173,18 +171,6 @@ data class OpenCodeGoHomeBindings(
     val windows: List<QuotaWindow>,
     val onLogin: () -> Unit,
 )
-
-@Composable
-fun rememberOpenCodeGoHomeState(
-    settingsRepository: PlatformSettingsRepository,
-): OpenCodeGoHomeState {
-    val app = LocalContext.current.applicationContext as QuotaWidgetApp
-    val client = remember(app) { OpenCodeGoClient(app.httpClient) }
-    val state = remember(settingsRepository, client) {
-        OpenCodeGoHomeState(settingsRepository, client)
-    }
-    return state
-}
 
 /**
  * Widget observation, summary sync, and login launcher.

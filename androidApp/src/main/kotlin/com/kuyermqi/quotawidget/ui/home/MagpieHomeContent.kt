@@ -7,7 +7,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -180,13 +179,6 @@ private fun magpieUsageSummary(
         usageDisplayMode = usageDisplayMode,
         fallback = resources.getString(R.string.usage_unavailable),
     )
-}
-
-@Composable
-fun rememberMagpieHomeState(
-    settingsRepository: PlatformSettingsRepository,
-): MagpieHomeState = remember(settingsRepository) {
-    MagpieHomeState(settingsRepository)
 }
 
 @Composable

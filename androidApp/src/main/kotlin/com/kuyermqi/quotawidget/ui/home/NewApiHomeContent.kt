@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -139,13 +138,6 @@ class NewApiHomeState internal constructor(
     }
 
     internal fun repository(): PlatformSettingsRepository = settingsRepository
-}
-
-@Composable
-fun rememberNewApiHomeState(
-    settingsRepository: PlatformSettingsRepository,
-): NewApiHomeState = remember(settingsRepository) {
-    NewApiHomeState(settingsRepository)
 }
 
 @Composable

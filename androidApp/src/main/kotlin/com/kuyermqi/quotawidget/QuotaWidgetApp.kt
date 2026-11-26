@@ -1,6 +1,9 @@
 package com.kuyermqi.quotawidget
 
 import android.app.Application
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.kuyermqi.quotawidget.antigravity.AntigravityClient
 import com.kuyermqi.quotawidget.cline.ClineClient
 import com.kuyermqi.quotawidget.codex.CodexOAuth
@@ -24,6 +27,7 @@ import com.kuyermqi.quotawidget.provider.sessionQuotaProviders
 import com.kuyermqi.quotawidget.refresh.BalanceRefreshInteractor
 import com.kuyermqi.quotawidget.settings.AndroidPlatformSettingsRepository
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
+import com.kuyermqi.quotawidget.ui.home.HomeViewModel
 import com.kuyermqi.quotawidget.ui.theme.AppNightMode
 import com.kuyermqi.quotawidget.update.GitHubReleaseClient
 import com.kuyermqi.quotawidget.update.UpdateCheckInteractor
@@ -56,6 +60,21 @@ class QuotaWidgetApp : Application() {
 
     lateinit var updateCheckInteractor: UpdateCheckInteractor
         private set
+
+    /**
+     * Home edit state lives in a view model that survives configuration changes; the factory is
+     * built here because this class is the manual dependency graph.
+     */
+    val homeViewModelFactory: ViewModelProvider.Factory by lazy {
+        viewModelFactory {
+            initializer {
+                HomeViewModel(
+                    settingsRepository = settingsRepository,
+                    openCodeClient = OpenCodeGoClient(httpClient),
+                )
+            }
+        }
+    }
 
     override fun onCreate() {
         // SharedPreferences mirrors first (synchronous), then DataStore: the observers below
