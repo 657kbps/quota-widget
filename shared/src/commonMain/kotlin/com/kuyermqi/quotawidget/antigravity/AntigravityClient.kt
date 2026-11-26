@@ -19,6 +19,7 @@ import com.kuyermqi.quotawidget.session.objectOrNull
 import com.kuyermqi.quotawidget.session.stringOrNull
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.util.currentTimeMillis
+import com.kuyermqi.quotawidget.util.secureRandomBytes
 import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
@@ -42,7 +43,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
-import kotlin.random.Random
 
 data class AntigravityLoginSession(
     val state: String,
@@ -402,11 +402,11 @@ class AntigravityClient(
     companion object {
         @OptIn(ExperimentalEncodingApi::class)
         fun createLoginSession(): AntigravityLoginSession {
-            val verifier = Base64.UrlSafe.encode(Random.nextBytes(32)).trimEnd('=')
+            val verifier = Base64.UrlSafe.encode(secureRandomBytes(32)).trimEnd('=')
             val challenge = Base64.UrlSafe.encode(
                 codexSha256(verifier.encodeToByteArray()),
             ).trimEnd('=')
-            val state = Base64.UrlSafe.encode(Random.nextBytes(24)).trimEnd('=')
+            val state = Base64.UrlSafe.encode(secureRandomBytes(24)).trimEnd('=')
             val redirect = REDIRECT_URI
             val url = buildString {
                 append(AUTH_URL)

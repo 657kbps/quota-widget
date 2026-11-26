@@ -23,6 +23,8 @@ import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
 import com.kuyermqi.quotawidget.domain.defaultUsageWindowKind
 import com.kuyermqi.quotawidget.magpie.MagpieProvider
+import com.kuyermqi.quotawidget.network.BaseUrlClass
+import com.kuyermqi.quotawidget.network.classifyBaseUrl
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.settings.MagpieSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
@@ -258,6 +260,12 @@ fun ColumnScope.MagpieHomeContent(
         saveError = state.saveError,
         onSave = {
             scope.launch {
+                if (state.draftBaseUrl.isNotBlank() &&
+                    classifyBaseUrl(state.draftBaseUrl) == BaseUrlClass.Invalid
+                ) {
+                    state.saveError = resources.getString(R.string.base_url_invalid)
+                    return@launch
+                }
                 val next = MagpieSettings(
                     baseUrl = state.draftBaseUrl.trim().trimEnd('/'),
                     apiKey = state.draftApiKey.trim(),

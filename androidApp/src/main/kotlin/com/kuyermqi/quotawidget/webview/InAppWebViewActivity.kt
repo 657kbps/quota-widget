@@ -11,6 +11,7 @@ import android.os.Looper
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.setContent
@@ -151,6 +152,7 @@ class InAppWebViewActivity : LocaleAwareActivity(), InAppWebViewHost {
                                 CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true
+                                settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
                                 settings.allowFileAccess = false
                                 settings.allowContentAccess = false
                                 if (userAgent.isNotBlank()) {

@@ -19,6 +19,8 @@ import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.formatNewApiBalanceTitle
+import com.kuyermqi.quotawidget.network.BaseUrlClass
+import com.kuyermqi.quotawidget.network.classifyBaseUrl
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.settings.DEFAULT_NEW_API_QUOTA_PER_USD
 import com.kuyermqi.quotawidget.settings.NewApiSettings
@@ -216,6 +218,12 @@ fun ColumnScope.NewApiHomeContent(
                 val quotaPerUsd = state.draftQuotaPerUsd.trim().toLongOrNull()?.takeIf { it > 0L }
                 if (quotaPerUsd == null) {
                     state.saveError = resources.getString(R.string.new_api_quota_per_usd_invalid)
+                    return@launch
+                }
+                if (state.draftBaseUrl.isNotBlank() &&
+                    classifyBaseUrl(state.draftBaseUrl) == BaseUrlClass.Invalid
+                ) {
+                    state.saveError = resources.getString(R.string.base_url_invalid)
                     return@launch
                 }
                 val next = NewApiSettings(

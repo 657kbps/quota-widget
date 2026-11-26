@@ -20,6 +20,7 @@ import com.kuyermqi.quotawidget.session.stringOrNull
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.util.currentTimeMillis
 import com.kuyermqi.quotawidget.util.parseDateTimeToEpochMs
+import com.kuyermqi.quotawidget.util.secureRandomHex
 import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
@@ -34,7 +35,6 @@ import io.ktor.http.contentType
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
-import kotlin.random.Random
 
 /** The two WorkBuddy builds the app signs in to. */
 enum class WorkBuddyRegion(
@@ -539,12 +539,7 @@ class WorkBuddyClient(
         }
     }
 
-    private fun randomHex(bytes: Int): String {
-        val chars = "0123456789abcdef"
-        return buildString(bytes * 2) {
-            repeat(bytes * 2) { append(chars[Random.nextInt(chars.length)]) }
-        }
-    }
+    private fun randomHex(bytes: Int): String = secureRandomHex(bytes)
 
     private data class CreditWindow(
         val usedPercent: Double?,

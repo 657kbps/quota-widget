@@ -166,6 +166,8 @@
     <string name="new_api_balance_summary">Balance %1$s</string>
     <string name="new_api_base_url_label">Base URL</string>
     <string name="new_api_base_url_hint">https://your-newapi-server</string>
+    <string name="base_url_plain_http_warning">This URL uses plain HTTP. Anyone on the network path can read your API key; use HTTPS if you can.</string>
+    <string name="base_url_invalid">Enter a full URL starting with http:// or https://</string>
     <string name="new_api_api_key_label">API Key</string>
     <string name="new_api_quota_per_usd_label">Quota conversion (quota : 1 USD)</string>
     <string name="new_api_quota_per_usd_hint">Defaults to 500000, meaning 500000 quota = 1 USD</string>

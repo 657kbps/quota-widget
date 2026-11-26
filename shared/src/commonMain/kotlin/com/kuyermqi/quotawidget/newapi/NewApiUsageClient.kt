@@ -8,6 +8,7 @@ import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.formatBalance
 import com.kuyermqi.quotawidget.domain.httpFailure
+import com.kuyermqi.quotawidget.network.requireValidBaseUrl
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.settings.DEFAULT_NEW_API_QUOTA_PER_USD
@@ -38,6 +39,7 @@ class NewApiUsageClient(
         apiKey: String,
         quotaPerUsd: Long = DEFAULT_NEW_API_QUOTA_PER_USD,
     ): QuotaSnapshot {
+        requireValidBaseUrl(baseUrl)
         val url = usageUrl(baseUrl)
         val response = try {
             httpClient.get(url) {

@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.codex
 
 import com.kuyermqi.quotawidget.util.currentTimeMillis
+import com.kuyermqi.quotawidget.util.secureRandomHex
 import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ClientRequestException
@@ -16,7 +17,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
-import kotlin.random.Random
 
 /**
  * Codex CLI OAuth (PKCE) — same client as sub2api / CLIProxyAPI / OpenCode.
@@ -105,7 +105,7 @@ class CodexOAuth(
         fun createPkceSession(): CodexPkceSession {
             val verifier = generateCodeVerifier()
             val challenge = generateCodeChallenge(verifier)
-            val state = generateHex(32)
+            val state = secureRandomHex(32)
             return CodexPkceSession(
                 state = state,
                 codeVerifier = verifier,
@@ -133,7 +133,7 @@ class CodexOAuth(
             return "$AUTHORIZE_URL?$params"
         }
 
-        fun generateCodeVerifier(): String = generateHex(64)
+        fun generateCodeVerifier(): String = secureRandomHex(64)
 
         fun generateCodeChallenge(verifier: String): String {
             val digest = sha256(verifier.encodeToByteArray())
@@ -173,14 +173,6 @@ class CodexOAuth(
 
         private fun JsonObject.string(key: String): String? =
             this[key]?.jsonPrimitive?.content
-
-        private fun generateHex(byteCount: Int): String {
-            val bytes = ByteArray(byteCount)
-            Random.Default.nextBytes(bytes)
-            return bytes.joinToString("") { b ->
-                (b.toInt() and 0xff).toString(16).padStart(2, '0')
-            }
-        }
 
         private fun encodeQuery(value: String): String =
             buildString(value.length) {

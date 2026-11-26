@@ -16,6 +16,7 @@ import com.kuyermqi.quotawidget.session.objectOrNull
 import com.kuyermqi.quotawidget.session.stringOrNull
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.util.currentTimeMillis
+import com.kuyermqi.quotawidget.util.secureRandomString
 import com.kuyermqi.quotawidget.util.suspendRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.ResponseException
@@ -28,7 +29,6 @@ import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
-import kotlin.random.Random
 
 data class CommandCodeCallback(
     val apiKey: String,
@@ -169,10 +169,8 @@ class CommandCodeClient(
         private const val STUDIO = "https://commandcode.ai"
         private const val DEFAULT_CALLBACK_PORT = 53682
 
-        fun newState(): String {
-            val chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
-            return buildString(32) { repeat(32) { append(chars[Random.nextInt(chars.length)]) } }
-        }
+        fun newState(): String =
+            secureRandomString(32, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_")
 
         fun createLoginUrl(state: String, port: Int = DEFAULT_CALLBACK_PORT): String {
             val callback = percentEncode("http://127.0.0.1:$port/callback")

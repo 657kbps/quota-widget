@@ -8,6 +8,7 @@ import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.formatUsagePrimaryDisplay
+import com.kuyermqi.quotawidget.network.requireValidBaseUrl
 import com.kuyermqi.quotawidget.opencode.parseIsoInstantMillis
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
@@ -50,6 +51,7 @@ class MagpieQuotaClient(
         baseUrl: String,
         apiKey: String,
     ): List<MagpieProvider> {
+        requireValidBaseUrl(baseUrl)
         val response = try {
             httpClient.get(quotasUrl(baseUrl)) {
                 header(HttpHeaders.Authorization, "Bearer $apiKey")

@@ -165,6 +165,8 @@
     <string name="new_api_balance_summary">残高 %1$s</string>
     <string name="new_api_base_url_label">ベース URL</string>
     <string name="new_api_base_url_hint">https://your-newapi-server</string>
+    <string name="base_url_plain_http_warning">この URL は暗号化されていない HTTP です。通信経路上の第三者が API キーを読み取れます。可能なら HTTPS を使用してください。</string>
+    <string name="base_url_invalid">http:// または https:// で始まる完全な URL を入力してください</string>
     <string name="new_api_api_key_label">API キー</string>
     <string name="new_api_quota_per_usd_label">クォータ換算（quota : 1 USD）</string>
     <string name="new_api_quota_per_usd_hint">デフォルトは 500000（500000 クォータ = 1 USD）</string>

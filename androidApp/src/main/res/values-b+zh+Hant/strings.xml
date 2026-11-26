@@ -165,6 +165,8 @@
     <string name="new_api_balance_summary">餘額 %1$s</string>
     <string name="new_api_base_url_label">Base URL</string>
     <string name="new_api_base_url_hint">https://your-newapi-server</string>
+    <string name="base_url_plain_http_warning">此位址使用明文 HTTP，網路中的第三方可讀取你的 API Key，建議改用 HTTPS。</string>
+    <string name="base_url_invalid">請輸入以 http:// 或 https:// 開頭的完整位址</string>
     <string name="new_api_api_key_label">API Key</string>
     <string name="new_api_quota_per_usd_label">額度換算（quota : 1 USD）</string>
     <string name="new_api_quota_per_usd_hint">預設 500000，表示 500000 額度 = 1 美元</string>

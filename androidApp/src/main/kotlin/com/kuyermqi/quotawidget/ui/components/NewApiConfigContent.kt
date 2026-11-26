@@ -21,6 +21,8 @@ import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
+import com.kuyermqi.quotawidget.network.BaseUrlClass
+import com.kuyermqi.quotawidget.network.classifyBaseUrl
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.ui.platformDisplayName
 
@@ -58,6 +60,14 @@ fun ColumnScope.NewApiConfigContent(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
             enabled = !isSaving,
         )
+        if (classifyBaseUrl(baseUrl) == BaseUrlClass.PlainHttpPublic) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.base_url_plain_http_warning),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedTextField(
             value = apiKey,
