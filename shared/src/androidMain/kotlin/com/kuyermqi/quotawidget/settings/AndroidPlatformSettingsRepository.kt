@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.edit
 import com.google.crypto.tink.Aead
 import com.google.crypto.tink.KeyTemplates
+import com.google.crypto.tink.RegistryConfiguration
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import com.google.crypto.tink.integration.android.AndroidKeystore
@@ -582,7 +583,7 @@ class AndroidPlatformSettingsRepository(
                 .withMasterKeyUri("android-keystore://$TINK_MASTER_KEY_ID")
                 .build()
                 .keysetHandle
-                .getPrimitive(Aead::class.java)
+                .getPrimitive(RegistryConfiguration.get(), Aead::class.java)
         }
 
         private fun resetTinkKeyset(context: Context) {
