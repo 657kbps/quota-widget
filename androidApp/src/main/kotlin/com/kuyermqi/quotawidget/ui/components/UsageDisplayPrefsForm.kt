@@ -329,7 +329,12 @@ private fun ResetTimeSelector(
     }
     val resetEnabled = usageResetStyle != UsageResetStyle.HIDDEN
     val toggleReset = { turnOn: Boolean ->
-        onUsageResetStyleChange(if (turnOn) lastNonHiddenResetStyle else UsageResetStyle.HIDDEN)
+        val restored = if (styleOptions.isNotEmpty() && lastNonHiddenResetStyle !in styleOptions) {
+            styleOptions.first()
+        } else {
+            lastNonHiddenResetStyle
+        }
+        onUsageResetStyleChange(if (turnOn) restored else UsageResetStyle.HIDDEN)
     }
     CompactSwitchRow(
         title = stringResource(R.string.usage_reset_toggle_title),
