@@ -154,6 +154,7 @@
     <string name="codex_logout">登出</string>
     <string name="codex_status_logged_out">未登入</string>
     <string name="codex_login_failed">登入未完成，請重試</string>
+    <string name="auth_method_google_oauth">Google OAuth</string>
     <string name="action_save">儲存</string>
     <string name="unsaved_changes_title">儲存變更？</string>
     <string name="unsaved_changes_message">目前修改尚未儲存。</string>

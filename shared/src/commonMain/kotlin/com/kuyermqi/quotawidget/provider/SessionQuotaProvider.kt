@@ -72,6 +72,7 @@ private fun SessionPlatformSettings.mergeRefreshResult(
     refreshToken = next.refreshToken,
     expiresAtEpochMs = next.expiresAtEpochMs,
     apiKey = next.apiKey,
+    authMethod = next.authMethod ?: authMethod,
     accountId = next.accountId,
     email = next.email,
     plan = next.plan,

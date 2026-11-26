@@ -154,6 +154,7 @@
     <string name="codex_logout">Abmelden</string>
     <string name="codex_status_logged_out">Nicht angemeldet</string>
     <string name="codex_login_failed">Anmeldung nicht abgeschlossen. Bitte erneut versuchen.</string>
+    <string name="auth_method_google_oauth">Google OAuth</string>
     <string name="action_save">Speichern</string>
     <string name="unsaved_changes_title">Änderungen speichern?</string>
     <string name="unsaved_changes_message">Ihre Änderungen wurden noch nicht gespeichert.</string>

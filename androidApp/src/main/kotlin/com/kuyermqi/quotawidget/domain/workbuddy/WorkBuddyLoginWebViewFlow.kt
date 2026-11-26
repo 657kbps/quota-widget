@@ -5,6 +5,7 @@ import android.content.Intent
 import android.webkit.CookieManager
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.session.SessionLoginResult
+import com.kuyermqi.quotawidget.settings.SessionAuthMethod
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
 import com.kuyermqi.quotawidget.webview.InAppWebViewHost
 import com.kuyermqi.quotawidget.webview.PollingWebLoginFlow
@@ -45,6 +46,7 @@ class WorkBuddyLoginWebViewFlow private constructor(
                 accessToken = current.accessToken,
                 refreshToken = current.refreshToken,
                 expiresAtEpochMs = current.expiresAtEpochMs,
+                authMethod = SessionAuthMethod.WEB,
                 accountId = buildAccountLabel(account),
                 email = account.phoneNumber,
                 uid = account.uid,

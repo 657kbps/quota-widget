@@ -10,6 +10,7 @@ import com.kuyermqi.quotawidget.antigravity.AntigravityLoginSession
 import com.kuyermqi.quotawidget.domain.session.SessionLoginResult
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
+import com.kuyermqi.quotawidget.settings.SessionAuthMethod
 import com.kuyermqi.quotawidget.webview.CallbackWebLoginFlow
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
 import com.kuyermqi.quotawidget.webview.InAppWebViewHost
@@ -68,6 +69,7 @@ class AntigravityLoginWebViewFlow private constructor(
                 accessToken = saved.accessToken,
                 refreshToken = saved.refreshToken,
                 expiresAtEpochMs = saved.expiresAtEpochMs,
+                authMethod = SessionAuthMethod.WEB,
                 accountId = saved.email,
                 email = saved.email,
                 plan = saved.plan,

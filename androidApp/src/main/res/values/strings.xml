@@ -155,6 +155,7 @@
     <string name="codex_logout">Sign out</string>
     <string name="codex_status_logged_out">Not signed in</string>
     <string name="codex_login_failed">Sign-in incomplete. Please try again.</string>
+    <string name="auth_method_google_oauth">Google OAuth</string>
     <string name="action_save">Save</string>
     <string name="unsaved_changes_title">Save changes?</string>
     <string name="unsaved_changes_message">You have unsaved changes.</string>

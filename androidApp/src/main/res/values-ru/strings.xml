@@ -154,6 +154,7 @@
     <string name="codex_logout">Выйти</string>
     <string name="codex_status_logged_out">Не выполнен вход</string>
     <string name="codex_login_failed">Вход не завершён. Повторите попытку.</string>
+    <string name="auth_method_google_oauth">Google OAuth</string>
     <string name="action_save">Сохранить</string>
     <string name="unsaved_changes_title">Сохранить изменения?</string>
     <string name="unsaved_changes_message">Изменения ещё не сохранены.</string>

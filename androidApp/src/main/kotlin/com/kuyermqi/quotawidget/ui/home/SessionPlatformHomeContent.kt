@@ -34,9 +34,12 @@ import com.kuyermqi.quotawidget.domain.usage.usageLabels
 import com.kuyermqi.quotawidget.domain.workbuddy.WorkBuddyLoginWebViewFlow
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
+import com.kuyermqi.quotawidget.settings.SessionAuthMethod
 import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.ui.components.SessionAuthPanel
 import com.kuyermqi.quotawidget.ui.components.SessionPlatformConfigContent
+import com.kuyermqi.quotawidget.ui.components.SessionPlatformConfigState
+import com.kuyermqi.quotawidget.ui.components.SessionUsagePrefsState
 import com.kuyermqi.quotawidget.ui.platformDisplayName
 import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.ui.usage.formatCodexUsageWindowSummary
@@ -215,6 +218,7 @@ class SessionPlatformHomeState internal constructor(
         ) {
             settings.copy(
                 apiKey = draftApiKey,
+                authMethod = SessionAuthMethod.API_KEY,
                 accessToken = if (clearSessionTokens) "" else settings.accessToken,
                 refreshToken = if (clearSessionTokens) "" else settings.refreshToken,
                 expiresAtEpochMs = if (clearSessionTokens) 0L else settings.expiresAtEpochMs,
@@ -445,43 +449,50 @@ fun ColumnScope.SessionPlatformHomeContent(
         )
     }
     SessionPlatformConfigContent(
-        settings = state.settings,
-        supportsApiKey = state.supportsApiKey,
-        authPanel = state.authPanel,
-        draftApiKey = state.draftApiKey,
-        onDraftApiKeyChange = { state.draftApiKey = it },
-        onAuthPanelChange = { panel ->
-            if (state.authPanel == SessionAuthPanel.API_KEY && panel != SessionAuthPanel.API_KEY) {
-                state.draftApiKey = state.settings.apiKey
-            }
-            state.authPanel = panel
-            state.error = null
-        },
-        windows = windows,
-        widgetWindowKind = state.draftWindowKind,
-        onWidgetWindowKindChange = { state.draftWindowKind = it },
-        usageDisplayMode = state.draftUsageDisplayMode,
-        onUsageDisplayModeChange = { state.draftUsageDisplayMode = it },
-        usageProgressStyle = state.draftUsageProgressStyle,
-        onUsageProgressStyleChange = { state.draftUsageProgressStyle = it },
-        usageResetStyle = state.draftUsageResetStyle,
-        onUsageResetStyleChange = { state.draftUsageResetStyle = it },
-        overviewKinds = overviewKinds,
-        notice = if (state.platformId == PlatformIds.ANTIGRAVITY) {
-            stringResource(R.string.session_antigravity_notice)
-        } else {
-            null
-        },
-        isConfigured = state.isConfigured,
-        isBusy = state.isBusy,
-        isSaving = state.isSaving,
-        isDirty = state.isDirty,
-        error = state.error,
-        onLogin = bindings.onLogin,
-        onLogout = bindings.onLogout,
-        onSave = bindings.onSave,
-        platformName = platformDisplayName(state.platformId),
-        updatedAtEpochMs =
-            (widgetState as? WidgetDisplayState.Success)?.snapshot?.updatedAtEpochMs ?: 0L,
+        state = SessionPlatformConfigState(
+            platformId = state.platformId,
+            platformName = platformDisplayName(state.platformId),
+            settings = state.settings,
+            supportsApiKey = state.supportsApiKey,
+            authPanel = state.authPanel,
+            draftApiKey = state.draftApiKey,
+            onDraftApiKeyChange = { state.draftApiKey = it },
+            onAuthPanelChange = { panel ->
+                if (state.authPanel == SessionAuthPanel.API_KEY &&
+                    panel != SessionAuthPanel.API_KEY
+                ) {
+                    state.draftApiKey = state.settings.apiKey
+                }
+                state.authPanel = panel
+                state.error = null
+            },
+            usagePrefs = SessionUsagePrefsState(
+                windows = windows,
+                widgetWindowKind = state.draftWindowKind,
+                onWidgetWindowKindChange = { state.draftWindowKind = it },
+                usageDisplayMode = state.draftUsageDisplayMode,
+                onUsageDisplayModeChange = { state.draftUsageDisplayMode = it },
+                usageProgressStyle = state.draftUsageProgressStyle,
+                onUsageProgressStyleChange = { state.draftUsageProgressStyle = it },
+                usageResetStyle = state.draftUsageResetStyle,
+                onUsageResetStyleChange = { state.draftUsageResetStyle = it },
+                overviewKinds = overviewKinds,
+                updatedAtEpochMs =
+                    (widgetState as? WidgetDisplayState.Success)?.snapshot?.updatedAtEpochMs ?: 0L,
+            ),
+            notice = if (state.platformId == PlatformIds.ANTIGRAVITY) {
+                stringResource(R.string.session_antigravity_notice)
+            } else {
+                null
+            },
+            isConfigured = state.isConfigured,
+            isBusy = state.isBusy,
+            isSaving = state.isSaving,
+            isDirty = state.isDirty,
+            error = state.error,
+            onLogin = bindings.onLogin,
+            onLogout = bindings.onLogout,
+            onSave = bindings.onSave,
+        ),
     )
 }

@@ -148,7 +148,14 @@ class AntigravityClient(
         val next = current.copy(
             projectId = project.id.ifBlank { current.projectId },
             plan = project.plan.ifBlank { current.plan },
-        )
+            email = current.email.ifBlank { fetchEmail(current.accessToken).orEmpty() },
+        ).let { updated ->
+            if (updated.accountId.isBlank() && updated.email.isNotBlank()) {
+                updated.copy(accountId = updated.email)
+            } else {
+                updated
+            }
+        }
         if (next != current) {
             save(next)
             current = next

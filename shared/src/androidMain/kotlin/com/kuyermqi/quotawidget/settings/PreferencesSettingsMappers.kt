@@ -193,6 +193,7 @@ internal fun Preferences.toSessionSettings(
         accessToken = decryptOrEmpty(sessionAccessKey(platformId), "access"),
         refreshToken = decryptOrEmpty(sessionRefreshKey(platformId), "refresh"),
         apiKey = decryptOrEmpty(sessionApiKey(platformId), "api_key"),
+        authMethod = SessionAuthMethod.fromStorage(this[sessionAuthMethodKey(platformId)]),
         expiresAtEpochMs = this[sessionExpiresAtKey(platformId)] ?: 0L,
         accountId = this[sessionAccountIdKey(platformId)].orEmpty(),
         email = this[sessionEmailKey(platformId)].orEmpty(),
@@ -459,6 +460,7 @@ internal fun MutablePreferences.applySessionSettings(
         remove(sessionAccessKey(platformId))
         remove(sessionRefreshKey(platformId))
         remove(sessionApiKey(platformId))
+        remove(sessionAuthMethodKey(platformId))
         remove(sessionExpiresAtKey(platformId))
         remove(sessionAccountIdKey(platformId))
         remove(sessionEmailKey(platformId))
@@ -473,6 +475,7 @@ internal fun MutablePreferences.applySessionSettings(
         putEncrypted(this, sessionAccessKey(platformId), settings.accessToken, platformId, "access", crypto)
         putEncrypted(this, sessionRefreshKey(platformId), settings.refreshToken, platformId, "refresh", crypto)
         putEncrypted(this, sessionApiKey(platformId), settings.apiKey, platformId, "api_key", crypto)
+        putOrRemove(sessionAuthMethodKey(platformId), settings.authMethod?.name.orEmpty())
         if (settings.expiresAtEpochMs > 0L) {
             this[sessionExpiresAtKey(platformId)] = settings.expiresAtEpochMs
         } else {

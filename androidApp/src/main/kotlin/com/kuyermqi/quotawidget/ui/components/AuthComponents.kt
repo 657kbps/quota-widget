@@ -79,6 +79,7 @@ fun ColumnScope.AuthStatusLine(
 }
 
 /** Shared account/method title and plan line. */
+@Suppress("FunctionNaming")
 @Composable
 fun ColumnScope.AuthSummaryHeader(
     title: String,
@@ -97,6 +98,20 @@ fun ColumnScope.AuthSummaryHeader(
         }
         Text(
             text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Optional secondary plan line shown inside an auth account card. */
+@Suppress("FunctionNaming")
+@Composable
+fun ColumnScope.AuthDetailLine(detail: String?) {
+    if (!detail.isNullOrBlank()) {
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = detail,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

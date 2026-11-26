@@ -75,6 +75,17 @@ data class CodexSettings(
             accountId.isNotBlank()
 }
 
+enum class SessionAuthMethod {
+    WEB,
+    API_KEY,
+    ;
+
+    companion object {
+        fun fromStorage(value: String?): SessionAuthMethod? =
+            entries.find { it.name == value }
+    }
+}
+
 /**
  * Login state shared by the session-based providers (WorkBuddy, Cline,
  * Command Code, Antigravity). Fields not used by a provider stay blank.
@@ -84,6 +95,7 @@ data class SessionPlatformSettings(
     val refreshToken: String = "",
     val expiresAtEpochMs: Long = 0L,
     val apiKey: String = "",
+    val authMethod: SessionAuthMethod? = null,
     val accountId: String = "",
     val email: String = "",
     val plan: String = "",

@@ -154,6 +154,7 @@
     <string name="codex_logout">ログアウト</string>
     <string name="codex_status_logged_out">未ログイン</string>
     <string name="codex_login_failed">ログインが完了しませんでした。再試行してください。</string>
+    <string name="auth_method_google_oauth">Google OAuth</string>
     <string name="action_save">保存</string>
     <string name="unsaved_changes_title">変更を保存しますか？</string>
     <string name="unsaved_changes_message">変更はまだ保存されていません。</string>

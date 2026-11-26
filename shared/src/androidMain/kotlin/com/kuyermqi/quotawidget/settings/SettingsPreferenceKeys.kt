@@ -118,6 +118,9 @@ internal fun sessionRefreshKey(platformId: String) =
 internal fun sessionApiKey(platformId: String) =
     stringPreferencesKey("session_${platformId}_api_key_enc")
 
+internal fun sessionAuthMethodKey(platformId: String) =
+    stringPreferencesKey("session_${platformId}_auth_method")
+
 internal fun sessionExpiresAtKey(platformId: String) =
     longPreferencesKey("session_${platformId}_expires_at")
 

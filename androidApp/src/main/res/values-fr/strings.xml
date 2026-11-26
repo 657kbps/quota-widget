@@ -154,6 +154,7 @@
     <string name="codex_logout">Se déconnecter</string>
     <string name="codex_status_logged_out">Non connecté</string>
     <string name="codex_login_failed">Connexion incomplète. Veuillez réessayer.</string>
+    <string name="auth_method_google_oauth">Google OAuth</string>
     <string name="action_save">Enregistrer</string>
     <string name="unsaved_changes_title">Enregistrer les modifications ?</string>
     <string name="unsaved_changes_message">Vos modifications n\'ont pas encore été enregistrées.</string>

@@ -8,6 +8,7 @@ import com.kuyermqi.quotawidget.cline.ClineClient
 import com.kuyermqi.quotawidget.cline.ClineDevicePoll
 import com.kuyermqi.quotawidget.cline.ClineDeviceSession
 import com.kuyermqi.quotawidget.domain.session.SessionLoginResult
+import com.kuyermqi.quotawidget.settings.SessionAuthMethod
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
 import com.kuyermqi.quotawidget.webview.InAppWebViewHost
 import com.kuyermqi.quotawidget.webview.PollingWebLoginFlow
@@ -48,6 +49,7 @@ class ClineLoginWebViewFlow private constructor(
                         accessToken = auth.accessToken,
                         refreshToken = auth.refreshToken,
                         expiresAtEpochMs = auth.expiresAtEpochMs,
+                        authMethod = SessionAuthMethod.WEB,
                         accountId = auth.email.ifBlank { auth.uid },
                         email = auth.email,
                         uid = auth.uid,

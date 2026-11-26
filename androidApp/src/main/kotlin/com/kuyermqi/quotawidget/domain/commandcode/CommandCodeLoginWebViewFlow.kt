@@ -10,6 +10,7 @@ import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.commandcode.CommandCodeCallback
 import com.kuyermqi.quotawidget.commandcode.CommandCodeClient
 import com.kuyermqi.quotawidget.domain.session.SessionLoginResult
+import com.kuyermqi.quotawidget.settings.SessionAuthMethod
 import com.kuyermqi.quotawidget.webview.InAppWebViewActivity
 import com.kuyermqi.quotawidget.webview.InAppWebViewFlow
 import com.kuyermqi.quotawidget.webview.InAppWebViewHost
@@ -75,6 +76,7 @@ class CommandCodeLoginWebViewFlow private constructor(
                 Activity.RESULT_OK,
                 SessionLoginResult(
                     apiKey = callback.apiKey,
+                    authMethod = SessionAuthMethod.WEB,
                     accountId = identity.email.ifBlank { identity.userName },
                     email = identity.email,
                     plan = identity.plan,
