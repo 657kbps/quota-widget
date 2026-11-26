@@ -344,12 +344,12 @@ private fun ColumnScope.AuthSaveAction(
     saveLabel: String,
     onSave: () -> Unit,
 ) {
-    Spacer(modifier = Modifier.height(12.dp))
     SaveAction(
         label = saveLabel,
         enabled = isDirty,
         busy = isBusy,
         onClick = onSave,
+        topSpacing = 12.dp,
     )
 }
 

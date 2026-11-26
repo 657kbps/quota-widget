@@ -138,11 +138,11 @@ fun ColumnScope.NewApiConfigContent(
             color = MaterialTheme.colorScheme.error,
         )
     }
-    Spacer(modifier = Modifier.height(12.dp))
     SaveAction(
         label = stringResource(R.string.new_api_save),
         enabled = isDirty,
         busy = isSaving,
         onClick = onSave,
+        topSpacing = 12.dp,
     )
 }

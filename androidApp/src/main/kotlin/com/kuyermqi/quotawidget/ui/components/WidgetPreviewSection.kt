@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.ui.components
 
 import android.os.Build
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,11 +30,14 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +46,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.dimensionResource
@@ -66,10 +73,21 @@ import com.kuyermqi.quotawidget.domain.usage.overviewWindowLabel
 import com.kuyermqi.quotawidget.widget.WidgetDateFormatter
 import com.kuyermqi.quotawidget.widget.compactBalanceTitleFontSize
 import com.kuyermqi.quotawidget.widget.usage.progressTrackColorArgb
+import kotlin.math.roundToInt
 
 private const val COMPACT_PILL_PREVIEW_MAX_PERCENT_SP = 22f
 
 internal val LocalShowWidgetUpdatedAt = staticCompositionLocalOf { true }
+
+internal class WidgetTabScrollContext(
+    val scrollState: ScrollState,
+    private val viewportCoordinatesProvider: () -> LayoutCoordinates?,
+) {
+    val viewportCoordinates: LayoutCoordinates?
+        get() = viewportCoordinatesProvider()
+}
+
+internal val LocalWidgetTabScrollContext = staticCompositionLocalOf<WidgetTabScrollContext?> { null }
 
 internal data class WidgetTabHeaderState<T>(
     val tabs: List<T>,
@@ -103,6 +121,25 @@ internal fun <T> WidgetTabPreviewCard(
     settingsContent: @Composable ColumnScope.(T) -> Unit = {},
     previewContent: @Composable (T) -> Unit,
 ) {
+    val tabScrollContext = LocalWidgetTabScrollContext.current
+    var tabRowCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var scrollToTopTrigger by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(scrollToTopTrigger) {
+        if (scrollToTopTrigger == 0) return@LaunchedEffect
+        repeat(2) { withFrameNanos { } }
+        val context = tabScrollContext ?: return@LaunchedEffect
+        val viewport = context.viewportCoordinates ?: return@LaunchedEffect
+        val tabRow = tabRowCoords ?: return@LaunchedEffect
+        if (!viewport.isAttached || !tabRow.isAttached) return@LaunchedEffect
+        val target = (context.scrollState.value + (tabRow.positionInRoot().y - viewport.positionInRoot().y))
+            .roundToInt()
+            .coerceIn(0, context.scrollState.maxValue)
+        if (target != context.scrollState.value) {
+            context.scrollState.animateScrollTo(target)
+        }
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -113,6 +150,7 @@ internal fun <T> WidgetTabPreviewCard(
                 val selectedIndex = tabState.tabs.indexOf(tabState.selectedTab).coerceAtLeast(0)
                 PrimaryTabRow(
                     selectedTabIndex = selectedIndex,
+                    modifier = Modifier.onGloballyPositioned { tabRowCoords = it },
                     containerColor = Color.Transparent,
                     divider = {
                         HorizontalDivider(
@@ -123,7 +161,12 @@ internal fun <T> WidgetTabPreviewCard(
                     tabState.tabs.forEachIndexed { index, tab ->
                         Tab(
                             selected = index == selectedIndex,
-                            onClick = { tabState.onTabSelected(tab) },
+                            onClick = {
+                                if (tab != tabState.selectedTab) {
+                                    tabState.onTabSelected(tab)
+                                    scrollToTopTrigger++
+                                }
+                            },
                             text = {
                                 Text(
                                     text = tabState.tabLabelOf(tab),

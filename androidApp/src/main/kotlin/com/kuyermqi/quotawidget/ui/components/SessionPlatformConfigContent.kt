@@ -224,12 +224,12 @@ private fun ColumnScope.SessionWidgetPrefs(
         platformName = state.platformName,
         updatedAtEpochMs = prefs.updatedAtEpochMs,
     )
-    Spacer(modifier = Modifier.height(12.dp))
     SaveAction(
         label = stringResource(R.string.session_save_prefs),
         enabled = state.isDirty,
         busy = state.isSaving,
         onClick = state.onSave,
+        topSpacing = 12.dp,
     )
 }
 

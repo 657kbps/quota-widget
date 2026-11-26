@@ -121,11 +121,11 @@ fun ColumnScope.ApiKeyUsageConfigContent(
             color = MaterialTheme.colorScheme.error,
         )
     }
-    Spacer(modifier = Modifier.height(12.dp))
     SaveAction(
         label = stringResource(R.string.action_save),
         enabled = isDirty,
         busy = isSaving,
         onClick = onSave,
+        topSpacing = 12.dp,
     )
 }
