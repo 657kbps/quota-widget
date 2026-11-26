@@ -303,6 +303,10 @@ internal fun Preferences.toWidgetCardSettings(platformId: String): WidgetCardSet
     return toUsageDisplayPrefs(platformId).toWidgetCardSettings(platformId)
 }
 
+internal fun Preferences.needsLegacyWidgetMigration(): Boolean =
+    this[widgetStatusKey(PlatformIds.DEEPSEEK)] == null &&
+        this[SettingsKeys.LEGACY_WIDGET_STATUS] != null
+
 internal fun MutablePreferences.migrateLegacyWidgetIfNeeded() {
     if (this[widgetStatusKey(PlatformIds.DEEPSEEK)] != null) return
     val legacyStatus = this[SettingsKeys.LEGACY_WIDGET_STATUS] ?: return

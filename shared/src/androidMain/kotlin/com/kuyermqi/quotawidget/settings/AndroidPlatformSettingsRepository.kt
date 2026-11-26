@@ -35,6 +35,9 @@ class AndroidPlatformSettingsRepository(
         resetKeyset = { resetTinkKeyset(appContext) },
     )
     private val settingsWriteMutex = Mutex()
+
+    @Volatile
+    private var legacyWidgetMigrationChecked = false
     private val crypto = SettingsCrypto(
         encrypt = { plain, associatedData -> encrypt(plain, associatedData) },
         decrypt = { encoded, associatedData -> decrypt(encoded, associatedData) },
@@ -370,10 +373,8 @@ class AndroidPlatformSettingsRepository(
     override fun observeWidgetState(platformId: String): Flow<WidgetDisplayState> =
         dataStore.data.map { prefs -> prefs.toWidgetState(platformId) }.distinctUntilChanged()
 
-    override suspend fun getWidgetState(platformId: String): WidgetDisplayState {
-        ensureLegacyMigrated()
-        return dataStore.data.first().toWidgetState(platformId)
-    }
+    override suspend fun getWidgetState(platformId: String): WidgetDisplayState =
+        readMigratedPreferences().toWidgetState(platformId)
 
     override suspend fun configuredPlatformIds(platformIds: List<String>): List<String> {
         val prefs = dataStore.data.first()
@@ -383,8 +384,7 @@ class AndroidPlatformSettingsRepository(
     override suspend fun getWidgetRenderSnapshot(
         platformIds: Set<String>,
     ): WidgetRenderSnapshot {
-        ensureLegacyMigrated()
-        val prefs = dataStore.data.first()
+        val prefs = readMigratedPreferences()
         return WidgetRenderSnapshot.of(
             platformIds = platformIds,
             appSettings = prefs.toAppSettings(),
@@ -397,8 +397,16 @@ class AndroidPlatformSettingsRepository(
         }
     }
 
-    private suspend fun ensureLegacyMigrated() {
-        dataStore.edit { it.migrateLegacyWidgetIfNeeded() }
+    private suspend fun readMigratedPreferences(): androidx.datastore.preferences.core.Preferences {
+        val prefs = dataStore.data.first()
+        val result = if (legacyWidgetMigrationChecked || !prefs.needsLegacyWidgetMigration()) {
+            prefs
+        } else {
+            editSettings { it.migrateLegacyWidgetIfNeeded() }
+            dataStore.data.first()
+        }
+        legacyWidgetMigrationChecked = true
+        return result
     }
 
     override suspend fun saveWidgetSuccess(platformId: String, snapshot: QuotaSnapshot) {
