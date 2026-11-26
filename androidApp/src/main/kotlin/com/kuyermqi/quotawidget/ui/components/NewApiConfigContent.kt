@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
@@ -69,15 +68,11 @@ fun ColumnScope.NewApiConfigContent(
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
-        OutlinedTextField(
+        SecretOutlinedTextField(
             value = apiKey,
             onValueChange = onApiKeyChange,
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(stringResource(R.string.new_api_api_key_label)) },
-            supportingText = { Text(stringResource(R.string.new_api_usage_display_hint)) },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            label = stringResource(R.string.new_api_api_key_label),
+            supportingText = stringResource(R.string.new_api_usage_display_hint),
             enabled = !isSaving,
         )
         Spacer(modifier = Modifier.height(12.dp))
