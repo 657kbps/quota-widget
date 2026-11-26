@@ -36,6 +36,7 @@ import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.domain.formatNewApiUsageWidgetTitle
 import com.kuyermqi.quotawidget.domain.formatNewApiWidgetFooter
 import com.kuyermqi.quotawidget.domain.formatUsageDisplayPercent
@@ -51,6 +52,7 @@ import com.kuyermqi.quotawidget.widget.BalanceBlock
 import com.kuyermqi.quotawidget.widget.WidgetHeader
 import com.kuyermqi.quotawidget.widget.clickableNoRipple
 import com.kuyermqi.quotawidget.widget.contextString
+import com.kuyermqi.quotawidget.widget.widgetContext
 import com.kuyermqi.quotawidget.widget.fittedTitleFontSize
 import com.kuyermqi.quotawidget.widget.updatedAtLabel
 import com.kuyermqi.quotawidget.widget.systemWidgetBackgroundCornerRadius
@@ -126,7 +128,7 @@ fun UsagePercentWidgetContent(
                     )
                 is WidgetDisplayState.Error ->
                     BalanceBlock(
-                        title = contextString(R.string.widget_fetch_failed),
+                        title = widgetErrorText(state.kind, widgetContext()),
                         subtitle = null,
                         titleSize = 32.sp,
                         openApp = openApp,

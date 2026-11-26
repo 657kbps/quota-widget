@@ -32,6 +32,7 @@ import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.ServiceRegion
 import com.kuyermqi.quotawidget.domain.ThemeColorMode
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.domain.WidgetErrorKind
 import com.kuyermqi.quotawidget.domain.encodeQuotaWindows
 import com.kuyermqi.quotawidget.magpie.decodeMagpieProviders
 import com.kuyermqi.quotawidget.magpie.encodeMagpieProviders
@@ -595,11 +596,11 @@ class AndroidPlatformSettingsRepository(
         }
     }
 
-    override suspend fun saveWidgetError(platformId: String, message: String) {
+    override suspend fun saveWidgetError(platformId: String, kind: WidgetErrorKind) {
         editSettings { prefs ->
             prefs.migrateLegacyWidgetIfNeeded()
             prefs[widgetStatusKey(platformId)] = StoredWidgetStatus.ERROR
-            prefs[widgetErrorKey(platformId)] = message
+            prefs[widgetErrorKey(platformId)] = kind.toStorage()
         }
     }
 

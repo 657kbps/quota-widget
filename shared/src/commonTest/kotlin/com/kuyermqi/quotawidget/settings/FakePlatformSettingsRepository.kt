@@ -4,6 +4,7 @@ import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.domain.WidgetErrorKind
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.refresh.isRefreshPhaseStale
 import com.kuyermqi.quotawidget.refresh.shouldResetRefreshPhase
@@ -69,8 +70,8 @@ class FakePlatformSettingsRepository(
     var oemBackgroundTipDismissed: Boolean = false
     var updateIgnoredVersion: String? = null
 
-    /** Every [saveWidgetError] call as `platformId to message`, oldest first. */
-    val widgetErrorSaves = mutableListOf<Pair<String, String>>()
+    /** Every [saveWidgetError] call as `platformId to kind`, oldest first. */
+    val widgetErrorSaves = mutableListOf<Pair<String, WidgetErrorKind>>()
 
     override fun observeDeepSeekSettings(): Flow<DeepSeekSettings> = deepSeekFlow.asStateFlow()
     override suspend fun getDeepSeekSettings(): DeepSeekSettings = deepSeekFlow.value
@@ -353,9 +354,9 @@ class FakePlatformSettingsRepository(
         widgetFlow(platformId).value = WidgetDisplayState.Success(snapshot)
     }
 
-    override suspend fun saveWidgetError(platformId: String, message: String) {
-        widgetErrorSaves += platformId to message
-        widgetFlow(platformId).value = WidgetDisplayState.Error(message)
+    override suspend fun saveWidgetError(platformId: String, kind: WidgetErrorKind) {
+        widgetErrorSaves += platformId to kind
+        widgetFlow(platformId).value = WidgetDisplayState.Error(kind)
     }
 
     override suspend fun saveWidgetLoading(platformId: String) {

@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.zhipu
 
 import com.kuyermqi.quotawidget.domain.HttpStatusException
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -94,7 +95,7 @@ class ZhipuUsageClient(
             platformId = PlatformIds.ZHIPU,
             platformName = PlatformRegistry.displayName(PlatformIds.ZHIPU),
             windows = windows,
-            primaryDisplay = formatUsagePrimaryDisplay(windows),
+            primaryDisplay = formatUsagePrimaryDisplay(windows, NeutralUsageLabels),
             updatedAtEpochMs = nowEpochMs,
         )
     }

@@ -10,6 +10,7 @@ import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.ServiceRegion
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.domain.WidgetErrorKind
 import com.kuyermqi.quotawidget.magpie.MagpieProvider
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import kotlinx.coroutines.flow.Flow
@@ -259,7 +260,9 @@ interface PlatformSettingsRepository {
     suspend fun getWidgetRenderSnapshot(platformIds: Set<String>): WidgetRenderSnapshot
 
     suspend fun saveWidgetSuccess(platformId: String, snapshot: QuotaSnapshot)
-    suspend fun saveWidgetError(platformId: String, message: String)
+
+    /** Persists only the kind (plus its HTTP status); the text is rendered per app language. */
+    suspend fun saveWidgetError(platformId: String, kind: WidgetErrorKind)
     suspend fun saveWidgetLoading(platformId: String)
     suspend fun saveWidgetNotConfigured(platformId: String)
     suspend fun saveWidgetNeedsReauth(platformId: String)

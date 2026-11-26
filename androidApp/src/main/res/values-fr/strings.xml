@@ -194,6 +194,12 @@
     <string name="zhipu_api_key_hint">Une clé API de formule créée sur la page Zhipu Coding Plan (utilisez une clé d\'équipe pour les formules d\'équipe)</string>
     <string name="zhipu_invalid_key">La clé API Zhipu est invalide ou a expiré. Vérifiez la configuration.</string>
     <string name="widget_fetch_failed">Échec de la récupération</string>
+    <string name="widget_error_session_expired">Session expirée. Veuillez vous reconnecter.</string>
+    <string name="widget_error_quota_unavailable">La plateforme n\'a renvoyé aucune donnée de quota</string>
+    <string name="widget_error_http_status">Échec de la requête (HTTP %1$d)</string>
+    <string name="widget_error_network">Réseau indisponible. Vérifiez votre connexion.</string>
+    <string name="widget_error_invalid_base_url">URL du serveur invalide</string>
+    <string name="widget_error_parse_failure">Réponse inattendue du serveur</string>
     <string name="home_title">Quota Widget</string>
     <string name="home_section_configured">Configurés</string>
     <string name="home_section_unconfigured">Non configurés</string>

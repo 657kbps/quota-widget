@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.magpie
 
 import com.kuyermqi.quotawidget.domain.HttpStatusException
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
@@ -249,7 +250,7 @@ class MagpieQuotaClient(
                 platformId = PlatformIds.MAGPIE,
                 platformName = PlatformRegistry.displayName(PlatformIds.MAGPIE),
                 windows = windows,
-                primaryDisplay = formatUsagePrimaryDisplay(windows, usageDisplayMode),
+                primaryDisplay = formatUsagePrimaryDisplay(windows, NeutralUsageLabels, usageDisplayMode),
                 updatedAtEpochMs = updatedAtEpochMs,
             )
         }

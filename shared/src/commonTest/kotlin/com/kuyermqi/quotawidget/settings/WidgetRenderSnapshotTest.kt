@@ -12,6 +12,7 @@ import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.domain.WidgetErrorKind
 import com.kuyermqi.quotawidget.domain.encodeQuotaWindows
 import com.kuyermqi.quotawidget.domain.formatBalance
 import com.kuyermqi.quotawidget.platform.PlatformIds
@@ -44,14 +45,40 @@ class WidgetRenderSnapshotTest {
     }
 
     @Test
-    fun errorFallsBackToTheDefaultMessage() {
+    fun storedErrorCodeDecodesToTheSameKind() {
+        val state = record(
+            platformId = PlatformIds.CODEX,
+            configured = true,
+            status = StoredWidgetStatus.ERROR,
+            error = WidgetErrorKind.HttpStatus(503).toStorage(),
+        ).toWidgetDisplayState()
+
+        assertEquals(WidgetDisplayState.Error(WidgetErrorKind.HttpStatus(503)), state)
+    }
+
+    @Test
+    fun legacyErrorMessageDecodesAsUnknownAndKeepsTheText() {
+        val state = record(
+            platformId = PlatformIds.CODEX,
+            configured = true,
+            status = StoredWidgetStatus.ERROR,
+            error = "Kimi Code 返回为空",
+        ).toWidgetDisplayState()
+
+        val kind = assertIs<WidgetErrorKind.Unknown>(assertIs<WidgetDisplayState.Error>(state).kind)
+        assertEquals("Kimi Code 返回为空", kind.legacyText)
+        assertEquals("unknown", kind.toStorage())
+    }
+
+    @Test
+    fun missingErrorMessageDecodesAsUnknownWithoutText() {
         val state = record(
             platformId = PlatformIds.CODEX,
             configured = true,
             status = StoredWidgetStatus.ERROR,
         ).toWidgetDisplayState()
 
-        assertEquals(WidgetDisplayState.Error("刷新失败"), state)
+        assertEquals(WidgetDisplayState.Error(WidgetErrorKind.Unknown()), state)
     }
 
     @Test
@@ -170,6 +197,7 @@ class WidgetRenderSnapshotTest {
         platformId: String,
         configured: Boolean,
         status: String? = StoredWidgetStatus.SUCCESS,
+        error: String? = null,
         payloadPlatformName: String? = null,
         currency: String? = null,
         total: String? = null,
@@ -180,6 +208,7 @@ class WidgetRenderSnapshotTest {
         platformId = platformId,
         configured = configured,
         status = status,
+        error = error,
         payloadPlatformName = payloadPlatformName,
         currency = currency,
         total = total,

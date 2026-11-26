@@ -2,6 +2,7 @@ package com.kuyermqi.quotawidget.antigravity
 
 import com.kuyermqi.quotawidget.codex.codexSha256
 import com.kuyermqi.quotawidget.domain.HttpStatusException
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -165,7 +166,7 @@ class AntigravityClient(
             platformId = PlatformIds.ANTIGRAVITY,
             platformName = PlatformRegistry.displayName(PlatformIds.ANTIGRAVITY),
             windows = windows,
-            primaryDisplay = formatUsagePrimaryDisplay(windows),
+            primaryDisplay = formatUsagePrimaryDisplay(windows, NeutralUsageLabels),
             updatedAtEpochMs = currentTimeMillis(),
         )
     }

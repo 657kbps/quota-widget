@@ -232,7 +232,7 @@ class MagpieQuotaClientTest {
 
         assertEquals(PlatformIds.MAGPIE, snapshot.platformId)
         assertEquals("Magpie", snapshot.platformName)
-        assertEquals("滚动 12.5 % · 每周 40 % · 每月 5 %", snapshot.primaryDisplay)
+        assertEquals("5h 12.5 % · 7d 40 % · 30d 5 %", snapshot.primaryDisplay)
         assertEquals(nowEpochMs, snapshot.updatedAtEpochMs)
     }
 

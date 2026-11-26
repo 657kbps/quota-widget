@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.kimi
 
 import com.kuyermqi.quotawidget.domain.HttpStatusException
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -149,7 +150,7 @@ class KimiCodeUsageClient(
                 platformId = PlatformIds.KIMI_CODE,
                 platformName = PlatformRegistry.displayName(PlatformIds.KIMI_CODE),
                 windows = windows,
-                primaryDisplay = formatUsagePrimaryDisplay(windows),
+                primaryDisplay = formatUsagePrimaryDisplay(windows, NeutralUsageLabels),
                 updatedAtEpochMs = updatedAtEpochMs,
             )
         }

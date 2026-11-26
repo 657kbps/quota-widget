@@ -5,6 +5,7 @@ import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.domain.WidgetErrorKind
 import com.kuyermqi.quotawidget.domain.decodeQuotaWindows
 import com.kuyermqi.quotawidget.domain.formatBalance
 import com.kuyermqi.quotawidget.platform.PlatformIds
@@ -19,8 +20,6 @@ internal object StoredWidgetStatus {
     const val NEEDS_REAUTH = "needs_reauth"
 }
 
-private const val DEFAULT_WIDGET_ERROR = "刷新失败"
-
 /**
  * Widget status plus the last stored payload of one platform, already resolved against the
  * legacy keys by the settings repository. Kept free of storage APIs so the decoding is shared
@@ -30,6 +29,7 @@ data class StoredWidgetRecord(
     val platformId: String,
     val configured: Boolean,
     val status: String?,
+    /** Stored [WidgetErrorKind] code; builds before the code existed left a message here. */
     val error: String? = null,
     val payloadPlatformId: String? = null,
     val payloadPlatformName: String? = null,
@@ -50,7 +50,9 @@ fun StoredWidgetRecord.toWidgetDisplayState(): WidgetDisplayState {
     return when (status) {
         StoredWidgetStatus.LOADING -> WidgetDisplayState.Loading
         StoredWidgetStatus.NEEDS_REAUTH -> WidgetDisplayState.NeedsReauth
-        StoredWidgetStatus.ERROR -> WidgetDisplayState.Error(error ?: DEFAULT_WIDGET_ERROR)
+        StoredWidgetStatus.ERROR -> WidgetDisplayState.Error(
+            WidgetErrorKind.fromStorage(error),
+        )
         StoredWidgetStatus.SUCCESS -> WidgetDisplayState.Success(
             QuotaSnapshot(
                 platformId = payloadPlatformId ?: platformId,

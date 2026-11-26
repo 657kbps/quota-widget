@@ -194,6 +194,12 @@
     <string name="zhipu_api_key_hint">Ein auf der Zhipu Coding Plan-Seite erstellter Plan-API-Schlüssel (für Team-Tarife den Team-Schlüssel verwenden)</string>
     <string name="zhipu_invalid_key">Der Zhipu API-Schlüssel ist ungültig oder abgelaufen. Prüfen Sie die Konfiguration.</string>
     <string name="widget_fetch_failed">Abruf fehlgeschlagen</string>
+    <string name="widget_error_session_expired">Sitzung abgelaufen. Bitte erneut anmelden.</string>
+    <string name="widget_error_quota_unavailable">Die Plattform hat keine Quotendaten geliefert</string>
+    <string name="widget_error_http_status">Anfrage fehlgeschlagen (HTTP %1$d)</string>
+    <string name="widget_error_network">Kein Netzwerk. Bitte Verbindung prüfen.</string>
+    <string name="widget_error_invalid_base_url">Ungültige Server-URL</string>
+    <string name="widget_error_parse_failure">Unerwartete Antwort vom Server</string>
     <string name="home_title">Quota Widget</string>
     <string name="home_section_configured">Konfiguriert</string>
     <string name="home_section_unconfigured">Nicht konfiguriert</string>

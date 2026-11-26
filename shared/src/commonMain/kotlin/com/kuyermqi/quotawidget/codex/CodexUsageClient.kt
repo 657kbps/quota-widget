@@ -1,5 +1,6 @@
 package com.kuyermqi.quotawidget.codex
 
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -58,7 +59,7 @@ class CodexUsageClient(
             platformId = PlatformIds.CODEX,
             platformName = PlatformRegistry.displayName(PlatformIds.CODEX),
             windows = windows,
-            primaryDisplay = formatUsagePrimaryDisplay(windows),
+            primaryDisplay = formatUsagePrimaryDisplay(windows, NeutralUsageLabels),
             updatedAtEpochMs = currentTimeMillis(),
         )
     }

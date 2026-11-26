@@ -31,6 +31,7 @@ import com.kuyermqi.quotawidget.settings.CodexSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.CodexConfigContent
 import com.kuyermqi.quotawidget.ui.usage.formatCodexUsageWindowSummary
+import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
@@ -270,7 +271,7 @@ fun codexHomeEffects(
                         state.error = null
                     }
                     is WidgetDisplayState.Error -> {
-                        state.error = refreshState.message
+                        state.error = widgetErrorText(refreshState.kind, resources)
                     }
                     WidgetDisplayState.NeedsReauth -> {
                         clearCodexSession(
@@ -382,7 +383,7 @@ fun ColumnScope.CodexHomeContent(
                     state.applyDraft(next)
                     when (val result = onRefreshPlatform(PlatformIds.CODEX)) {
                         is WidgetDisplayState.Error -> {
-                            state.error = result.message
+                            state.error = widgetErrorText(result.kind, context)
                         }
                         WidgetDisplayState.NeedsReauth -> {
                             clearCodexSession(

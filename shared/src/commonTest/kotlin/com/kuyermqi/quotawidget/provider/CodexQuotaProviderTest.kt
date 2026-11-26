@@ -10,6 +10,7 @@ import com.kuyermqi.quotawidget.domain.UsageDisplayMode
 import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.domain.WidgetErrorKind
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
 import com.kuyermqi.quotawidget.refresh.BalanceRefreshInteractor
@@ -100,7 +101,7 @@ class CodexQuotaProviderTest {
 
         val result = interactor.refresh(PlatformIds.CODEX)
 
-        val regionError = WidgetDisplayState.Error(CodexRegionUnavailableException().message!!)
+        val regionError = WidgetDisplayState.Error(WidgetErrorKind.Unknown())
         assertEquals(0, refreshCalls)
         val completed = assertIs<BalanceRefreshResult.Completed>(result)
         assertEquals(regionError, completed.state)
@@ -129,7 +130,7 @@ class CodexQuotaProviderTest {
 
         val result = interactor.refresh(PlatformIds.CODEX)
 
-        val regionError = WidgetDisplayState.Error(CodexRegionUnavailableException().message!!)
+        val regionError = WidgetDisplayState.Error(WidgetErrorKind.Unknown())
         val completed = assertIs<BalanceRefreshResult.Completed>(result)
         assertEquals(regionError, completed.state)
         assertTrue(repo.getCodexSettings().isConfigured)

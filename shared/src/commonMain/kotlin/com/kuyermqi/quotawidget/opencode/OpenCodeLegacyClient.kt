@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.opencode
 
 import com.kuyermqi.quotawidget.domain.HttpStatusException
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
@@ -87,7 +88,7 @@ class OpenCodeLegacyClient(
             platformName = PlatformRegistry.displayName(PlatformIds.OPENCODE_GO),
             windows = windows,
             primaryDisplay = formatUsageRemainingRolling(windows)
-                ?: formatUsagePrimaryDisplay(windows),
+                ?: formatUsagePrimaryDisplay(windows, NeutralUsageLabels),
             updatedAtEpochMs = currentTimeMillis(),
         )
     }

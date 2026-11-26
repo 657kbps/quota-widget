@@ -26,9 +26,11 @@ import com.kuyermqi.quotawidget.domain.UsageProgressStyle
 import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.widget.RefreshButton
 import com.kuyermqi.quotawidget.widget.clickableNoRipple
 import com.kuyermqi.quotawidget.widget.contextString
+import com.kuyermqi.quotawidget.widget.widgetContext
 import com.kuyermqi.quotawidget.widget.systemWidgetBackgroundCornerRadius
 
 @Composable
@@ -89,7 +91,7 @@ fun UsagePercentCompactContent(
                         WidgetDisplayState.NeedsReauth ->
                             contextString(R.string.widget_needs_reauth)
                         is WidgetDisplayState.Error ->
-                            contextString(R.string.widget_fetch_failed)
+                            widgetErrorText(state.kind, widgetContext())
                         is WidgetDisplayState.Success -> ""
                     }
                     Column(

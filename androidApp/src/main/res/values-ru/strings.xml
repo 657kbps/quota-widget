@@ -194,6 +194,12 @@
     <string name="zhipu_api_key_hint">API-ключ тарифа, созданный на странице Zhipu Coding Plan (для командных тарифов используйте командный ключ)</string>
     <string name="zhipu_invalid_key">API-ключ Zhipu недействителен или истёк. Проверьте настройки.</string>
     <string name="widget_fetch_failed">Ошибка получения</string>
+    <string name="widget_error_session_expired">Сеанс истёк. Войдите снова.</string>
+    <string name="widget_error_quota_unavailable">Платформа не вернула данные о квоте</string>
+    <string name="widget_error_http_status">Запрос не выполнен (HTTP %1$d)</string>
+    <string name="widget_error_network">Сеть недоступна. Проверьте подключение.</string>
+    <string name="widget_error_invalid_base_url">Неверный URL сервера</string>
+    <string name="widget_error_parse_failure">Сервер вернул неожиданный ответ</string>
     <string name="home_title">Quota Widget</string>
     <string name="home_section_configured">Настроено</string>
     <string name="home_section_unconfigured">Не настроено</string>

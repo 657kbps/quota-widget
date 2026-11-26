@@ -56,6 +56,7 @@ import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toAppLanguage
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toAppThemeSettings
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toDisplayState
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toRefreshPhase
+import com.kuyermqi.quotawidget.widget.WidgetGlanceState.usageDisplayModeFor
 import com.kuyermqi.quotawidget.worker.BalanceRefreshWorker
 
 /** App Context from [provideGlance], not Glance [androidx.glance.LocalContext]. */
@@ -104,7 +105,7 @@ internal suspend fun GlanceAppWidget.providePlatformGlance(
             AppLocale.wrap(context, appLanguage)
         }
         CompositionLocalProvider(LocalWidgetAndroidContext provides localizedContext) {
-            val glanceState = prefs.toDisplayState(localizedContext)
+            val glanceState = prefs.toDisplayState()
             val state = if (
                 prefs[WidgetGlanceState.statusKey] == null &&
                 repoDisplay !is WidgetDisplayState.NotConfigured
@@ -112,7 +113,7 @@ internal suspend fun GlanceAppWidget.providePlatformGlance(
                 repoDisplay
             } else {
                 glanceState
-            }
+            }.withLocalizedSummary(localizedContext, prefs.usageDisplayModeFor(platformId))
             val refreshPhase = prefs.toRefreshPhase()
             val themeColors = colorProvidersFor(localizedContext, prefs.toAppThemeSettings())
             val platformTitle = platformNameRes(platformId)?.let { contextString(it) }

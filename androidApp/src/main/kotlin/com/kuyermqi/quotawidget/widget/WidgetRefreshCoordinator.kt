@@ -132,7 +132,7 @@ object WidgetRefreshCoordinator {
             is BalanceRefreshResult.TransientFailure -> result.retained
         }) {
             is WidgetDisplayState.Error ->
-                Log.e(TAG, "refresh error platform=$platformId message=${state.message}")
+                Log.e(TAG, "refresh error platform=$platformId kind=${state.kind}")
             WidgetDisplayState.NeedsReauth ->
                 Log.w(TAG, "refresh needsReauth platform=$platformId")
             is WidgetDisplayState.Success ->

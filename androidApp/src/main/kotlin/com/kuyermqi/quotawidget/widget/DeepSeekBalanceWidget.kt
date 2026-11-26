@@ -32,6 +32,7 @@ import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.platform.PlatformIds
+import com.kuyermqi.quotawidget.ui.widgetErrorText
 
 class DeepSeekBalanceWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
@@ -129,7 +130,7 @@ private fun DeepSeekWidgetContent(
                 }
                 is WidgetDisplayState.Error ->
                     BalanceBlock(
-                        title = contextString(R.string.widget_fetch_failed),
+                        title = widgetErrorText(state.kind, widgetContext()),
                         subtitle = null,
                         titleSize = 32.sp,
                         openApp = openApp,
@@ -180,7 +181,7 @@ Triple(contextString(R.string.widget_needs_reauth), null, 26.sp)
                     )
                 }
                 is WidgetDisplayState.Error ->
-Triple(contextString(R.string.widget_fetch_failed), null, 26.sp)
+                    Triple(widgetErrorText(state.kind, widgetContext()), null, 26.sp)
             }
             Column(
                 modifier = GlanceModifier

@@ -194,6 +194,12 @@
     <string name="zhipu_api_key_hint">Zhipu コーディングプランのページで作成したプラン API キー（チームプランはチームキーを使用）</string>
     <string name="zhipu_invalid_key">Zhipu API キーが無効または期限切れです。設定を確認してください。</string>
     <string name="widget_fetch_failed">取得に失敗</string>
+    <string name="widget_error_session_expired">ログインの有効期限が切れました。再度ログインしてください</string>
+    <string name="widget_error_quota_unavailable">プラットフォームが表示できるクォータデータを返しませんでした</string>
+    <string name="widget_error_http_status">リクエストに失敗しました (HTTP %1$d)</string>
+    <string name="widget_error_network">ネットワークに接続できません。接続を確認してください</string>
+    <string name="widget_error_invalid_base_url">サーバー URL が無効です</string>
+    <string name="widget_error_parse_failure">サーバーから想定外の応答が返りました</string>
     <string name="home_title">クォータウィジェット</string>
     <string name="home_section_configured">設定済み</string>
     <string name="home_section_unconfigured">未設定</string>

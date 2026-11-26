@@ -4,7 +4,9 @@ import com.kuyermqi.quotawidget.domain.HttpStatusException
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.domain.WidgetErrorKind
 import com.kuyermqi.quotawidget.domain.isRetryableHttpStatus
+import com.kuyermqi.quotawidget.network.InvalidBaseUrlException
 import com.kuyermqi.quotawidget.provider.QuotaProvider
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import io.ktor.client.plugins.ResponseException
@@ -12,6 +14,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.io.IOException
+import kotlinx.serialization.SerializationException
 
 /**
  * Only network-level failures and retryable HTTP statuses are worth another attempt.
@@ -30,6 +33,30 @@ internal fun isRetryableFailure(error: Throwable): Boolean {
         current = current.cause
     }
     return false
+}
+
+/**
+ * Classifies [error] for persistence, walking the cause chain like [isRetryableFailure] so a
+ * wrapped network or status failure keeps its meaning. Messages are dropped: the kind is the
+ * only thing stored and every surface renders it in the app language.
+ */
+internal fun Throwable.toWidgetErrorKind(): WidgetErrorKind {
+    val visited = mutableSetOf<Throwable>()
+    var current: Throwable? = this
+    while (current != null && visited.add(current)) {
+        when (current) {
+            is SessionExpiredException -> return WidgetErrorKind.SessionExpired
+            is QuotaUnavailableException -> return WidgetErrorKind.QuotaUnavailable
+            is InvalidBaseUrlException -> return WidgetErrorKind.InvalidBaseUrl
+            is HttpStatusException -> return WidgetErrorKind.HttpStatus(current.statusCode)
+            is ResponseException ->
+                return WidgetErrorKind.HttpStatus(current.response.status.value)
+            is IOException -> return WidgetErrorKind.Network
+            is SerializationException -> return WidgetErrorKind.ParseFailure
+        }
+        current = current.cause
+    }
+    return WidgetErrorKind.Unknown()
 }
 
 class BalanceRefreshInteractor(
@@ -71,9 +98,9 @@ class BalanceRefreshInteractor(
      * so the widget can keep showing the previous value while the icon spins.
      *
      * Retryable failures ([isRetryableFailure]) keep an existing
-     * [WidgetDisplayState.Success] instead of overwriting it with Error (avoids
-     * "获取失败" after lock-screen network blips). Permanent failures write
-     * [WidgetDisplayState.Error] and stop WorkManager retries.
+     * [WidgetDisplayState.Success] instead of overwriting it with Error (avoids a
+     * "fetch failed" state after lock-screen network blips). Permanent failures write
+     * [WidgetDisplayState.Error] with a [WidgetErrorKind] and stop WorkManager retries.
      *
      * Session expiry ([SessionExpiredException]) writes [WidgetDisplayState.NeedsReauth]
      * and does not retain a prior Success.
@@ -91,9 +118,10 @@ class BalanceRefreshInteractor(
     private suspend fun refreshInternal(platformId: String): BalanceRefreshResult {
         val provider = providersById[platformId]
         if (provider == null) {
-            val message = "未知平台: $platformId"
-            settingsRepository.saveWidgetError(platformId, message)
-            return BalanceRefreshResult.Completed(WidgetDisplayState.Error(message))
+            val kind = WidgetErrorKind.Unknown()
+            println("QuotaRefresh unknownPlatform id=$platformId kind=$kind")
+            settingsRepository.saveWidgetError(platformId, kind)
+            return BalanceRefreshResult.Completed(WidgetDisplayState.Error(kind))
         }
 
         if (!provider.isConfigured(settingsRepository)) {
@@ -115,29 +143,29 @@ class BalanceRefreshInteractor(
             // Expected data condition (no connected account / no usage window):
             // always surface it instead of silently keeping a stale Success, and
             // don't ask WorkManager to retry something only the user can fix.
-            val message = e.message?.takeIf { it.isNotBlank() } ?: "查询额度失败"
-            println("QuotaRefresh unavailable platform=$platformId msg=$message")
-            settingsRepository.saveWidgetError(platformId, message)
-            BalanceRefreshResult.Completed(WidgetDisplayState.Error(message))
+            val kind = WidgetErrorKind.QuotaUnavailable
+            println("QuotaRefresh unavailable platform=$platformId kind=$kind msg=${e.message}")
+            settingsRepository.saveWidgetError(platformId, kind)
+            BalanceRefreshResult.Completed(WidgetDisplayState.Error(kind))
         } catch (e: Exception) {
-            val message = e.message?.takeIf { it.isNotBlank() } ?: "查询额度失败"
+            val kind = e.toWidgetErrorKind()
             val retryable = isRetryableFailure(e)
             println(
                 "QuotaRefresh fetchFailed platform=$platformId " +
-                    "retryable=$retryable type=${e::class.simpleName} msg=$message",
+                    "retryable=$retryable type=${e::class.simpleName} kind=$kind msg=${e.message}",
             )
             e.printStackTrace()
             if (!retryable) {
-                settingsRepository.saveWidgetError(platformId, message)
-                return BalanceRefreshResult.Completed(WidgetDisplayState.Error(message))
+                settingsRepository.saveWidgetError(platformId, kind)
+                return BalanceRefreshResult.Completed(WidgetDisplayState.Error(kind))
             }
             val previous = settingsRepository.getWidgetState(platformId)
             if (previous is WidgetDisplayState.Success) {
                 BalanceRefreshResult.TransientFailure(previous, retryable = true)
             } else {
-                settingsRepository.saveWidgetError(platformId, message)
+                settingsRepository.saveWidgetError(platformId, kind)
                 BalanceRefreshResult.TransientFailure(
-                    WidgetDisplayState.Error(message),
+                    WidgetDisplayState.Error(kind),
                     retryable = true,
                 )
             }

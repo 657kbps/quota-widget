@@ -37,6 +37,7 @@ import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.formatNewApiBalanceTitle
 import com.kuyermqi.quotawidget.domain.formatNewApiWidgetFooter
 import com.kuyermqi.quotawidget.platform.PlatformIds
+import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.widget.WidgetGlanceState.toNewApiUsageDisplayMode
 
 class NewApiBalanceWidget : GlanceAppWidget() {
@@ -146,7 +147,7 @@ private fun NewApiBalanceWidgetContent(
                 }
                 is WidgetDisplayState.Error ->
                     BalanceBlock(
-                        title = contextString(R.string.widget_fetch_failed),
+                        title = widgetErrorText(state.kind, widgetContext()),
                         subtitle = null,
                         titleSize = 32.sp,
                         openApp = openApp,
@@ -204,7 +205,7 @@ Triple(contextString(R.string.widget_needs_reauth), null, 26.sp)
                     )
                 }
                 is WidgetDisplayState.Error ->
-Triple(contextString(R.string.widget_fetch_failed), null, 26.sp)
+                    Triple(widgetErrorText(state.kind, widgetContext()), null, 26.sp)
             }
             Column(
                 modifier = GlanceModifier

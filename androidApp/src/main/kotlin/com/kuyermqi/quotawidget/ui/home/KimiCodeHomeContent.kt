@@ -28,6 +28,7 @@ import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.ApiKeyUsageConfigContent
 import com.kuyermqi.quotawidget.ui.platformDisplayName
 import com.kuyermqi.quotawidget.ui.usage.formatUsageWindowSummaryWithFallback
+import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
@@ -222,7 +223,7 @@ fun ColumnScope.KimiCodeHomeContent(
                     state.saveError = when (
                         val result = onRefreshPlatform(PlatformIds.KIMI_CODE)
                     ) {
-                        is WidgetDisplayState.Error -> result.message
+                        is WidgetDisplayState.Error -> widgetErrorText(result.kind, context)
                         WidgetDisplayState.NeedsReauth -> msgInvalidKey
                         else -> null
                     }

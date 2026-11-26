@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.QuotaWidgetApp
@@ -26,10 +27,12 @@ import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.availableUsageWindowKinds
+import com.kuyermqi.quotawidget.domain.relocalizedPrimaryDisplay
 import com.kuyermqi.quotawidget.domain.antigravity.AntigravityLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.cline.ClineLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.commandcode.CommandCodeLoginWebViewFlow
 import com.kuyermqi.quotawidget.domain.session.SessionLoginResult
+import com.kuyermqi.quotawidget.domain.usage.usageLabels
 import com.kuyermqi.quotawidget.domain.workbuddy.WorkBuddyLoginWebViewFlow
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
@@ -37,6 +40,7 @@ import com.kuyermqi.quotawidget.settings.SessionPlatformSettings
 import com.kuyermqi.quotawidget.ui.components.SessionAuthPanel
 import com.kuyermqi.quotawidget.ui.components.SessionPlatformConfigContent
 import com.kuyermqi.quotawidget.ui.platformDisplayName
+import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.ui.usage.formatCodexUsageWindowSummary
 import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import com.kuyermqi.quotawidget.workbuddy.WorkBuddyClient
@@ -156,11 +160,14 @@ class SessionPlatformHomeState internal constructor(
                 windows = widgetState.snapshot.windows,
                 windowKind = settings.widgetWindowKind,
                 usageDisplayMode = settings.usageDisplayMode,
-                fallback = widgetState.snapshot.primaryDisplay,
+                fallback = widgetState.snapshot.relocalizedPrimaryDisplay(
+                    labels = usageLabels(resources),
+                    mode = settings.usageDisplayMode,
+                ),
             )
             WidgetDisplayState.Loading -> loadingMsg
             WidgetDisplayState.NeedsReauth -> reauthMsg
-            is WidgetDisplayState.Error -> widgetState.message
+            is WidgetDisplayState.Error -> widgetErrorText(widgetState.kind, resources)
             WidgetDisplayState.NotConfigured -> null
         }
     }
@@ -275,6 +282,7 @@ fun sessionPlatformHomeEffects(
     onRefreshPlatform: suspend (String) -> WidgetDisplayState,
 ): SessionPlatformHomeBindings {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val app = context.applicationContext as QuotaWidgetApp
     val scope = rememberCoroutineScope()
     val loginFailed = stringResource(R.string.session_login_failed)
@@ -300,7 +308,13 @@ fun sessionPlatformHomeEffects(
                 val refreshed = withContext(Dispatchers.IO) {
                     onRefreshPlatform(state.platformId)
                 }
-                handleRefreshResult(state, settingsRepository, refreshed, reauthMessage)
+                handleRefreshResult(
+                    state = state,
+                    settingsRepository = settingsRepository,
+                    refreshed = refreshed,
+                    reauthMessage = reauthMessage,
+                    resources = resources,
+                )
                 WidgetSyncCoordinator.syncWidgets(context, "session_login", state.platformId)
             } catch (e: Exception) {
                 state.error = e.message ?: loginFailed
@@ -380,7 +394,13 @@ fun sessionPlatformHomeEffects(
                     val refreshed = withContext(Dispatchers.IO) {
                         onRefreshPlatform(state.platformId)
                     }
-                    handleRefreshResult(state, settingsRepository, refreshed, reauthMessage)
+                    handleRefreshResult(
+                        state = state,
+                        settingsRepository = settingsRepository,
+                        refreshed = refreshed,
+                        reauthMessage = reauthMessage,
+                        resources = resources,
+                    )
                     if (state.supportsApiKey && state.error == null) {
                         state.authPanel = SessionAuthPanel.SUMMARY
                     }
@@ -407,10 +427,14 @@ private suspend fun handleRefreshResult(
     settingsRepository: PlatformSettingsRepository,
     refreshed: WidgetDisplayState,
     reauthMessage: String,
+    resources: Resources,
 ) {
     when (refreshed) {
         is WidgetDisplayState.Success -> {
-            state.lastDisplay = refreshed.snapshot.primaryDisplay
+            state.lastDisplay = refreshed.snapshot.relocalizedPrimaryDisplay(
+                labels = usageLabels(resources),
+                mode = state.settings.usageDisplayMode,
+            )
             val available = availableUsageWindowKinds(refreshed.snapshot.windows)
             if (available.isNotEmpty() && state.draftWindowKind !in available) {
                 state.draftWindowKind = available.first()
@@ -424,7 +448,7 @@ private suspend fun handleRefreshResult(
             state.error = reauthMessage
         }
         is WidgetDisplayState.Error -> {
-            state.error = refreshed.message
+            state.error = widgetErrorText(refreshed.kind, resources)
         }
         else -> Unit
     }

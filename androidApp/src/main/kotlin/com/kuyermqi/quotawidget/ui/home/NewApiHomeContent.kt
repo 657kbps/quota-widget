@@ -26,6 +26,7 @@ import com.kuyermqi.quotawidget.settings.DEFAULT_NEW_API_QUOTA_PER_USD
 import com.kuyermqi.quotawidget.settings.NewApiSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.NewApiConfigContent
+import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
@@ -254,7 +255,7 @@ fun ColumnScope.NewApiHomeContent(
                     state.saveError = when (
                         val result = onRefreshPlatform(PlatformIds.NEW_API)
                     ) {
-                        is WidgetDisplayState.Error -> result.message
+                        is WidgetDisplayState.Error -> widgetErrorText(result.kind, context)
                         else -> null
                     }
                     WidgetSyncCoordinator.syncWidgets(context, "new_api_save", PlatformIds.NEW_API)

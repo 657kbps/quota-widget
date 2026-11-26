@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.commandcode
 
 import com.kuyermqi.quotawidget.domain.HttpStatusException
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaUnavailableException
 import com.kuyermqi.quotawidget.domain.QuotaWindow
@@ -110,7 +111,7 @@ class CommandCodeClient(
         }
         val next = settings.copy(plan = parsed.plan.ifBlank { settings.plan })
         if (next != settings) save(next)
-        val primary = formatUsagePrimaryDisplay(parsed.windows)
+        val primary = formatUsagePrimaryDisplay(parsed.windows, NeutralUsageLabels)
         return QuotaSnapshot(
             platformId = PlatformIds.COMMAND_CODE,
             platformName = PlatformRegistry.displayName(PlatformIds.COMMAND_CODE),

@@ -30,6 +30,7 @@ import com.kuyermqi.quotawidget.settings.MagpieSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.MagpieConfigContent
 import com.kuyermqi.quotawidget.ui.usage.formatUsageWindowSummary
+import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
@@ -289,7 +290,8 @@ fun ColumnScope.MagpieHomeContent(
                         state.lastUpdatedAtEpochMs = 0L
                     }
                     when (val result = onRefreshPlatform(PlatformIds.MAGPIE)) {
-                        is WidgetDisplayState.Error -> state.saveError = result.message
+                        is WidgetDisplayState.Error ->
+                            state.saveError = widgetErrorText(result.kind, resources)
                         WidgetDisplayState.NeedsReauth ->
                             state.saveError = resources.getString(R.string.magpie_key_rejected)
                         is WidgetDisplayState.Success -> {

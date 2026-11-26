@@ -1,6 +1,7 @@
 package com.kuyermqi.quotawidget.cline
 
 import com.kuyermqi.quotawidget.domain.HttpStatusException
+import com.kuyermqi.quotawidget.domain.NeutralUsageLabels
 import com.kuyermqi.quotawidget.domain.QuotaSnapshot
 import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
@@ -197,7 +198,7 @@ class ClineClient(
             ?: ""
         val balanceText = balance?.toBalanceText()
         val display = balanceText
-            ?: if (windows.isNotEmpty()) formatUsagePrimaryDisplay(windows) else plan
+            ?: if (windows.isNotEmpty()) formatUsagePrimaryDisplay(windows, NeutralUsageLabels) else plan
         val email = me.stringOrNull("email").orEmpty()
         val uid = me.stringOrNull("clineUserId")
             ?: me.stringOrNull("id")

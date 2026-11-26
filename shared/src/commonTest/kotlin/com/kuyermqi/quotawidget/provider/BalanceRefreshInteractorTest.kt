@@ -9,6 +9,7 @@ import com.kuyermqi.quotawidget.domain.QuotaWindow
 import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.SessionExpiredException
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.domain.WidgetErrorKind
 import com.kuyermqi.quotawidget.domain.formatBalance
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
@@ -81,10 +82,12 @@ class BalanceRefreshInteractorTest {
         val result = interactor.refresh(PlatformIds.DEEPSEEK)
 
         val completed = assertIs<BalanceRefreshResult.Completed>(result)
-        assertEquals(WidgetDisplayState.Error("网关未返回额度窗口"), completed.state)
-        assertEquals(
-            WidgetDisplayState.Error("网关未返回额度窗口"),
-            repo.getWidgetState(PlatformIds.DEEPSEEK),
+        val expected = WidgetDisplayState.Error(WidgetErrorKind.QuotaUnavailable)
+        assertEquals(expected, completed.state)
+        assertEquals(expected, repo.getWidgetState(PlatformIds.DEEPSEEK))
+        assertEquals<List<Pair<String, WidgetErrorKind>>>(
+            listOf(PlatformIds.DEEPSEEK to WidgetErrorKind.QuotaUnavailable),
+            repo.widgetErrorSaves,
         )
     }
 
@@ -151,7 +154,10 @@ class BalanceRefreshInteractorTest {
 
         val failure = assertIs<BalanceRefreshResult.TransientFailure>(result)
         assertEquals(true, failure.retryable)
-        assertEquals("rate limited", assertIs<WidgetDisplayState.Error>(failure.retained).message)
+        assertEquals(
+            WidgetErrorKind.HttpStatus(429),
+            assertIs<WidgetDisplayState.Error>(failure.retained).kind,
+        )
     }
 
     @Test
@@ -169,12 +175,13 @@ class BalanceRefreshInteractorTest {
         val result = interactor.refresh(PlatformIds.DEEPSEEK)
 
         val completed = assertIs<BalanceRefreshResult.Completed>(result)
-        assertEquals(WidgetDisplayState.Error("接口不存在"), completed.state)
-        assertEquals(
-            WidgetDisplayState.Error("接口不存在"),
-            repo.getWidgetState(PlatformIds.DEEPSEEK),
+        val expected = WidgetDisplayState.Error(WidgetErrorKind.HttpStatus(404))
+        assertEquals(expected, completed.state)
+        assertEquals(expected, repo.getWidgetState(PlatformIds.DEEPSEEK))
+        assertEquals<List<Pair<String, WidgetErrorKind>>>(
+            listOf(PlatformIds.DEEPSEEK to WidgetErrorKind.HttpStatus(404)),
+            repo.widgetErrorSaves,
         )
-        assertEquals(listOf(PlatformIds.DEEPSEEK to "接口不存在"), repo.widgetErrorSaves)
     }
 
     @Test
@@ -193,12 +200,13 @@ class BalanceRefreshInteractorTest {
         val result = interactor.refresh(PlatformIds.DEEPSEEK)
 
         val completed = assertIs<BalanceRefreshResult.Completed>(result)
-        assertEquals(WidgetDisplayState.Error("unexpected payload"), completed.state)
-        assertEquals(
-            WidgetDisplayState.Error("unexpected payload"),
-            repo.getWidgetState(PlatformIds.DEEPSEEK),
+        val expected = WidgetDisplayState.Error(WidgetErrorKind.Unknown())
+        assertEquals(expected, completed.state)
+        assertEquals(expected, repo.getWidgetState(PlatformIds.DEEPSEEK))
+        assertEquals<List<Pair<String, WidgetErrorKind>>>(
+            listOf(PlatformIds.DEEPSEEK to WidgetErrorKind.Unknown()),
+            repo.widgetErrorSaves,
         )
-        assertEquals(listOf(PlatformIds.DEEPSEEK to "unexpected payload"), repo.widgetErrorSaves)
     }
 
     @Test
@@ -242,7 +250,7 @@ class BalanceRefreshInteractorTest {
 
         assertIs<BalanceRefreshResult.TransientFailure>(result)
         val error = assertIs<WidgetDisplayState.Error>(result.retained)
-        assertEquals("boom", error.message)
+        assertEquals(WidgetErrorKind.Network, error.kind)
         assertIs<WidgetDisplayState.Error>(repo.getWidgetState(PlatformIds.DEEPSEEK))
     }
 

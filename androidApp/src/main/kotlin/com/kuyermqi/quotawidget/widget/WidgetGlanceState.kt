@@ -15,7 +15,6 @@ import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.kuyermqi.quotawidget.QuotaWidgetApp
-import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.AppLanguage
 import com.kuyermqi.quotawidget.domain.AppSettings
 import com.kuyermqi.quotawidget.domain.CurrencyPreference
@@ -32,9 +31,12 @@ import com.kuyermqi.quotawidget.domain.QuotaWindowKind
 import com.kuyermqi.quotawidget.domain.RefreshIconPhase
 import com.kuyermqi.quotawidget.domain.ThemeColorMode
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
+import com.kuyermqi.quotawidget.domain.WidgetErrorKind
 import com.kuyermqi.quotawidget.domain.decodeQuotaWindows
 import com.kuyermqi.quotawidget.domain.encodeQuotaWindows
 import com.kuyermqi.quotawidget.domain.formatBalance
+import com.kuyermqi.quotawidget.domain.relocalizedPrimaryDisplay
+import com.kuyermqi.quotawidget.domain.usage.usageLabels
 import com.kuyermqi.quotawidget.locale.AppLocale
 import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.platform.PlatformRegistry
@@ -401,12 +403,24 @@ object WidgetGlanceState {
     fun Preferences.toSessionUsageResetStyle(platformId: String): UsageResetStyle =
         UsageResetStyle.fromStorage(this[sessionUsageResetStyleKey(platformId)])
 
-    fun Preferences.toDisplayState(context: Context): WidgetDisplayState {
+    /** Display mode the platform's card uses; also drives the rebuilt usage summary. */
+    fun Preferences.usageDisplayModeFor(platformId: String): UsageDisplayMode = when (platformId) {
+        PlatformIds.OPENCODE_GO -> toOpenCodeUsageDisplayMode()
+        PlatformIds.CODEX -> toCodexUsageDisplayMode()
+        PlatformIds.NEW_API -> toNewApiUsageDisplayMode()
+        PlatformIds.MAGPIE -> toMagpieUsageDisplayMode()
+        PlatformIds.KIMI_CODE -> toKimiCodeUsageDisplayMode()
+        PlatformIds.ZHIPU -> toZhipuUsageDisplayMode()
+        in PlatformIds.sessionPlatforms -> toSessionUsageDisplayMode(platformId)
+        else -> UsageDisplayMode.USED
+    }
+
+    fun Preferences.toDisplayState(): WidgetDisplayState {
         return when (this[statusKey]) {
             Status.LOADING -> WidgetDisplayState.Loading
             Status.NEEDS_REAUTH -> WidgetDisplayState.NeedsReauth
             Status.ERROR -> WidgetDisplayState.Error(
-                this[errorKey] ?: context.getString(R.string.widget_fetch_failed),
+                WidgetErrorKind.fromStorage(this[errorKey]),
             )
             Status.SUCCESS -> {
                 val platformId = this[platformIdKey] ?: PlatformIds.DEEPSEEK
@@ -476,7 +490,7 @@ object WidgetGlanceState {
             }
             is WidgetDisplayState.Error -> {
                 this[statusKey] = Status.ERROR
-                this[errorKey] = display.message
+                this[errorKey] = display.kind.toStorage()
             }
             is WidgetDisplayState.Success -> {
                 this[statusKey] = Status.SUCCESS
@@ -548,4 +562,24 @@ object WidgetGlanceState {
             }
         }
     }
+}
+
+/**
+ * Rebuilds [QuotaSnapshot.primaryDisplay] from the stored windows with the app language, so a
+ * summary persisted under another language never reaches the screen. Balance and plan texts
+ * (no usage windows) are kept as stored.
+ */
+internal fun WidgetDisplayState.withLocalizedSummary(
+    context: Context,
+    mode: UsageDisplayMode,
+): WidgetDisplayState = when (this) {
+    is WidgetDisplayState.Success -> WidgetDisplayState.Success(
+        snapshot.copy(
+            primaryDisplay = snapshot.relocalizedPrimaryDisplay(
+                labels = usageLabels(context.resources),
+                mode = mode,
+            ),
+        ),
+    )
+    else -> this
 }

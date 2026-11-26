@@ -26,6 +26,8 @@ import com.kuyermqi.quotawidget.domain.UsageResetStyle
 import com.kuyermqi.quotawidget.domain.UsageWindowKind
 import com.kuyermqi.quotawidget.domain.WidgetDisplayState
 import com.kuyermqi.quotawidget.domain.opencode.OpenCodeLoginWebViewFlow
+import com.kuyermqi.quotawidget.domain.relocalizedPrimaryDisplay
+import com.kuyermqi.quotawidget.domain.usage.usageLabels
 import com.kuyermqi.quotawidget.opencode.OpenCodeGoClient
 import com.kuyermqi.quotawidget.opencode.OpenCodeWorkspace
 import com.kuyermqi.quotawidget.platform.PlatformIds
@@ -35,6 +37,7 @@ import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.OpenCodeAuthPanel
 import com.kuyermqi.quotawidget.ui.components.OpenCodeGoConfigContent
 import com.kuyermqi.quotawidget.ui.usage.formatUsageWindowSummary
+import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -135,7 +138,10 @@ class OpenCodeGoHomeState internal constructor(
                 windows = widgetState.snapshot.windows,
                 windowKind = settings.widgetWindowKind,
                 usageDisplayMode = settings.usageDisplayMode,
-                fallback = widgetState.snapshot.primaryDisplay,
+                fallback = widgetState.snapshot.relocalizedPrimaryDisplay(
+                    labels = usageLabels(resources),
+                    mode = settings.usageDisplayMode,
+                ),
             )
             WidgetDisplayState.Loading -> lastDisplay ?: loadingMsg
             is WidgetDisplayState.Error -> lastDisplay
@@ -218,7 +224,10 @@ fun openCodeGoHomeEffects(
             windows = success.snapshot.windows,
             windowKind = state.settings.widgetWindowKind,
             usageDisplayMode = state.settings.usageDisplayMode,
-            fallback = success.snapshot.primaryDisplay,
+            fallback = success.snapshot.relocalizedPrimaryDisplay(
+                labels = usageLabels(resources),
+                mode = state.settings.usageDisplayMode,
+            ),
         )
     }
 
@@ -273,7 +282,7 @@ fun openCodeGoHomeEffects(
                         state.authPanel = OpenCodeAuthPanel.SUMMARY
                     }
                     is WidgetDisplayState.Error -> {
-                        state.error = refresh.message
+                        state.error = widgetErrorText(refresh.kind, resources)
                         state.authPanel = OpenCodeAuthPanel.SUMMARY
                     }
                     WidgetDisplayState.NeedsReauth -> {
@@ -443,7 +452,7 @@ fun ColumnScope.OpenCodeGoHomeContent(
                     }
                     when (val result = onRefreshPlatform(PlatformIds.OPENCODE_GO)) {
                         is WidgetDisplayState.Error -> {
-                            state.error = result.message
+                            state.error = widgetErrorText(result.kind, context)
                             state.authPanel = editingPanel
                         }
                         WidgetDisplayState.NeedsReauth -> {

@@ -19,6 +19,7 @@ import com.kuyermqi.quotawidget.platform.PlatformIds
 import com.kuyermqi.quotawidget.settings.DeepSeekSettings
 import com.kuyermqi.quotawidget.settings.PlatformSettingsRepository
 import com.kuyermqi.quotawidget.ui.components.DeepSeekConfigContent
+import com.kuyermqi.quotawidget.ui.widgetErrorText
 import com.kuyermqi.quotawidget.widget.WidgetSyncCoordinator
 import kotlinx.coroutines.launch
 
@@ -149,7 +150,7 @@ fun ColumnScope.DeepSeekHomeContent(
                     state.saveError = when (
                         val result = onRefreshPlatform(PlatformIds.DEEPSEEK)
                     ) {
-                        is WidgetDisplayState.Error -> result.message
+                        is WidgetDisplayState.Error -> widgetErrorText(result.kind, context)
                         else -> null
                     }
                     WidgetSyncCoordinator.syncWidgets(context, "deepseek_save", PlatformIds.DEEPSEEK)
