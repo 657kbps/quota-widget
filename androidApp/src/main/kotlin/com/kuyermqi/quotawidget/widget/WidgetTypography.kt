@@ -5,6 +5,7 @@ import android.graphics.Typeface
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.util.DisplayMetrics
+import android.util.TypedValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.Dp
@@ -17,6 +18,7 @@ private const val LINE_HEIGHT_FACTOR = 1.2f
 private const val WIDTH_SAFETY_FACTOR = 0.95f
 private const val MULTI_LINE_WIDTH_SAFETY_FACTOR = 0.94f
 private const val MULTI_LINE_FIT_STEP_SP = 1f
+private const val MIN_SP_TO_PX = 0.1f
 private const val CJK_SYMBOLS_START = 0x3000
 private const val CJK_SYMBOLS_END = 0x303F
 private const val HALFWIDTH_FULLWIDTH_START = 0xFF00
@@ -77,7 +79,8 @@ internal fun fittedMultiLineTextSize(
     bold: Boolean = true,
 ): TextUnit {
     val metrics = LocalContext.current.resources.displayMetrics
-    return remember(text, bounds, maxLines, bold, metrics.density, metrics.scaledDensity) {
+    val spScale = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 1f, metrics)
+    return remember(text, bounds, maxLines, bold, metrics.density, spScale) {
         fitMultiLineTextSize(
             metrics = metrics,
             text = text,
@@ -110,7 +113,7 @@ internal fun fitMultiLineTextSize(
     var resultSp = bounds.minSp
     var candidateSp = bounds.maxSp.coerceAtLeast(bounds.minSp)
     while (candidateSp > bounds.minSp) {
-        paint.textSize = candidateSp * metrics.scaledDensity
+        paint.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, candidateSp, metrics)
         if (fitsMultiLineCandidate(paint, text, unbreakableTokens, measureBox)) {
             resultSp = candidateSp
             break
@@ -193,6 +196,8 @@ internal fun fitMeasuredTextSize(
     val widthPx = bounds.maxWidth.value * metrics.density * WIDTH_SAFETY_FACTOR
     val heightPx = bounds.maxHeight.value * metrics.density / LINE_HEIGHT_FACTOR
     val fittedPx = minOf(widthPx / widthPerPx, heightPx)
-    val fittedSp = fittedPx / metrics.scaledDensity
+    val spScalePx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 1f, metrics)
+        .coerceAtLeast(MIN_SP_TO_PX)
+    val fittedSp = fittedPx / spScalePx
     return fittedSp.coerceIn(bounds.minSp, bounds.maxSp).sp
 }
