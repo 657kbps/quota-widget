@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Resources
 import com.kuyermqi.quotawidget.R
 import com.kuyermqi.quotawidget.domain.WidgetErrorKind
+import com.kuyermqi.quotawidget.refresh.toWidgetErrorKind
 
 /**
  * The only place that turns a stored [WidgetErrorKind] into user-visible text, so a widget,
@@ -23,6 +24,15 @@ fun widgetErrorText(kind: WidgetErrorKind, resources: Resources): String = when 
     WidgetErrorKind.ParseFailure ->
         resources.getString(R.string.widget_error_parse_failure)
     is WidgetErrorKind.Unknown -> resources.getString(R.string.widget_fetch_failed)
+}
+
+fun widgetErrorText(
+    error: Throwable,
+    resources: Resources,
+    fallback: String? = null,
+): String = when (val kind = error.toWidgetErrorKind()) {
+    is WidgetErrorKind.Unknown -> fallback ?: widgetErrorText(kind, resources)
+    else -> widgetErrorText(kind, resources)
 }
 
 fun widgetErrorText(kind: WidgetErrorKind, context: Context): String =

@@ -40,23 +40,26 @@ internal fun isRetryableFailure(error: Throwable): Boolean {
  * wrapped network or status failure keeps its meaning. Messages are dropped: the kind is the
  * only thing stored and every surface renders it in the app language.
  */
-internal fun Throwable.toWidgetErrorKind(): WidgetErrorKind {
+fun Throwable.toWidgetErrorKind(): WidgetErrorKind {
     val visited = mutableSetOf<Throwable>()
     var current: Throwable? = this
-    while (current != null && visited.add(current)) {
-        when (current) {
-            is SessionExpiredException -> return WidgetErrorKind.SessionExpired
-            is QuotaUnavailableException -> return WidgetErrorKind.QuotaUnavailable
-            is InvalidBaseUrlException -> return WidgetErrorKind.InvalidBaseUrl
-            is HttpStatusException -> return WidgetErrorKind.HttpStatus(current.statusCode)
-            is ResponseException ->
-                return WidgetErrorKind.HttpStatus(current.response.status.value)
-            is IOException -> return WidgetErrorKind.Network
-            is SerializationException -> return WidgetErrorKind.ParseFailure
-        }
+    var kind: WidgetErrorKind? = null
+    while (current != null && kind == null && visited.add(current)) {
+        kind = current.directWidgetErrorKind()
         current = current.cause
     }
-    return WidgetErrorKind.Unknown()
+    return kind ?: WidgetErrorKind.Unknown()
+}
+
+private fun Throwable.directWidgetErrorKind(): WidgetErrorKind? = when (this) {
+    is SessionExpiredException -> WidgetErrorKind.SessionExpired
+    is QuotaUnavailableException -> WidgetErrorKind.QuotaUnavailable
+    is InvalidBaseUrlException -> WidgetErrorKind.InvalidBaseUrl
+    is HttpStatusException -> WidgetErrorKind.HttpStatus(statusCode)
+    is ResponseException -> WidgetErrorKind.HttpStatus(response.status.value)
+    is IOException -> WidgetErrorKind.Network
+    is SerializationException -> WidgetErrorKind.ParseFailure
+    else -> null
 }
 
 class BalanceRefreshInteractor(

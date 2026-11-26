@@ -290,7 +290,7 @@ fun sessionPlatformHomeEffects(
                 )
                 WidgetSyncCoordinator.syncWidgets(context, "session_login", state.platformId)
             } catch (e: Exception) {
-                state.error = e.message ?: loginFailed
+                state.error = widgetErrorText(e, resources, loginFailed)
             }
         }
     }
@@ -324,12 +324,12 @@ fun sessionPlatformHomeEffects(
                         CommandCodeLoginWebViewFlow.createIntent(context)
                     }
                     PlatformIds.ANTIGRAVITY -> AntigravityLoginWebViewFlow.createIntent(context)
-                    else -> error("未知平台: ${state.platformId}")
+                    else -> error("Unknown platform: ${state.platformId}")
                 }
                 launcher.launch(intent)
             } catch (e: Exception) {
                 state.isBusy = false
-                state.error = e.message ?: loginFailed
+                state.error = widgetErrorText(e, resources, loginFailed)
             }
         }
     }
@@ -348,7 +348,7 @@ fun sessionPlatformHomeEffects(
                 state.error = null
                 WidgetSyncCoordinator.syncWidgets(context, "session_logout", state.platformId)
             } catch (e: Exception) {
-                state.error = e.message
+                state.error = widgetErrorText(e, resources)
             } finally {
                 state.isBusy = false
             }
@@ -380,7 +380,7 @@ fun sessionPlatformHomeEffects(
                 }
                 WidgetSyncCoordinator.syncWidgets(context, "session_save", state.platformId)
             } catch (e: Exception) {
-                state.error = e.message
+                state.error = widgetErrorText(e, resources)
             } finally {
                 state.isSaving = false
                 state.isBusy = false

@@ -253,7 +253,6 @@
     <ID>ReturnCount:AntigravityClient.kt$AntigravityClient$private fun SessionPlatformSettings.isExpiring(): Boolean</ID>
     <ID>ReturnCount:AntigravityClient.kt$AntigravityClient$private suspend fun loadProject(accessToken: String, existingProject: String): ProjectInfo</ID>
     <ID>ReturnCount:BalanceRefreshInteractor.kt$BalanceRefreshInteractor$private suspend fun refreshInternal(platformId: String): BalanceRefreshResult</ID>
-    <ID>ReturnCount:BalanceRefreshInteractor.kt$internal fun Throwable.toWidgetErrorKind(): WidgetErrorKind</ID>
     <ID>ReturnCount:BalanceRefreshInteractor.kt$internal fun isRetryableFailure(error: Throwable): Boolean</ID>
     <ID>ReturnCount:BaseUrl.kt$fun classifyBaseUrl(baseUrl: String): BaseUrlClass</ID>
     <ID>ReturnCount:ClineClient.kt$ClineClient$private fun JsonObject?.toBalanceText(): String?</ID>
